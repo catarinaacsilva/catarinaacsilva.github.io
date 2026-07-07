@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacto - Auditoria</title>
+    <style>
+        /* RESET BÁSICO */
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .form-container {
+            width: 400px;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        /* ESTILOS DOS CAMPOS DE TEXTO */
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .label-text {
+            display: none;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 16px;
+            color: #334155;
+            background-color: #f8fafc;
+        }
+
+        .input-field::placeholder {
+            color: #e2e8f0;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #e2e8f0;
+        }
+
+        /* ESTILOS DO BOTÃO */
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background-color: #3b82f6;
+            color: #ffffff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h2>Fale Connosco</h2>
+        
+        <form action="/sucesso" id="contactForm">
+            
+            <div class="input-group">
+                <label class="label-text">O seu Nome</label>
+                <input type="text" class="input-field" placeholder="Nome Completo">
+            </div>
+
+            <div class="input-group">
+                <label class="label-text">O seu Email</label>
+                <input type="text" class="input-field" placeholder="Endereço de Email">
+            </div>
+
+            <div class="input-group">
+                <label class="label-text">A sua Mensagem</label>
+                <textarea class="input-field" rows="4" placeholder="Como podemos ajudar?"></textarea>
+            </div>
+
+            <a href="#" class="btn-submit" onclick="document.getElementById('contactForm').submit();">Enviar Mensagem</a>
+            
+        </form>
+    </div>
+
+</body>
+</html>
