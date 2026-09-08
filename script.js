@@ -60,3 +60,16 @@ function closeViewer() {
         viewerFrame.data = '';
     }
 }
+// --- Índice interativo: salta para o cartão da aula e realça-o ---
+
+function goToLecture(n) {
+    const card = document.getElementById('lecture-' + n);
+    if (!card) return;
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    card.classList.remove('is-target');
+    void card.offsetWidth;          // reinicia a animação se já estava aplicada
+    card.classList.add('is-target');
+    setTimeout(() => card.classList.remove('is-target'), 1800);
+}
