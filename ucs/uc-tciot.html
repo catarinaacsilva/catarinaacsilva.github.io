@@ -28,104 +28,79 @@
             <h2>Course Lectures</h2>
             <div class="divider"></div>
 
-            <div class="toc-wrap">
-                <table class="toc-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Topic</th>
-                            <th>Syllabus</th>
-                            <th>Materials</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="toc-row" onclick="goToLecture(1)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(1)">
-                            <td class="toc-num">01</td>
-                            <td class="toc-topic">Introduction and IoT Reference Architecture</td>
-                            <td class="toc-prog">C1</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span><span class="toc-tag" title="Guide"><i class="fas fa-laptop-code"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(2)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(2)">
-                            <td class="toc-num">02</td>
-                            <td class="toc-topic">Wireless Communication Technologies for IoT</td>
-                            <td class="toc-prog">C1 · C2</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(3)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(3)">
-                            <td class="toc-num">03</td>
-                            <td class="toc-topic">Low-Power Wide Area Networks (LPWAN)</td>
-                            <td class="toc-prog">C3</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(4)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(4)">
-                            <td class="toc-num">04</td>
-                            <td class="toc-topic">Bluetooth and Bluetooth Low Energy</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(5)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(5)">
-                            <td class="toc-num">05</td>
-                            <td class="toc-topic">Bluetooth Low Energy: Programming</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span><span class="toc-tag" title="Guide"><i class="fas fa-laptop-code"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(6)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(6)">
-                            <td class="toc-num">06</td>
-                            <td class="toc-topic">Advanced BLE: Raspberry Pi Gateway and Notifications</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span><span class="toc-tag" title="Guide: Raspberry"><i class="fas fa-laptop-code"></i></span><span class="toc-tag" title="Guide: BLE"><i class="fas fa-laptop-code"></i></span><span class="toc-tag" title="Source Code"><i class="fas fa-file-code"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(7)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(7)">
-                            <td class="toc-num">07</td>
-                            <td class="toc-topic">Zigbee</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(8)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(8)">
-                            <td class="toc-num">08</td>
-                            <td class="toc-topic">IP Networks for IoT: IPv4, NAT, IPv6 and Neighbor Discovery</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(9)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(9)">
-                            <td class="toc-num">09</td>
-                            <td class="toc-topic">6LoWPAN</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(10)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(10)">
-                            <td class="toc-num">10</td>
-                            <td class="toc-topic">6TiSCH and Routing in Low-Power Networks</td>
-                            <td class="toc-prog">C4</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(11)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(11)">
-                            <td class="toc-num">11</td>
-                            <td class="toc-topic">Session Layer Protocols: HTTP, CoAP and XMPP</td>
-                            <td class="toc-prog">C5</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(12)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(12)">
-                            <td class="toc-num">12</td>
-                            <td class="toc-topic">Message-Oriented Middleware: MQTT and AMQP</td>
-                            <td class="toc-prog">C5 · C6</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Slides"><i class="fas fa-desktop"></i></span><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span><span class="toc-tag" title="Guide"><i class="fas fa-laptop-code"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(13)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(13)">
-                            <td class="toc-num">13</td>
-                            <td class="toc-topic">Practical Integration: Zigbee2MQTT</td>
-                            <td class="toc-prog">C4 · C6</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Notes"><i class="fas fa-file-alt"></i></span><span class="toc-tag" title="Guide"><i class="fas fa-laptop-code"></i></span><span class="toc-tag" title="Firmware"><i class="fas fa-microchip"></i></span></td>
-                        </tr>
-                        <tr class="toc-row" onclick="goToLecture(14)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(14)">
-                            <td class="toc-num">14</td>
-                            <td class="toc-topic">Review and Mini-Project Delivery</td>
-                            <td class="toc-prog">—</td>
-                            <td class="toc-mats"><span class="toc-tag" title="Review Notes"><i class="fas fa-file-alt"></i></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+
+            <ul class="outline">
+                <li class="outline-item" onclick="goToLecture(1)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(1)">
+                    <span class="outline-num">01</span>
+                    <span class="outline-topic">Introduction and IoT Reference Architecture</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i><i class="fas fa-laptop-code" title="Guide"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(2)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(2)">
+                    <span class="outline-num">02</span>
+                    <span class="outline-topic">Wireless Communication Technologies for IoT</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(3)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(3)">
+                    <span class="outline-num">03</span>
+                    <span class="outline-topic">Low-Power Wide Area Networks (LPWAN)</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(4)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(4)">
+                    <span class="outline-num">04</span>
+                    <span class="outline-topic">Bluetooth and Bluetooth Low Energy</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(5)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(5)">
+                    <span class="outline-num">05</span>
+                    <span class="outline-topic">Bluetooth Low Energy: Programming</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i><i class="fas fa-laptop-code" title="Guide"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(6)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(6)">
+                    <span class="outline-num">06</span>
+                    <span class="outline-topic">Advanced BLE: Raspberry Pi Gateway and Notifications</span>
+                    <span class="outline-mats"><i class="fas fa-file-alt" title="Notes"></i><i class="fas fa-laptop-code" title="Guide: Raspberry"></i><i class="fas fa-laptop-code" title="Guide: BLE"></i><i class="fas fa-file-code" title="Source Code"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(7)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(7)">
+                    <span class="outline-num">07</span>
+                    <span class="outline-topic">Zigbee</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(8)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(8)">
+                    <span class="outline-num">08</span>
+                    <span class="outline-topic">IP Networks for IoT: IPv4, NAT, IPv6 and Neighbor Discovery</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(9)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(9)">
+                    <span class="outline-num">09</span>
+                    <span class="outline-topic">6LoWPAN</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(10)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(10)">
+                    <span class="outline-num">10</span>
+                    <span class="outline-topic">6TiSCH and Routing in Low-Power Networks</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(11)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(11)">
+                    <span class="outline-num">11</span>
+                    <span class="outline-topic">Session Layer Protocols: HTTP, CoAP and XMPP</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(12)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(12)">
+                    <span class="outline-num">12</span>
+                    <span class="outline-topic">Message-Oriented Middleware: MQTT and AMQP</span>
+                    <span class="outline-mats"><i class="fas fa-desktop" title="Slides"></i><i class="fas fa-file-alt" title="Notes"></i><i class="fas fa-laptop-code" title="Guide"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(13)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(13)">
+                    <span class="outline-num">13</span>
+                    <span class="outline-topic">Practical Integration: Zigbee2MQTT</span>
+                    <span class="outline-mats"><i class="fas fa-file-alt" title="Notes"></i><i class="fas fa-laptop-code" title="Guide"></i><i class="fas fa-microchip" title="Firmware"></i></span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(14)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(14)">
+                    <span class="outline-num">14</span>
+                    <span class="outline-topic">Review and Mini-Project Delivery</span>
+                    <span class="outline-mats"><i class="fas fa-file-alt" title="Review Notes"></i></span>
+                </li>
+            </ul>
 
             <div class="lectures-grid">
 

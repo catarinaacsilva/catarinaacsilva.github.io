@@ -178,40 +178,38 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .btn-close-viewer:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
 .pdf-viewer { width: 100%; height: 75vh; min-height: 600px; border: 1px solid var(--border-color); border-radius: 4px; background-color: #e9ecef; }
-/* --- Índice interativo das aulas (Course Outline) --- */
-.toc-wrap { border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-bottom: 3rem; background: var(--bg-main); }
-.toc-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-.toc-table thead th {
-    background: var(--bg-muted); color: var(--text-light);
-    font-family: var(--font-body); font-weight: 600; font-size: 0.75rem;
-    text-transform: uppercase; letter-spacing: 1px;
-    text-align: left; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border-color);
+/* --- Índice das aulas (Course Outline) --- */
+.outline { list-style: none; margin: 0 0 3.5rem 0; border-top: 1px solid var(--border-color); }
+.outline-item {
+    display: flex; align-items: baseline; gap: 1.5rem;
+    padding: 1rem 0.25rem; border-bottom: 1px solid var(--border-color);
+    cursor: pointer; transition: padding-left 0.3s, color 0.3s;
 }
-.toc-table thead th:last-child, .toc-table tbody td:last-child { text-align: right; }
-.toc-row { cursor: pointer; transition: background-color 0.25s; border-bottom: 1px solid var(--border-color); }
-.toc-row:last-child { border-bottom: none; }
-.toc-row:hover, .toc-row:focus { background: var(--bg-muted); outline: none; }
-.toc-row:focus-visible { box-shadow: inset 3px 0 0 var(--accent-color); }
-.toc-row td { padding: 0.85rem 1.2rem; vertical-align: middle; }
-.toc-num { font-family: var(--font-heading); font-weight: 600; color: var(--accent-color); width: 3.5rem; }
-.toc-topic { font-family: var(--font-heading); color: var(--primary-color); line-height: 1.5; }
-.toc-row:hover .toc-topic { color: var(--accent-color); }
-.toc-prog { color: var(--text-light); font-size: 0.8rem; letter-spacing: 0.5px; white-space: nowrap; width: 7rem; }
-.toc-mats { white-space: nowrap; width: 8rem; }
-.toc-tag { display: inline-block; margin-left: 0.5rem; color: var(--accent-color); opacity: 0.75; font-size: 0.85rem; }
-.toc-row:hover .toc-tag { opacity: 1; }
+.outline-item:hover, .outline-item:focus { padding-left: 0.75rem; outline: none; }
+.outline-item:focus-visible { box-shadow: inset 3px 0 0 var(--accent-color); }
+.outline-num {
+    font-family: var(--font-heading); font-weight: 600; font-size: 0.95rem;
+    color: var(--accent-color); flex: 0 0 auto; min-width: 1.75rem;
+}
+.outline-topic {
+    font-family: var(--font-heading); font-size: 1.05rem; line-height: 1.5;
+    color: var(--primary-color); flex: 1 1 auto; transition: color 0.3s;
+}
+.outline-item:hover .outline-topic { color: var(--accent-color); }
+.outline-mats { flex: 0 0 auto; margin-left: auto; white-space: nowrap; color: var(--accent-color); opacity: 0.55; transition: opacity 0.3s; }
+.outline-mats i { margin-left: 0.6rem; font-size: 0.8rem; }
+.outline-item:hover .outline-mats { opacity: 1; }
 
-/* Realce do cartão de aula ao ser selecionado no índice */
+/* Realce do cartão ao ser escolhido no índice */
 .lecture-card.is-target { animation: cardPulse 1.6s ease; }
 @keyframes cardPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(164,140,98,0.55); }
-    40%  { box-shadow: 0 0 0 10px rgba(164,140,98,0); }
+    0%   { box-shadow: 0 0 0 0 rgba(164,140,98,0.5); }
+    45%  { box-shadow: 0 0 0 9px rgba(164,140,98,0); }
     100% { box-shadow: 0 0 0 0 rgba(164,140,98,0); }
 }
 
-@media (max-width: 768px) {
-    .toc-prog { display: none; }
-    .toc-table thead th:nth-child(3) { display: none; }
-    .toc-row td { padding: 0.75rem 0.8rem; }
-    .toc-topic { font-size: 0.9rem; }
+@media (max-width: 600px) {
+    .outline-item { gap: 1rem; padding: 0.85rem 0.25rem; flex-wrap: wrap; }
+    .outline-topic { font-size: 0.98rem; }
+    .outline-mats { margin-left: 2.6rem; opacity: 0.8; }
 }
