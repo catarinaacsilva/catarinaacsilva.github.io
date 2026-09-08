@@ -178,27 +178,32 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .btn-close-viewer:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
 .pdf-viewer { width: 100%; height: 75vh; min-height: 600px; border: 1px solid var(--border-color); border-radius: 4px; background-color: #e9ecef; }
-/* --- Índice das aulas (Course Outline) --- */
+/* --- Estrutura do programa (Course Outline) --- */
 .outline { list-style: none; margin: 0 0 3.5rem 0; border-top: 1px solid var(--border-color); }
 .outline-item {
     display: flex; align-items: baseline; gap: 1.5rem;
-    padding: 1rem 0.25rem; border-bottom: 1px solid var(--border-color);
-    cursor: pointer; transition: padding-left 0.3s, color 0.3s;
+    padding: 1.4rem 0.25rem; border-bottom: 1px solid var(--border-color);
+    cursor: pointer; transition: padding-left 0.3s;
 }
 .outline-item:hover, .outline-item:focus { padding-left: 0.75rem; outline: none; }
 .outline-item:focus-visible { box-shadow: inset 3px 0 0 var(--accent-color); }
 .outline-num {
-    font-family: var(--font-heading); font-weight: 600; font-size: 0.95rem;
-    color: var(--accent-color); flex: 0 0 auto; min-width: 1.75rem;
+    font-family: var(--font-heading); font-weight: 600; font-size: 0.9rem;
+    color: var(--accent-color); flex: 0 0 auto; min-width: 2rem; letter-spacing: 1px;
 }
+.outline-body { flex: 1 1 auto; display: block; }
 .outline-topic {
-    font-family: var(--font-heading); font-size: 1.05rem; line-height: 1.5;
-    color: var(--primary-color); flex: 1 1 auto; transition: color 0.3s;
+    display: block; font-family: var(--font-heading); font-size: 1.1rem;
+    color: var(--primary-color); line-height: 1.4; transition: color 0.3s;
 }
+.outline-desc { display: block; color: var(--text-light); font-size: 0.9rem; line-height: 1.6; margin-top: 0.2rem; }
 .outline-item:hover .outline-topic { color: var(--accent-color); }
-.outline-mats { flex: 0 0 auto; margin-left: auto; white-space: nowrap; color: var(--accent-color); opacity: 0.55; transition: opacity 0.3s; }
-.outline-mats i { margin-left: 0.6rem; font-size: 0.8rem; }
-.outline-item:hover .outline-mats { opacity: 1; }
+.outline-mats {
+    flex: 0 0 auto; margin-left: auto; white-space: nowrap;
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-light); transition: color 0.3s;
+}
+.outline-item:hover .outline-mats { color: var(--accent-color); }
 
 /* Realce do cartão ao ser escolhido no índice */
 .lecture-card.is-target { animation: cardPulse 1.6s ease; }
@@ -209,7 +214,6 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 }
 
 @media (max-width: 600px) {
-    .outline-item { gap: 1rem; padding: 0.85rem 0.25rem; flex-wrap: wrap; }
-    .outline-topic { font-size: 0.98rem; }
-    .outline-mats { margin-left: 2.6rem; opacity: 0.8; }
+    .outline-item { gap: 1rem; padding: 1.1rem 0.25rem; flex-wrap: wrap; }
+    .outline-mats { margin-left: 3rem; margin-top: 0.4rem; }
 }
