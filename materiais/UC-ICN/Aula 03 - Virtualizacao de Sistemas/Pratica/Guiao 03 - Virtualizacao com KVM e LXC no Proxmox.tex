@@ -1,0 +1,232 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 03 -- Virtualização com KVM e LXC no Proxmox}{Infraestruturas de Computação na Nuvem, Aula 03}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Criar e gerir máquinas virtuais KVM por linha de comandos, com a ferramenta \texttt{qm} do Proxmox VE.
+  \item Criar e gerir um contentor de sistema LXC com a ferramenta \texttt{pct}, e comparar com a VM equivalente.
+  \item Observar na prática as diferenças de arranque, consumo de memória e isolamento entre KVM e LXC.
+  \item Criar um snapshot e um clone, e converter uma VM em template.
+  \item Medir, de forma básica, o overhead de virtualização com um benchmark simples.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item Acesso ao Proxmox VE do servidor central, com as credenciais do Guião 01.
+  \item A VM \texttt{icn-lab} criada no Guião 01.
+  \item Intervalo de VMIDs atribuído pela docente (neste guião usamos \texttt{<vmid>} como marcador -- substituir pelos números efetivamente atribuídos).
+  \item Acesso por SSH ao \emph{node} Proxmox para os comandos \texttt{qm}/\texttt{pct}. Se o acesso à shell do node não estiver disponível para os alunos, todos os passos têm equivalente na interface web, e a componente CLI é demonstrada pela docente.
+\end{itemize}
+
+\section{Introdução}
+Na aula teórica vimos que existem dois modelos distintos de virtualização: a \textbf{virtualização completa} (uma VM com o seu próprio kernel, sobre um hypervisor) e a \textbf{virtualização ao nível do sistema operativo} (contentores que partilham o kernel do host). O Proxmox VE é particularmente útil para estudar esta distinção porque implementa ambos os modelos na mesma plataforma: \textbf{KVM} para máquinas virtuais e \textbf{LXC} para contentores de sistema.
+
+Neste guião vamos criar um exemplar de cada um, lado a lado, e medir concretamente as diferenças. Usaremos sobretudo a linha de comandos (\texttt{qm} e \texttt{pct}), porque é a forma como um administrador automatiza estas operações em escala -- uma competência que será retomada na Aula 07, quando automatizarmos este mesmo tipo de provisionamento com Ansible e Terraform.
+
+\section{Parte 1 -- Máquinas Virtuais KVM com \texttt{qm}}
+\begin{enumerate}[label=\arabic*.]
+
+  \item \textbf{Listar as VMs existentes e inspecionar a sua configuração.}
+\begin{lstlisting}
+$ qm list
+$ qm config <vmid-da-icn-lab>
+\end{lstlisting}
+  Identifique na configuração: a memória atribuída, o número de cores, o disco (e o seu formato) e a interface de rede.
+
+  \item \textbf{Consultar o estado e os recursos em uso.}
+\begin{lstlisting}
+$ qm status <vmid-da-icn-lab> --verbose
+\end{lstlisting}
+
+  \item \textbf{Criar uma nova VM apenas por linha de comandos.} Repare que cada opção corresponde a um dos recursos virtualizados estudados na teoria:
+\begin{lstlisting}
+$ qm create <novo-vmid> \
+    --name icn-lab-cli \
+    --memory 2048 \
+    --cores 2 \
+    --net0 virtio,bridge=vmbr0 \
+    --scsihw virtio-scsi-pci \
+    --ostype l26
+\end{lstlisting}
+  A opção \texttt{--net0 virtio} usa a interface paravirtualizada \emph{virtio} referida na aula, em vez de emular uma placa de rede real.
+
+  \item \textbf{Adicionar um disco à nova VM.} O disco é criado no storage indicado (confirmar o nome do storage disponível com \texttt{pvesm status}):
+\begin{lstlisting}
+$ pvesm status
+$ qm set <novo-vmid> --scsi0 <storage>:20
+\end{lstlisting}
+  Isto cria um disco de 20~GB. Consulte a configuração resultante e identifique o formato usado:
+\begin{lstlisting}
+$ qm config <novo-vmid>
+\end{lstlisting}
+
+  \item \textbf{Comparar thin provisioning com o tamanho nominal.} Verifique quanto espaço o disco ocupa realmente no armazenamento, em contraste com os 20~GB declarados:
+\begin{lstlisting}
+$ pvesm list <storage>
+\end{lstlisting}
+  Registe a diferença entre o tamanho nominal e o espaço efetivamente alocado.
+
+\end{enumerate}
+
+\section{Parte 2 -- Contentores de Sistema LXC com \texttt{pct}}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Listar os templates de contentor disponíveis.}
+\begin{lstlisting}
+$ pveam available | grep ubuntu
+$ pveam list <storage-de-templates>
+\end{lstlisting}
+  Se o template pretendido ainda não estiver descarregado no servidor, a docente indicará qual usar (o download só é feito uma vez, para toda a turma).
+
+  \item \textbf{Criar um contentor LXC.} Note como o comando é significativamente mais simples do que a criação da VM: não há ISO nem instalação de sistema operativo, porque o template já contém o sistema de ficheiros pronto:
+\begin{lstlisting}
+$ pct create <novo-ctid> \
+    <storage-de-templates>:vztmpl/<nome-do-template>.tar.zst \
+    --hostname icn-ct \
+    --memory 2048 \
+    --cores 2 \
+    --net0 name=eth0,bridge=vmbr0,ip=dhcp \
+    --rootfs <storage>:8
+\end{lstlisting}
+
+  \item \textbf{Arrancar o contentor e cronometrar o arranque.} Compare com o tempo de arranque de uma VM completa:
+\begin{lstlisting}
+$ time pct start <novo-ctid>
+$ pct status <novo-ctid>
+\end{lstlisting}
+
+  \item \textbf{Entrar no contentor e inspecionar o kernel.} Este é o passo mais revelador do guião:
+\begin{lstlisting}
+$ pct enter <novo-ctid>
+root@icn-ct:~# uname -r
+root@icn-ct:~# cat /etc/os-release
+root@icn-ct:~# exit
+\end{lstlisting}
+  Compare agora com o kernel visto \emph{dentro da VM} \texttt{icn-lab} (via SSH) e com o kernel do próprio \emph{node} Proxmox:
+\begin{lstlisting}
+# no node Proxmox:
+$ uname -r
+\end{lstlisting}
+  Registe as três versões de kernel observadas. A relação entre elas é o ponto central desta aula.
+
+  \item \textbf{Comparar o consumo de memória.} Observe quanto ocupa efetivamente cada um:
+\begin{lstlisting}
+$ pct status <novo-ctid> --verbose
+$ qm status <vmid-da-icn-lab> --verbose
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Parte 3 -- Snapshots, Clones e Templates}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Criar um snapshot} da VM \texttt{icn-lab} antes de qualquer alteração:
+\begin{lstlisting}
+$ qm snapshot <vmid-da-icn-lab> estado-inicial \
+    --description "Antes das experiencias da Aula 03"
+$ qm listsnapshot <vmid-da-icn-lab>
+\end{lstlisting}
+
+  \item \textbf{Provocar uma alteração e reverter.} Dentro da VM (via SSH), crie um ficheiro reconhecível:
+\begin{lstlisting}
+$ echo "alteracao de teste" > ~/teste-snapshot.txt
+\end{lstlisting}
+  De volta ao node, reverta a VM para o snapshot e confirme que o ficheiro desapareceu:
+\begin{lstlisting}
+$ qm rollback <vmid-da-icn-lab> estado-inicial
+$ qm start <vmid-da-icn-lab>
+\end{lstlisting}
+
+  \item \textbf{Clonar a VM.} Compare os dois modos de clonagem discutidos na teoria:
+\begin{lstlisting}
+# Clone completo (independente):
+$ qm clone <vmid-da-icn-lab> <novo-vmid-2> --name icn-lab-clone --full
+
+# Clone ligado (partilha as camadas base, ocupa menos espaco):
+$ qm clone <vmid-da-icn-lab> <novo-vmid-3> --name icn-lab-linked
+\end{lstlisting}
+  Verifique o espaço ocupado por cada um com \texttt{pvesm list <storage>} e registe a diferença.
+  \emph{Nota:} o clone ligado só é suportado em alguns tipos de storage e exige que a origem seja um template; se o comando falhar, registe a mensagem de erro obtida e explique-a com base no que sabe sobre linked clones.
+
+  \item \textbf{Converter uma VM em template.} Uma vez convertida, a VM passa a ser só de leitura e serve de base para novas máquinas:
+\begin{lstlisting}
+$ qm template <novo-vmid>
+$ qm list
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Parte 4 -- Medir o Overhead de Virtualização}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Executar um benchmark de CPU} dentro da VM KVM (via SSH) e dentro do contentor LXC (via \texttt{pct enter}), com parâmetros idênticos:
+\begin{lstlisting}
+$ sudo apt update && sudo apt install sysbench -y
+$ sysbench cpu --cpu-max-prime=20000 --threads=2 run
+\end{lstlisting}
+  Registe o valor de \emph{events per second} em cada ambiente.
+
+  \item \textbf{Comparar com o desempenho no próprio node} (se tiver acesso à shell do node e a docente o autorizar; caso contrário, use o valor de referência que ela fornecer):
+\begin{lstlisting}
+$ sysbench cpu --cpu-max-prime=20000 --threads=2 run
+\end{lstlisting}
+  Construa uma pequena tabela com os três valores (node, VM KVM, contentor LXC) e calcule a diferença percentual face ao node.
+
+  \item \textbf{Limpeza.} No final da aula, remova os recursos criados para não esgotar a capacidade do servidor partilhado:
+\begin{lstlisting}
+$ qm stop <novo-vmid-2>; qm destroy <novo-vmid-2>
+$ pct stop <novo-ctid>; pct destroy <novo-ctid>
+\end{lstlisting}
+  Mantenha a VM \texttt{icn-lab} original, que continuará a ser usada nos guiões seguintes.
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+  \setlength\itemsep{0.2cm}
+  \item Submeta a tabela com os três valores de \texttt{sysbench} (node, VM KVM, contentor LXC) e uma breve interpretação das diferenças observadas.
+  \item Registe as três versões de kernel observadas (node, VM, contentor). Porque é que a do contentor coincide com a do node e a da VM não? Relacione com a distinção entre virtualização completa e virtualização ao nível do SO.
+  \item Compare o tempo de arranque e o consumo de memória do contentor LXC e da VM KVM. Que explicação arquitetural justifica a diferença?
+  \item Que diferença observou, em espaço ocupado, entre o tamanho nominal do disco (20~GB) e o espaço efetivamente alocado? Que mecanismo explica isto e que risco operacional introduz?
+  \item Em que situação escolheria um contentor LXC em vez de uma VM KVM, e em que situação faria o contrário? Dê um exemplo concreto para cada caso.
+  \item Qual a diferença prática entre um snapshot, um clone completo e um template? Indique um cenário de administração real para cada um.
+\end{enumerate}
+
+\end{document}

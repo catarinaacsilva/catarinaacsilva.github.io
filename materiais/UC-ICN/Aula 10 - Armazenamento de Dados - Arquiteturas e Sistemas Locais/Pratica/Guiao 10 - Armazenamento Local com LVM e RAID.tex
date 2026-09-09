@@ -1,0 +1,236 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 10 -- Armazenamento Local com LVM e RAID}{Infraestruturas de Computação na Nuvem, Aula 10}
+
+\section{Objetivos}
+\begin{itemize}
+    \setlength\itemsep{0.2cm}
+    \item Observar os tipos de storage configurados no servidor Proxmox e anexar discos virtuais a uma VM.
+    \item Criar um array RAID por software com \texttt{mdadm} a partir desses discos.
+    \item Configurar o LVM sobre esse array: criar um volume físico (PV), um grupo de volumes (VG) e um volume lógico (LV).
+    \item Formatar e montar o volume lógico resultante.
+    \item Criar um snapshot LVM do volume lógico e verificar o seu conteúdo.
+    \item Simular a falha de um disco e observar a reconstrução do array.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}
+    \setlength\itemsep{0.2cm}
+    \item A VM \texttt{icn-lab} no Proxmox (Guião 01), ou outra VM Linux disponível.
+    \item Acesso à interface web do Proxmox, para anexar os discos virtuais (feito no próprio guião).
+    \item Acesso com privilégios de administração (\texttt{sudo}) na VM.
+    \item Pacotes \texttt{mdadm} e \texttt{lvm2} instalados:
+\begin{lstlisting}
+$ sudo apt update
+$ sudo apt install -y mdadm lvm2
+\end{lstlisting}
+\end{itemize}
+
+\section{Introdução}
+Nas aulas teóricas foram apresentados os conceitos de RAID (níveis 0, 1, 5, 6 e 10) e de LVM (PV, VG, LV, thin provisioning e snapshots). Neste guião esses conceitos são postos em prática dentro de uma VM do Proxmox.
+
+Há aqui uma sobreposição interessante que vale a pena reter: o servidor Proxmox já usa, por baixo, os mesmos mecanismos (tipicamente LVM-thin) para armazenar os discos das VMs. Vamos observar essa camada primeiro, e depois construir, \emph{dentro} da nossa VM, uma pilha equivalente sobre discos virtuais.
+
+A ordem lógica das camadas construídas é: \textbf{discos virtuais} $\rightarrow$ \textbf{array RAID (mdadm)} $\rightarrow$ \textbf{PV} $\rightarrow$ \textbf{VG} $\rightarrow$ \textbf{LV} $\rightarrow$ \textbf{sistema de ficheiros}.
+
+\section{Parte 1 -- O armazenamento do servidor Proxmox}
+\begin{enumerate}[label=\arabic*.]
+
+    \item \textbf{Observar os storages configurados.} Na interface web, selecione o \emph{Datacenter} e abra \emph{Storage}. Registe os storages existentes e o \emph{tipo} de cada um (Directory, LVM-Thin, ZFS, \ldots).
+
+    Se tiver acesso à shell do node, obtenha a mesma informação por CLI:
+\begin{lstlisting}
+$ pvesm status
+\end{lstlisting}
+
+    \item \textbf{Identificar onde reside o disco da sua VM.} Consulte a configuração da VM e localize a linha do disco:
+\begin{lstlisting}
+$ qm config <vmid> | grep -E "scsi|virtio|ide|sata"
+\end{lstlisting}
+    Registe o storage usado e o tamanho declarado. Se o storage for do tipo LVM-thin, o disco da sua VM é um volume lógico \emph{thin} -- exatamente o mecanismo descrito na aula teórica.
+
+    \item \textbf{Anexar quatro discos virtuais adicionais à VM.} Na interface web: selecione a VM $\rightarrow$ \emph{Hardware} $\rightarrow$ \emph{Add} $\rightarrow$ \emph{Hard Disk}, e crie quatro discos de 1~GB cada.
+
+    Por linha de comandos, o equivalente seria:
+\begin{lstlisting}
+$ qm set <vmid> --scsi1 <storage>:1
+$ qm set <vmid> --scsi2 <storage>:1
+$ qm set <vmid> --scsi3 <storage>:1
+$ qm set <vmid> --scsi4 <storage>:1
+\end{lstlisting}
+    Reinicie a VM se os discos não aparecerem imediatamente.
+
+\end{enumerate}
+
+\section{Parte 2 -- RAID e LVM dentro da VM}
+\begin{enumerate}[label=\arabic*.,resume]
+
+    \item \textbf{Identificar os discos virtuais adicionados.} Confirmar que os quatro novos discos estão visíveis na VM (tipicamente \texttt{/dev/sdb} a \texttt{/dev/sde}):
+\begin{lstlisting}
+$ lsblk
+\end{lstlisting}
+    \textbf{Atenção:} confirme com cuidado quais são os discos novos. Aplicar os comandos seguintes ao disco de sistema destruiria a VM.
+
+    \item \textbf{Criar o array RAID 5 com \texttt{mdadm}.} Combinar três dos discos num array RAID 5 (o quarto disco fica de reserva/spare):
+\begin{lstlisting}
+$ sudo mdadm --create /dev/md0 --level=5 --raid-devices=3 \
+    /dev/sdb /dev/sdc /dev/sdd --spare-devices=1 /dev/sde
+\end{lstlisting}
+
+    \item \textbf{Verificar o estado do array.} Confirmar que a sincronização está em curso ou concluída:
+\begin{lstlisting}
+$ cat /proc/mdstat
+$ sudo mdadm --detail /dev/md0
+\end{lstlisting}
+
+    \item \textbf{Guardar a configuração do array} (para que seja reconhecido em reinícios seguintes):
+\begin{lstlisting}
+$ sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
+$ sudo update-initramfs -u
+\end{lstlisting}
+
+    \item \textbf{Criar o volume físico (PV) sobre o array RAID:}
+\begin{lstlisting}
+$ sudo pvcreate /dev/md0
+$ sudo pvdisplay
+\end{lstlisting}
+
+    \item \textbf{Criar o grupo de volumes (VG):}
+\begin{lstlisting}
+$ sudo vgcreate vg_dados /dev/md0
+$ sudo vgdisplay
+\end{lstlisting}
+
+    \item \textbf{Criar o volume lógico (LV)}, ocupando, por exemplo, 80\% do espaço disponível no VG (deixando espaço livre para o snapshot):
+\begin{lstlisting}
+$ sudo lvcreate -l 80%VG -n lv_app vg_dados
+$ sudo lvdisplay
+\end{lstlisting}
+
+    \item \textbf{Formatar o volume lógico} com o sistema de ficheiros ext4:
+\begin{lstlisting}
+$ sudo mkfs.ext4 /dev/vg_dados/lv_app
+\end{lstlisting}
+
+    \item \textbf{Montar o volume lógico} num ponto de montagem dedicado:
+\begin{lstlisting}
+$ sudo mkdir -p /mnt/dados
+$ sudo mount /dev/vg_dados/lv_app /mnt/dados
+$ df -h /mnt/dados
+\end{lstlisting}
+
+    \item \textbf{Criar ficheiros de teste} no volume montado, para mais tarde verificar o snapshot:
+\begin{lstlisting}
+$ echo "versao inicial" | sudo tee /mnt/dados/ficheiro.txt
+$ ls -l /mnt/dados
+\end{lstlisting}
+
+    \item \textbf{Criar um snapshot LVM} do volume lógico, usando o espaço livre deixado no VG:
+\begin{lstlisting}
+$ sudo lvcreate -L 200M -s -n lv_app_snap /dev/vg_dados/lv_app
+$ sudo lvdisplay /dev/vg_dados/lv_app_snap
+\end{lstlisting}
+
+    \item \textbf{Modificar o volume original} depois de criado o snapshot:
+\begin{lstlisting}
+$ echo "versao alterada" | sudo tee /mnt/dados/ficheiro.txt
+\end{lstlisting}
+
+    \item \textbf{Montar o snapshot} (em modo só de leitura) num ponto de montagem separado, e confirmar que preserva o estado anterior à alteração:
+\begin{lstlisting}
+$ sudo mkdir -p /mnt/snapshot
+$ sudo mount -o ro /dev/vg_dados/lv_app_snap /mnt/snapshot
+$ cat /mnt/snapshot/ficheiro.txt
+$ cat /mnt/dados/ficheiro.txt
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Parte 3 -- Simular a falha de um disco}
+\begin{enumerate}[label=\arabic*.,resume]
+
+    \item \textbf{Verificar o estado inicial do array} e confirmar a presença do disco de reserva:
+\begin{lstlisting}
+$ cat /proc/mdstat
+\end{lstlisting}
+
+    \item \textbf{Marcar um disco como falhado} e removê-lo do array:
+\begin{lstlisting}
+$ sudo mdadm --manage /dev/md0 --fail /dev/sdc
+$ cat /proc/mdstat
+\end{lstlisting}
+    Observe que o array entra em estado \textbf{degradado} e que o \emph{hot spare} começa automaticamente a ser reconstruído.
+
+    \item \textbf{Acompanhar a reconstrução:}
+\begin{lstlisting}
+$ watch -n 2 cat /proc/mdstat
+\end{lstlisting}
+    Registe o tempo aproximado de reconstrução. (Interrompa com \texttt{Ctrl+C} quando terminar.)
+
+    \item \textbf{Confirmar que os dados continuaram acessíveis} durante todo o processo:
+\begin{lstlisting}
+$ cat /mnt/dados/ficheiro.txt
+$ sudo mdadm --detail /dev/md0
+\end{lstlisting}
+
+    \item \textbf{Remover o disco falhado e voltar a adicioná-lo} como novo spare:
+\begin{lstlisting}
+$ sudo mdadm --manage /dev/md0 --remove /dev/sdc
+$ sudo mdadm --manage /dev/md0 --add /dev/sdc
+$ cat /proc/mdstat
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+    \setlength\itemsep{0.2cm}
+    \item Capturas de ecrã (ou output copiado) de: \texttt{pvesm status}, \texttt{mdadm --detail /dev/md0}, \texttt{vgdisplay}, \texttt{lvdisplay}, e do conteúdo dos ficheiros em \texttt{/mnt/dados} e \texttt{/mnt/snapshot} após a alteração.
+    \item Que tipos de storage estão configurados no servidor Proxmox da UC, e em qual reside o disco da sua VM? Se for LVM-thin, que implicação tem isso quanto ao espaço efetivamente ocupado?
+    \item Qual o conteúdo de \texttt{ficheiro.txt} visto a partir do snapshot, e qual o conteúdo visto a partir do volume original? Explique a diferença com base no mecanismo de copy-on-write.
+    \item Que nível de RAID foi usado e quantos discos podiam falhar simultaneamente sem perda de dados neste array?
+    \item Descreva o que observou ao marcar \texttt{/dev/sdc} como falhado. Quanto tempo demorou a reconstrução e os dados estiveram sempre acessíveis?
+    \item Durante a reconstrução, o array esteve \emph{degradado}. Porque é que este é considerado o período de maior risco, e que nível de RAID mitigaria esse risco?
+    \item Qual a vantagem prática de ter criado o LV a ocupar apenas 80\% do VG, em vez de 100\%?
+    \item Indique um cenário real em que este tipo de snapshot seria útil antes de aplicar uma atualização a um sistema em produção.
+    \item Neste guião construiu uma pilha RAID+LVM \emph{dentro} de uma VM cujo disco já assenta no storage do Proxmox. Enumere as camadas de armazenamento envolvidas, da aplicação até ao disco físico.
+    \item O array RAID 5 que criou protege contra a falha de um disco. Enumere três cenários de perda de dados contra os quais ele \emph{não} protege, e indique que estratégia os cobriria.
+\end{enumerate}
+
+\end{document}

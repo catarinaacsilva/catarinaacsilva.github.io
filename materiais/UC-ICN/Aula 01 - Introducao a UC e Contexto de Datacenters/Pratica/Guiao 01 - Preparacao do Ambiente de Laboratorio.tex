@@ -1,0 +1,159 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 01 -- Preparação do Ambiente de Laboratório}{Infraestruturas de Computação na Nuvem, Aula 01}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Aceder à interface web do servidor central com Proxmox VE e reconhecer a hierarquia Datacenter / Node / VM / Armazenamento.
+  \item Criar a primeira máquina virtual (VM), que servirá de base a todos os guiões práticos do semestre.
+  \item Configurar acesso remoto por SSH a essa VM.
+  \item Instalar o Docker dentro da VM e validar a instalação com um contentor de teste.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item Credenciais de acesso ao Proxmox VE do servidor central da UC, fornecidas pela docente (utilizador, password e, se aplicável, \textit{pool} de recursos ou intervalo de VMIDs atribuído).
+  \item Endereço da interface web do Proxmox: \texttt{https://<IP-do-servidor-central>:8006} (a confirmar com a docente).
+  \item Computador pessoal com ligação à rede da instituição (por cabo, Wi-Fi eduroam, ou VPN, consoante o acesso disponibilizado) e um browser atualizado.
+  \item Um cliente SSH (integrado em Linux/macOS; no Windows pode usar-se o PowerShell ou o PuTTY).
+\end{itemize}
+
+\section{Introdução}
+Ao longo do semestre, os guiões práticos desta unidade curricular assumem a existência de um ambiente de virtualização funcional. Em vez de cada estudante instalar um hypervisor no seu próprio computador, vamos usar um \textbf{servidor central com Proxmox VE}, já preparado pela instituição, onde cada aluno cria e gere as suas próprias VMs e contentores -- tal como um administrador de sistemas faria numa infraestrutura real.
+
+O Proxmox VE é uma plataforma de virtualização open-source do tipo 1 (bare-metal), que combina dois mecanismos de virtualização estudados nesta UC: \textbf{KVM} (máquinas virtuais completas) e \textbf{LXC} (contentores de sistema, ao nível do sistema operativo). Este primeiro guião estabelece o ambiente base do semestre: uma VM Linux, criada e gerida através do Proxmox, acessível remotamente por SSH e com o Docker instalado, que servirá de ponto de partida para os trabalhos práticos sobre virtualização, contentores, orquestração e administração de sistemas.
+
+\textbf{Nota:} os passos seguintes descrevem o fluxo típico de acesso a um servidor Proxmox VE partilhado por uma turma. O endereço exato, o modelo de contas (uma por aluno ou por grupo) e o intervalo de VMIDs/nomes disponíveis devem ser confirmados com a docente antes da aula, pois dependem da configuração concreta feita no servidor.
+
+\section{Passo a Passo}
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Aceder à interface web do Proxmox.} Abra o browser em \texttt{https://<IP-do-servidor-central>:8006} e autentique-se com as credenciais fornecidas. Aceite o aviso de certificado autoassinado, se aplicável (comum em instalações internas sem certificado público).
+
+  \item \textbf{Explorar a hierarquia do Proxmox.} No painel esquerdo, identifique os três níveis principais:
+\begin{lstlisting}
+Datacenter                 (agrupa todos os nodes geridos)
+  -> Node (ex.: pve-estga)  (o servidor fisico central)
+      -> VMs / Containers   (as suas maquinas virtuais e LXC)
+      -> Storage            (onde discos, ISOs e templates residem)
+\end{lstlisting}
+  Clique no node e explore os separadores \emph{Summary} (utilização de CPU/RAM/disco do servidor físico) e \emph{Storage}.
+
+  \item \textbf{Verificar templates disponíveis.} Muitos servidores Proxmox preparados para ensino disponibilizam \textit{templates} de VM já prontos, para acelerar a criação de novas máquinas. No separador \emph{Storage} do node, veja se existe um template de VM (ex.\ \texttt{ubuntu-2204-template}) ou uma imagem de contentor LXC (\emph{CT Templates}, ex.\ \texttt{ubuntu-22.04-standard}). Confirme com a docente qual está disponível para a turma.
+
+  \item \textbf{Criar a VM -- opção A (clonar um template, se disponível).} Clique com o botão direito sobre o template de VM e escolha \emph{Clone}. Defina:
+\begin{lstlisting}
+VM ID: <numero atribuido pela docente>
+Nome: icn-lab-<numero-aluno>
+Modo: Full Clone
+\end{lstlisting}
+
+  \item \textbf{Criar a VM -- opção B (criar do zero, se não houver template).} Use o botão \emph{Create VM} no canto superior direito e siga o assistente com valores mínimos razoáveis para os guiões deste semestre:
+\begin{lstlisting}
+Nome: icn-lab-<numero-aluno>
+SO: Linux, ISO do Ubuntu Server (versao LTS mais recente,
+    disponivel no storage de ISOs do node)
+CPU: 2 cores
+Memoria: 2048 MB
+Disco: 20 GB
+Rede: bridge vmbr0 (ou a indicada pela docente)
+\end{lstlisting}
+
+  \item \textbf{Arrancar a VM e completar a instalação.} Selecione a VM criada, clique em \emph{Start}, e depois em \emph{Console} para abrir o ecrã (noVNC) diretamente no browser. Se a VM foi clonada de um template pronto, poderá arrancar diretamente; se foi criada do zero, siga o assistente de instalação do Ubuntu Server com as opções por omissão, ativando a instalação do servidor OpenSSH quando esta for apresentada.
+
+  \item \textbf{Identificar o endereço IP da VM.} Ainda pela consola, confirme o IP atribuído:
+\begin{lstlisting}
+$ ip addr show
+\end{lstlisting}
+
+  \item \textbf{Validar o acesso SSH.} A partir do seu computador, confirme que consegue estabelecer uma ligação SSH à VM (substitua \texttt{utilizador} e \texttt{IP\_da\_VM} pelos valores correspondentes):
+\begin{lstlisting}
+$ ssh utilizador@IP_da_VM
+\end{lstlisting}
+  Caso o serviço SSH não esteja ativo, instale-o e inicie-o manualmente, a partir da consola do Proxmox:
+\begin{lstlisting}
+$ sudo apt update
+$ sudo apt install openssh-server -y
+$ sudo systemctl enable --now ssh
+\end{lstlisting}
+
+  \item \textbf{Instalar o Docker.} Já dentro da VM (via SSH), atualize os repositórios e instale o Docker Engine:
+\begin{lstlisting}
+$ sudo apt update
+$ sudo apt install docker.io -y
+$ sudo systemctl enable --now docker
+\end{lstlisting}
+  Opcionalmente, adicione o utilizador ao grupo \texttt{docker} para evitar o uso de \texttt{sudo} em cada comando:
+\begin{lstlisting}
+$ sudo usermod -aG docker $USER
+\end{lstlisting}
+  (É necessário terminar sessão e voltar a entrar para que a alteração ao grupo tenha efeito.)
+
+  \item \textbf{Validar a instalação.} Execute o contentor de teste oficial do Docker:
+\begin{lstlisting}
+$ docker run hello-world
+\end{lstlisting}
+  Uma mensagem de boas-vindas do Docker confirma que o motor de contentores está corretamente instalado e operacional.
+
+  \item \textbf{(Vista de administrador) Repetir a criação por linha de comandos.} Tudo o que foi feito na interface gráfica tem um equivalente por CLI, diretamente no node Proxmox (via SSH ao node, se tiver acesso, ou apenas para consulta/demonstração pela docente):
+\begin{lstlisting}
+# Clonar um template existente:
+$ qm clone <id-template> <novo-vmid> --name icn-lab-cli --full
+
+# Ou criar uma VM do zero:
+$ qm create <novo-vmid> --name icn-lab-cli --memory 2048 --cores 2 \
+    --net0 virtio,bridge=vmbr0
+
+# Arrancar e consultar o estado:
+$ qm start <novo-vmid>
+$ qm status <novo-vmid>
+\end{lstlisting}
+  Esta dualidade GUI/CLI (\texttt{qm} para VMs KVM, e \texttt{pct} para contentores LXC) será usada novamente na Aula 03.
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{itemize}[itemsep=0.2cm]
+  \item Capture o resultado do comando \texttt{docker run hello-world} e submeta-o na plataforma da UC.
+  \item Qual o VMID e o endereço IP atribuídos à sua VM?
+  \item Na hierarquia do Proxmox (Datacenter / Node / VM / Storage), onde reside fisicamente o disco da sua VM?
+  \item Porque motivo o Docker exige, por omissão, privilégios de root (ou pertença ao grupo \texttt{docker}) para ser executado?
+  \item Que vantagem tem, do ponto de vista de um administrador, criar uma VM por clonagem de um template em vez de a instalar sempre do zero?
+\end{itemize}
+
+\end{document}

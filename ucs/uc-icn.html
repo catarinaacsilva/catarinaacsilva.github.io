@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infraestruturas de Computação na Nuvem | Dr. Catarina Silva</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="course-page">
+
+    <!-- Header -->
+    <header class="header" style="padding: 2rem 0;">
+        <div class="header-container">
+            <a href="../index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Profile</a>
+            <div class="brand" style="margin-top: 1rem;">
+                <h1>Infraestruturas de Computação na Nuvem</h1>
+                <p class="title">BSc Course Materials | ESTGA - University of Aveiro</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="section">
+        <div class="container">
+
+            <h2>Course Lectures</h2>
+            <div class="divider"></div>
+
+            <ul class="outline">
+                <li class="outline-item" onclick="goToLecture(1)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(1)">
+                    <span class="outline-num">I</span>
+                    <span class="outline-body">
+                        <span class="outline-topic">Foundations of Cloud Infrastructure</span>
+                        <span class="outline-desc">Datacenter concepts, service and deployment models, Uptime Institute tiers and availability calculations.</span>
+                    </span>
+                    <span class="outline-mats">Lectures 1–2</span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(3)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(3)">
+                    <span class="outline-num">II</span>
+                    <span class="outline-body">
+                        <span class="outline-topic">Virtualization and Containers</span>
+                        <span class="outline-desc">Hypervisors, KVM and LXC on Proxmox VE, kernel namespaces and cgroups, and the Docker container model.</span>
+                    </span>
+                    <span class="outline-mats">Lectures 3–4</span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(5)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(5)">
+                    <span class="outline-num">III</span>
+                    <span class="outline-body">
+                        <span class="outline-topic">Orchestration and Automation</span>
+                        <span class="outline-desc">Kubernetes architecture, software-defined networking with OpenFlow and Open vSwitch, and Infrastructure as Code with Ansible and Terraform.</span>
+                    </span>
+                    <span class="outline-mats">Lectures 5–7</span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(8)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(8)">
+                    <span class="outline-num">IV</span>
+                    <span class="outline-body">
+                        <span class="outline-topic">Availability, Scalability and Resilience</span>
+                        <span class="outline-desc">Auto-scaling, load balancing and zero-downtime deployments, plus redundancy and asynchronous decoupling with message brokers.</span>
+                    </span>
+                    <span class="outline-mats">Lectures 8–9</span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(10)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(10)">
+                    <span class="outline-num">V</span>
+                    <span class="outline-body">
+                        <span class="outline-topic">Storage Systems</span>
+                        <span class="outline-desc">Local storage with RAID and LVM, and networked/distributed storage with NFS, iSCSI and object storage.</span>
+                    </span>
+                    <span class="outline-mats">Lectures 10–11</span>
+                </li>
+                <li class="outline-item" onclick="goToLecture(12)" tabindex="0" onkeypress="if(event.key==='Enter')goToLecture(12)">
+                    <span class="outline-num">VI</span>
+                    <span class="outline-body">
+                        <span class="outline-topic">Systems Management Technologies</span>
+                        <span class="outline-desc">Classic monitoring and management with SNMP, WBEM/CIM and WS-Management, and a general course review.</span>
+                    </span>
+                    <span class="outline-mats">Lectures 12–13</span>
+                </li>
+            </ul>
+
+            <div class="lectures-grid">
+
+                <!-- Aula 1 -->
+                <div class="lecture-card" id="lecture-1">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 1</span>
+                        <h3 class="lecture-title">Introduction and Context of Datacenters</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 1: Slides', '../materiais/UC-ICN/Aula%2001%20-%20Introducao%20a%20UC%20e%20Contexto%20de%20Datacenters/Teoria/Aula%2001%20-%20Introducao%20e%20Contexto%20de%20Datacenters.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 1: Guide', '../materiais/UC-ICN/Aula%2001%20-%20Introducao%20a%20UC%20e%20Contexto%20de%20Datacenters/Pratica/Guiao%2001%20-%20Preparacao%20do%20Ambiente%20de%20Laboratorio.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 2 -->
+                <div class="lecture-card" id="lecture-2">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 2</span>
+                        <h3 class="lecture-title">Datacenter Architecture and Operating Models</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 2: Slides', '../materiais/UC-ICN/Aula%2002%20-%20Arquitetura%20de%20Datacenters%20e%20Modelos%20de%20Operacao/Teoria/Aula%2002%20-%20Arquitetura%20de%20Datacenters%20e%20Modelos%20de%20Operacao.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 2: Guide', '../materiais/UC-ICN/Aula%2002%20-%20Arquitetura%20de%20Datacenters%20e%20Modelos%20de%20Operacao/Pratica/Guiao%2002%20-%20Analise%20de%20Arquitetura%20e%20Disponibilidade%20de%20Datacenters.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 3 -->
+                <div class="lecture-card" id="lecture-3">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 3</span>
+                        <h3 class="lecture-title">System Virtualization</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 3: Slides', '../materiais/UC-ICN/Aula%2003%20-%20Virtualizacao%20de%20Sistemas/Teoria/Aula%2003%20-%20Virtualizacao%20de%20Sistemas.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 3: Guide', '../materiais/UC-ICN/Aula%2003%20-%20Virtualizacao%20de%20Sistemas/Pratica/Guiao%2003%20-%20Virtualizacao%20com%20KVM%20e%20LXC%20no%20Proxmox.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 4 -->
+                <div class="lecture-card" id="lecture-4">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 4</span>
+                        <h3 class="lecture-title">Containers and Process Isolation</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 4: Slides', '../materiais/UC-ICN/Aula%2004%20-%20Contentores%20e%20Isolamento%20de%20Processos/Teoria/Aula%2004%20-%20Contentores%20e%20Isolamento%20de%20Processos.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 4: Guide', '../materiais/UC-ICN/Aula%2004%20-%20Contentores%20e%20Isolamento%20de%20Processos/Pratica/Guiao%2004%20-%20Docker%20-%20Primeiros%20Contentores.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 5 -->
+                <div class="lecture-card" id="lecture-5">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 5</span>
+                        <h3 class="lecture-title">Container Orchestration with Kubernetes</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 5: Slides', '../materiais/UC-ICN/Aula%2005%20-%20Orquestracao%20de%20Contentores%20com%20Kubernetes/Teoria/Aula%2005%20-%20Orquestracao%20de%20Contentores%20com%20Kubernetes.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 5: Guide', '../materiais/UC-ICN/Aula%2005%20-%20Orquestracao%20de%20Contentores%20com%20Kubernetes/Pratica/Guiao%2005%20-%20Cluster%20Kubernetes%20em%20VMs%20Proxmox.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 6 -->
+                <div class="lecture-card" id="lecture-6">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 6</span>
+                        <h3 class="lecture-title">Centralized Network Management and SDN</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 6: Slides', '../materiais/UC-ICN/Aula%2006%20-%20Gestao%20de%20Rede%20Centralizada%20e%20SDN/Teoria/Aula%2006%20-%20Gestao%20de%20Rede%20Centralizada%20e%20SDN.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 6: Guide', '../materiais/UC-ICN/Aula%2006%20-%20Gestao%20de%20Rede%20Centralizada%20e%20SDN/Pratica/Guiao%2006%20-%20SDN%20com%20Mininet%20e%20Open%20vSwitch.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 7 -->
+                <div class="lecture-card" id="lecture-7">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 7</span>
+                        <h3 class="lecture-title">Configuration Automation: Infrastructure as Code</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 7: Slides', '../materiais/UC-ICN/Aula%2007%20-%20Automatizacao%20de%20Configuracoes%20-%20IaC/Teoria/Aula%2007%20-%20Automatizacao%20de%20Configuracoes%20-%20IaC.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 7: Guide', '../materiais/UC-ICN/Aula%2007%20-%20Automatizacao%20de%20Configuracoes%20-%20IaC/Pratica/Guiao%2007%20-%20IaC%20com%20Ansible%20e%20Terraform%20no%20Proxmox.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 8 -->
+                <div class="lecture-card" id="lecture-8">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 8</span>
+                        <h3 class="lecture-title">Availability and Scalability of Services</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 8: Slides', '../materiais/UC-ICN/Aula%2008%20-%20Disponibilidade%20e%20Escalabilidade%20de%20Servicos/Teoria/Aula%2008%20-%20Disponibilidade%20e%20Escalabilidade%20de%20Servicos.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 8: Guide', '../materiais/UC-ICN/Aula%2008%20-%20Disponibilidade%20e%20Escalabilidade%20de%20Servicos/Pratica/Guiao%2008%20-%20Balanceamento%20de%20Carga%20e%20Escalabilidade%20no%20Kubernetes.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 9 -->
+                <div class="lecture-card" id="lecture-9">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 9</span>
+                        <h3 class="lecture-title">Redundancy and Service Decoupling</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 9: Slides', '../materiais/UC-ICN/Aula%2009%20-%20Redundancia%20e%20Desacoplamento%20de%20Servicos/Teoria/Aula%2009%20-%20Redundancia%20e%20Desacoplamento%20de%20Servicos.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 9: Guide', '../materiais/UC-ICN/Aula%2009%20-%20Redundancia%20e%20Desacoplamento%20de%20Servicos/Pratica/Guiao%2009%20-%20Mensageria%20e%20Desacoplamento%20com%20RabbitMQ.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 10 -->
+                <div class="lecture-card" id="lecture-10">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 10</span>
+                        <h3 class="lecture-title">Data Storage: Architectures and Local Systems</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 10: Slides', '../materiais/UC-ICN/Aula%2010%20-%20Armazenamento%20de%20Dados%20-%20Arquiteturas%20e%20Sistemas%20Locais/Teoria/Aula%2010%20-%20Armazenamento%20de%20Dados%20-%20Arquiteturas%20e%20Sistemas%20Locais.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 10: Guide', '../materiais/UC-ICN/Aula%2010%20-%20Armazenamento%20de%20Dados%20-%20Arquiteturas%20e%20Sistemas%20Locais/Pratica/Guiao%2010%20-%20Armazenamento%20Local%20com%20LVM%20e%20RAID.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 11 -->
+                <div class="lecture-card" id="lecture-11">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 11</span>
+                        <h3 class="lecture-title">Remote and Distributed Storage</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 11: Slides', '../materiais/UC-ICN/Aula%2011%20-%20Armazenamento%20Remoto%20e%20Distribuido/Teoria/Aula%2011%20-%20Armazenamento%20Remoto%20e%20Distribuido.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 11: Guide', '../materiais/UC-ICN/Aula%2011%20-%20Armazenamento%20Remoto%20e%20Distribuido/Pratica/Guiao%2011%20-%20NFS%2C%20iSCSI%20e%20Object%20Storage%20com%20MinIO.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 12 -->
+                <div class="lecture-card" id="lecture-12">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 12</span>
+                        <h3 class="lecture-title">Systems Administration Technologies: SNMP</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 12: Slides', '../materiais/UC-ICN/Aula%2012%20-%20Tecnologias%20de%20Administracao%20de%20Sistemas%20-%20SNMP/Teoria/Aula%2012%20-%20Tecnologias%20de%20Administracao%20de%20Sistemas%20-%20SNMP.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 12: Guide', '../materiais/UC-ICN/Aula%2012%20-%20Tecnologias%20de%20Administracao%20de%20Sistemas%20-%20SNMP/Pratica/Guiao%2012%20-%20Monitorizacao%20com%20Net-SNMP.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+                <!-- Aula 13 -->
+                <div class="lecture-card" id="lecture-13">
+                    <div class="lecture-header">
+                        <span class="lecture-number">Lecture 13</span>
+                        <h3 class="lecture-title">WBEM, WS-Management and General Review</h3>
+                    </div>
+                    <div class="lecture-actions">
+                        <button onclick="openViewer('Lecture 13: Slides', '../materiais/UC-ICN/Aula%2013%20-%20WBEM%2C%20WS-Management%20e%20Revisao%20Geral/Teoria/Aula%2013%20-%20WBEM%2C%20WS-Management%20e%20Revisao%20Geral.pdf')" class="btn-material">
+                            <i class="fas fa-desktop"></i> Slides
+                        </button>
+                        <button onclick="openViewer('Lecture 13: Guide', '../materiais/UC-ICN/Aula%2013%20-%20WBEM%2C%20WS-Management%20e%20Revisao%20Geral/Pratica/Guiao%2013%20-%20WBEM%20com%20SFCB%20e%20Revisao%20do%20Semestre.pdf')" class="btn-material">
+                            <i class="fas fa-laptop-code"></i> Guide
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- Visualizador Dinâmico -->
+            <div id="document-viewer" class="viewer-section" style="display: none;">
+                <div class="viewer-header">
+                    <h3 id="viewer-title">Document Title</h3>
+                    <div class="viewer-controls">
+                        <a id="viewer-download" href="#" download class="btn-download"><i class="fas fa-download"></i> Export PDF</a>
+                        <button onclick="closeViewer()" class="btn-close-viewer"><i class="fas fa-times"></i> Close Viewer</button>
+                    </div>
+                </div>
+                <iframe id="viewer-frame" src="" class="pdf-viewer"></iframe>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer" style="padding: 2rem 0; text-align: center;">
+        <p>&copy; 2026 Catarina Silva. All rights reserved.</p>
+    </footer>
+
+    <script src="../script.js"></script>
+</body>
+</html>

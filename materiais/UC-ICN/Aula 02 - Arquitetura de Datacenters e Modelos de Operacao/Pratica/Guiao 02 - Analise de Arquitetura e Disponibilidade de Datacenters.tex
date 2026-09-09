@@ -1,0 +1,133 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 02 -- Análise de Arquitetura e Disponibilidade de Datacenters}{Infraestruturas de Computação na Nuvem, Aula 02}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Calcular a disponibilidade combinada de sistemas com componentes em série e em paralelo (redundância).
+  \item Classificar um cenário de datacenter segundo os Tiers do Uptime Institute.
+  \item Propor melhorias de redundância a uma arquitetura existente.
+  \item Observar, de forma prática, indícios de uma topologia de rede real com \texttt{ping} e \texttt{traceroute}.
+  \item Analisar, no próprio servidor Proxmox da UC, um caso real de partilha de recursos e de single point of failure.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item Conhecimento dos conceitos de Tier, redundância N/N+1/2N e "noves" de disponibilidade, apresentados na Aula 02.
+  \item Calculadora ou folha de cálculo para os exercícios numéricos.
+  \item Acesso a um terminal com os comandos \texttt{ping} e \texttt{traceroute} (ou \texttt{tracert} no Windows) disponíveis; a VM criada no Guião 01 pode ser usada para este efeito.
+  \item Acesso à interface web do Proxmox VE do servidor central, tal como usado no Guião 01.
+\end{itemize}
+
+\section{Enquadramento Teórico Breve}
+A disponibilidade de um sistema, $A$, representa a fração de tempo em que este se encontra operacional, e relaciona-se com o \emph{Mean Time Between Failures} (MTBF) e o \emph{Mean Time To Repair} (MTTR) através de:
+\[
+A = \frac{\text{MTBF}}{\text{MTBF} + \text{MTTR}}
+\]
+
+Para um conjunto de componentes independentes ligados em \textbf{série} (todos têm de funcionar para o sistema funcionar), a disponibilidade combinada é o produto das disponibilidades individuais:
+\[
+A_{\text{série}} = A_1 \times A_2 \times \cdots \times A_n
+\]
+
+Para um conjunto de componentes redundantes ligados em \textbf{paralelo} (basta um funcionar), a disponibilidade combinada é:
+\[
+A_{\text{paralelo}} = 1 - \big[(1-A_1)(1-A_2)\cdots(1-A_n)\big]
+\]
+
+O downtime anual associado a uma disponibilidade $A$ obtém-se por $(1-A) \times 365{,}25 \times 24 \times 60$ minutos.
+
+\section{Exercícios}
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Sistema em série.} Um serviço depende de três componentes ligados em série: o link de rede (disponibilidade 99,95\%), o servidor de aplicação (99,9\%) e a base de dados (99,99\%). Calcule a disponibilidade combinada do sistema e o downtime anual esperado, em horas.
+  \vspace{2cm}
+
+  \item \textbf{Sistema em paralelo.} A alimentação elétrica do datacenter é assegurada por duas fontes independentes (rede elétrica e gerador de emergência), cada uma com disponibilidade individual de 99,5\%. Calcule a disponibilidade combinada do sistema de alimentação e compare com a disponibilidade de uma única fonte.
+  \vspace{2cm}
+
+  \item \textbf{Sistema misto.} Um serviço depende de um link de rede (99,9\%) em série com um par redundante de servidores de aplicação (99\% cada, em paralelo). Calcule a disponibilidade final do sistema completo.
+  \vspace{2cm}
+
+  \item \textbf{Classificação Tier.} Um datacenter possui uma única via de alimentação elétrica e um único sistema de arrefecimento, mas com um gerador de reserva (N+1) para a alimentação. A manutenção de qualquer componente obriga à interrupção do serviço. Classifique este cenário segundo os Tiers do Uptime Institute e justifique a resposta.
+  \vspace{2cm}
+
+  \item \textbf{Proposta de melhoria.} Com base no cenário do exercício anterior, proponha duas alterações concretas à arquitetura que permitiriam evoluir para um Tier III. Justifique o impacto de cada alteração na disponibilidade global.
+  \vspace{2cm}
+
+  \item \textbf{Observação de topologia de rede.} A partir de um terminal, execute os comandos seguintes para um destino à sua escolha (por exemplo, \texttt{www.ua.pt}) e registe os resultados:
+\begin{lstlisting}
+$ ping -c 5 www.ua.pt
+$ traceroute www.ua.pt
+\end{lstlisting}
+  Analise o resultado do \texttt{traceroute}: quantos saltos (hops) são percorridos até ao destino? Existe alguma variação significativa de latência entre saltos consecutivos? O que pode isso indicar sobre a topologia de rede atravessada?
+  \vspace{1cm}
+
+  \item \textbf{Análise do servidor central da UC.} Aceda à interface web do Proxmox VE (a mesma do Guião 01) e, no separador \emph{Summary} do node, registe os valores observados:
+\begin{lstlisting}
+- Uptime do servidor
+- Numero de CPUs (cores/threads) e utilizacao atual
+- Memoria RAM total e em uso
+- Espaco de armazenamento total e disponivel
+\end{lstlisting}
+  Com base nestes dados e no que observa da infraestrutura disponível, responda:
+  \begin{enumerate}[label=\alph*)]
+    \item Que Tier do Uptime Institute atribuiria a esta infraestrutura? Justifique identificando concretamente que elementos de redundância existem ou faltam.
+    \item Assumindo que o servidor tem uma única fonte de alimentação e uma única ligação de rede, e considerando uma disponibilidade individual de 99\% para cada um destes dois componentes em série, qual seria a disponibilidade combinada estimada e o downtime anual correspondente?
+    \item Identifique pelo menos dois \emph{single points of failure} nesta infraestrutura e, para cada um, indique que alteração concreta os eliminaria.
+  \end{enumerate}
+  \vspace{1cm}
+
+  \item \textbf{Latência dentro vs fora do datacenter.} A partir da sua VM (criada no Guião 01), compare a latência para um destino \emph{dentro} da infraestrutura local com a latência para um destino externo:
+\begin{lstlisting}
+$ ping -c 5 <IP-do-servidor-Proxmox>
+$ ping -c 5 www.ua.pt
+\end{lstlisting}
+  Compare os valores médios obtidos. Relacione a diferença observada com a distinção entre tráfego \emph{este-oeste} (dentro do datacenter) e \emph{norte-sul} (para o exterior) apresentada na aula teórica.
+\end{enumerate}
+
+\section{Questões de Verificação}
+\begin{itemize}[itemsep=0.2cm]
+  \item Porque motivo a disponibilidade combinada de componentes em série é sempre inferior à do componente mais fraco da cadeia?
+  \item Explique, em termos práticos, a diferença entre redundância N+1 e redundância 2N.
+  \item Que vantagem tem a topologia leaf-spine sobre a three-tier relativamente à previsibilidade da latência observada num \texttt{traceroute}?
+  \item Todas as VMs da turma correm sobre o mesmo servidor físico. Que característica essencial da computação na nuvem (Aula 01) isto ilustra, e que risco operacional introduz?
+\end{itemize}
+
+\end{document}

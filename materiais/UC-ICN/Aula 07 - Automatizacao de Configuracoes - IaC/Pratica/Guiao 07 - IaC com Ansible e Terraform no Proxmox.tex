@@ -1,0 +1,367 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 07 -- IaC com Ansible e Terraform no Proxmox}{Infraestruturas de Computação na Nuvem, Aula 07}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Configurar o Ansible e definir um \emph{inventory} com as VMs Proxmox como alvos.
+  \item Escrever um \emph{playbook} idempotente que instala e configura o Nginx, com variáveis, templates e handlers.
+  \item Demonstrar concretamente a idempotência, correndo o mesmo playbook duas vezes.
+  \item Provisionar uma VM no Proxmox de forma declarativa com Terraform, observando o ciclo \texttt{plan}/\texttt{apply}/\texttt{destroy}.
+  \item Distinguir, na prática, provisionamento (Terraform) de gestão de configuração (Ansible).
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item A VM \texttt{icn-lab} (Guião 01), que servirá de \textbf{máquina de controlo} -- é onde o Ansible e o Terraform correm.
+  \item Pelo menos uma segunda VM no Proxmox, para servir de alvo do Ansible (pode reutilizar uma VM das aulas anteriores, ou criar uma nova).
+  \item Acesso SSH da máquina de controlo para a(s) VM(s) alvo, com privilégios de \texttt{sudo}.
+  \item Para a Parte 3 (Terraform): um \emph{API token} do Proxmox com permissões de criação de VMs, fornecido pela docente.
+\end{itemize}
+
+\textbf{Nota sobre a Parte 3:} a criação de VMs por Terraform exige permissões elevadas no Proxmox. Consoante a política do servidor da UC, esta parte pode ser feita por cada aluno com um token restrito a um \emph{pool} próprio, ou realizada como demonstração pela docente. Confirme antes de começar.
+
+\section{Introdução}
+Na aula teórica distinguimos duas camadas complementares de automatização: o \textbf{provisionamento} (que recursos existem) e a \textbf{gestão de configuração} (o que corre dentro deles). Neste guião vamos exercitar as duas, na ordem inversa da que seria usada em produção -- primeiro a configuração, depois o provisionamento -- por ser a progressão pedagogicamente mais simples.
+
+Na Parte 1 e 2 usamos o \textbf{Ansible}, uma ferramenta \emph{agentless} que comunica por SSH e descreve o estado desejado em YAML. Na Parte 3 usamos o \textbf{Terraform} para criar uma VM no Proxmox a partir de código declarativo, fechando o ciclo: Terraform cria a máquina, Ansible configura-a.
+
+Repare que, nas aulas anteriores, criámos VMs manualmente (interface web) e por comandos (\texttt{qm}). O que fazemos hoje é o passo seguinte: descrever a infraestrutura em ficheiros versionáveis, em vez de a construir por ações irrepetíveis.
+
+\section{Parte 1 -- Ansible: preparação}
+\begin{enumerate}[label=\arabic*.]
+
+  \item \textbf{Instalar o Ansible} na máquina de controlo:
+\begin{lstlisting}
+$ sudo apt update
+$ sudo apt install -y ansible
+$ ansible --version
+\end{lstlisting}
+
+  \item \textbf{Configurar acesso SSH por chave} para a(s) VM(s) alvo, evitando pedidos de password a cada execução:
+\begin{lstlisting}
+$ ssh-keygen -t ed25519 -C "ansible-icn"
+$ ssh-copy-id utilizador@<IP-da-VM-alvo>
+$ ssh utilizador@<IP-da-VM-alvo> "hostname"
+\end{lstlisting}
+
+  \item \textbf{Criar a pasta do projeto:}
+\begin{lstlisting}
+$ mkdir -p ~/ansible-nginx/templates && cd ~/ansible-nginx
+\end{lstlisting}
+
+  \item \textbf{Criar o \emph{inventory}} \texttt{inventory.ini}, com as VMs alvo (substituir pelos IPs reais):
+\begin{lstlisting}
+[webservers]
+vm1 ansible_host=<IP-da-VM-alvo-1> ansible_user=<utilizador>
+vm2 ansible_host=<IP-da-VM-alvo-2> ansible_user=<utilizador>
+
+[webservers:vars]
+ansible_python_interpreter=/usr/bin/python3
+\end{lstlisting}
+  Se só tiver uma VM alvo disponível, inclua apenas a linha \texttt{vm1}.
+
+  \item \textbf{Testar a ligação a todos os hosts:}
+\begin{lstlisting}
+$ ansible -i inventory.ini webservers -m ping
+\end{lstlisting}
+  Uma resposta \texttt{pong} por host confirma que o SSH e o Python estão corretamente configurados.
+
+  \item \textbf{Observar os \emph{facts} recolhidos automaticamente} de um host:
+\begin{lstlisting}
+$ ansible -i inventory.ini vm1 -m setup | head -40
+\end{lstlisting}
+  Localize, entre outros, os seguintes campos:
+\begin{lstlisting}
+ansible_distribution
+ansible_memtotal_mb
+ansible_default_ipv4
+\end{lstlisting}
+  Estes valores podem ser usados em condições e em templates.
+
+\end{enumerate}
+
+\section{Parte 2 -- Ansible: playbook idempotente}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Criar o ficheiro de variáveis} \texttt{vars.yml}:
+\begin{lstlisting}
+site_name: "aula-icn"
+http_port: 80
+welcome_message: "Servico configurado automaticamente com Ansible"
+\end{lstlisting}
+
+  \item \textbf{Criar o template Jinja2} \texttt{templates/index.html.j2}. Note o uso de \emph{facts} para incluir informação específica de cada host:
+\begin{lstlisting}
+<html>
+  <head><title>{{ site_name }}</title></head>
+  <body>
+    <h1>{{ welcome_message }}</h1>
+    <p>Servido por: {{ ansible_hostname }}</p>
+    <p>Sistema: {{ ansible_distribution }} {{ ansible_distribution_version }}</p>
+    <p>Endereco IP: {{ ansible_default_ipv4.address }}</p>
+  </body>
+</html>
+\end{lstlisting}
+  O mesmo template gera conteúdo diferente em cada máquina -- é aqui que se vê a utilidade dos facts.
+
+  \item \textbf{Criar o playbook} \texttt{nginx.yml}:
+\begin{lstlisting}
+---
+- name: Instalar e configurar Nginx
+  hosts: webservers
+  become: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Instalar o pacote nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Implementar pagina de boas-vindas
+      template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar nginx
+
+    - name: Garantir que o servico esta ativo e habilitado
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Reiniciar nginx
+      service:
+        name: nginx
+        state: restarted
+\end{lstlisting}
+
+  \item \textbf{Validar antes de aplicar.} O modo \emph{check} simula a execução sem alterar nada -- o equivalente ao \texttt{plan} do Terraform:
+\begin{lstlisting}
+$ ansible-playbook -i inventory.ini nginx.yml --check --diff
+\end{lstlisting}
+
+  \item \textbf{Executar o playbook} e registar o resumo final:
+\begin{lstlisting}
+$ ansible-playbook -i inventory.ini nginx.yml
+\end{lstlisting}
+  Anote os valores de \texttt{changed} e \texttt{ok} apresentados no \texttt{PLAY RECAP}.
+
+  \item \textbf{Demonstrar a idempotência.} Execute \emph{exatamente o mesmo comando} uma segunda vez, sem alterar nada:
+\begin{lstlisting}
+$ ansible-playbook -i inventory.ini nginx.yml
+\end{lstlisting}
+  Compare o \texttt{PLAY RECAP} com o da execução anterior. Desta vez, \texttt{changed} deve ser \texttt{0}: nada foi alterado porque o estado desejado já estava atingido. Repare também que o handler \emph{não} correu -- o Nginx não foi reiniciado desnecessariamente.
+
+  \item \textbf{Verificar o resultado:}
+\begin{lstlisting}
+$ curl http://<IP-da-VM-alvo-1>
+\end{lstlisting}
+  Se tiver duas VMs alvo, compare as duas respostas e confirme que os campos preenchidos pelos facts diferem.
+
+  \item \textbf{Provocar drift e corrigi-lo.} Simule uma alteração manual indevida diretamente na VM alvo:
+\begin{lstlisting}
+$ ssh utilizador@<IP-da-VM-alvo-1>
+$ sudo rm /var/www/html/index.html
+$ sudo systemctl stop nginx
+$ exit
+\end{lstlisting}
+  Volte a correr o playbook e observe que ele deteta e repõe automaticamente o estado correto:
+\begin{lstlisting}
+$ ansible-playbook -i inventory.ini nginx.yml
+$ curl http://<IP-da-VM-alvo-1>
+\end{lstlisting}
+  Este é o mecanismo central da gestão de configuração: convergir sempre para o estado declarado.
+
+  \item \textbf{Alterar a configuração e observar o handler.} Edite \texttt{welcome\_message} em \texttt{vars.yml} e volte a correr o playbook. Confirme que apenas a task \texttt{template} reporta \texttt{changed} e que, por isso, o handler é acionado e o Nginx reiniciado.
+
+\end{enumerate}
+
+\section{Parte 3 -- Terraform: provisionar uma VM no Proxmox}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Instalar o Terraform} na máquina de controlo:
+\begin{lstlisting}
+$ sudo apt install -y wget gpg
+$ wget -O- https://apt.releases.hashicorp.com/gpg \
+    | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+$ echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+    | sudo tee /etc/apt/sources.list.d/hashicorp.list
+$ sudo apt update && sudo apt install -y terraform
+$ terraform version
+\end{lstlisting}
+
+  \item \textbf{Criar a pasta do projeto Terraform:}
+\begin{lstlisting}
+$ mkdir ~/terraform-proxmox && cd ~/terraform-proxmox
+\end{lstlisting}
+
+  \item \textbf{Declarar o provider.} Crie \texttt{providers.tf}. O Proxmox não tem provider oficial da HashiCorp; usa-se um provider da comunidade (confirme com a docente qual está em uso e a respetiva versão):
+\begin{lstlisting}
+terraform {
+  required_providers {
+    proxmox = {
+      source  = "Telmate/proxmox"
+      version = "3.0.1-rc4"
+    }
+  }
+}
+
+provider "proxmox" {
+  pm_api_url          = var.pm_api_url
+  pm_api_token_id     = var.pm_api_token_id
+  pm_api_token_secret = var.pm_api_token_secret
+  pm_tls_insecure     = true
+}
+\end{lstlisting}
+
+  \item \textbf{Declarar as variáveis.} Crie \texttt{variables.tf}, mantendo os segredos fora do código:
+\begin{lstlisting}
+variable "pm_api_url" {
+  type = string
+}
+
+variable "pm_api_token_id" {
+  type      = string
+  sensitive = true
+}
+
+variable "pm_api_token_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "target_node" {
+  type = string
+}
+
+variable "vm_template" {
+  type = string
+}
+\end{lstlisting}
+  Os valores concretos vão num ficheiro \texttt{terraform.tfvars} \textbf{que nunca deve ser commitado} num repositório:
+\begin{lstlisting}
+pm_api_url          = "https://<IP-do-servidor>:8006/api2/json"
+pm_api_token_id     = "<utilizador>@pve!<nome-do-token>"
+pm_api_token_secret = "<segredo-do-token>"
+target_node         = "<nome-do-node>"
+vm_template         = "<nome-do-template>"
+\end{lstlisting}
+  Crie também um \texttt{.gitignore} com \texttt{terraform.tfvars} e \texttt{*.tfstate*}, pelas razões discutidas na teoria.
+
+  \item \textbf{Declarar o recurso.} Crie \texttt{main.tf}:
+\begin{lstlisting}
+resource "proxmox_vm_qemu" "vm_iac" {
+  name        = "icn-terraform"
+  target_node = var.target_node
+  clone       = var.vm_template
+  full_clone  = true
+
+  cores  = 2
+  memory = 2048
+
+  network {
+    id     = 0
+    model  = "virtio"
+    bridge = "vmbr0"
+  }
+}
+\end{lstlisting}
+  \emph{Nota:} a sintaxe exata dos blocos varia entre versões do provider. Se o \texttt{terraform validate} acusar erros, consulte a documentação da versão instalada -- este ajuste faz parte do exercício.
+
+  \item \textbf{Inicializar e validar:}
+\begin{lstlisting}
+$ terraform init
+$ terraform validate
+$ terraform fmt
+\end{lstlisting}
+
+  \item \textbf{Executar o \texttt{plan}.} Este é o passo conceptualmente mais importante: mostra o que \emph{seria} feito, sem fazer nada:
+\begin{lstlisting}
+$ terraform plan
+\end{lstlisting}
+  Leia com atenção o resumo final (\texttt{Plan: 1 to add, 0 to change, 0 to destroy}) e registe-o.
+
+  \item \textbf{Aplicar:}
+\begin{lstlisting}
+$ terraform apply
+\end{lstlisting}
+  Confirme na interface web do Proxmox que a VM foi efetivamente criada.
+
+  \item \textbf{Inspecionar o estado registado:}
+\begin{lstlisting}
+$ terraform state list
+$ terraform show
+\end{lstlisting}
+
+  \item \textbf{Observar a deteção de drift.} Na interface web do Proxmox, altere manualmente a memória da VM criada (ex.\ para 1024~MB). De volta ao terminal:
+\begin{lstlisting}
+$ terraform plan
+\end{lstlisting}
+  O Terraform deteta a divergência entre o estado real e o declarado, e propõe repô-la. Este é o comportamento discutido na teoria a propósito do \emph{state file}.
+
+  \item \textbf{Destruir a infraestrutura criada:}
+\begin{lstlisting}
+$ terraform destroy
+\end{lstlisting}
+  Confirme no Proxmox que a VM desapareceu.
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+  \setlength\itemsep{0.2cm}
+  \item Submeta \texttt{nginx.yml}, \texttt{vars.yml}, o template Jinja2 e o \texttt{inventory.ini} (com IPs anonimizados, se necessário).
+  \item Submeta os dois \texttt{PLAY RECAP} obtidos (primeira e segunda execução do playbook). Explique a diferença nos valores de \texttt{changed} recorrendo ao conceito de idempotência.
+  \item Porque é que o handler não foi executado na segunda passagem, mas foi executado quando alterou o \texttt{welcome\_message}?
+  \item Descreva o que aconteceu quando apagou manualmente o \texttt{index.html} e voltou a correr o playbook. Que problema operacional (visto na teoria) é assim resolvido?
+  \item Submeta o resultado de \texttt{terraform plan} antes do \texttt{apply}. Que vantagem tem esta separação entre planear e aplicar, comparada com executar um script diretamente?
+  \item Alterou a memória da VM manualmente no Proxmox e o Terraform detetou-o. Que ficheiro lhe permitiu detetar essa divergência, e porque é que esse ficheiro deve ser tratado como um segredo?
+  \item Neste guião usou duas ferramentas distintas. Qual delas fez \emph{provisionamento} e qual fez \emph{gestão de configuração}? Descreva, em duas ou três frases, como as encadearia num fluxo de trabalho real.
+  \item O ficheiro \texttt{terraform.tfvars} não deve ser commitado. Que alternativas existem para gerir segredos num projeto de IaC versionado em Git?
+\end{enumerate}
+
+\end{document}

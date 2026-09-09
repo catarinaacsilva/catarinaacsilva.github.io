@@ -1,0 +1,286 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Orquestração de Contentores com Kubernetes}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 05}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Porque precisamos de orquestração além de um único host.
+    \item Arquitetura Kubernetes: control plane e worker nodes.
+    \item Objetos principais: Pod, Deployment, ReplicaSet, Service, Namespace.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Ciclo de vida de um Pod e self-healing.
+    \item O ciclo de reconciliação e o modelo declarativo.
+    \item Tipos de Service e o modelo de rede do Kubernetes.
+    \item Configuração, segredos e armazenamento persistente.
+    \item Agendamento: requests, limits e afinidade.
+    \item Alternativas de orquestração: Swarm e Nomad.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Porque Precisamos de Orquestração}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O Docker, por si só, gere contentores num único host — não decide onde correr cada contentor, nem reage a falhas.
+    \item Aplicações em produção precisam de vários hosts, para tolerância a falhas e para distribuir carga.
+    \item É necessário decidir automaticamente em que nó correr cada carga de trabalho (agendamento/scheduling).
+    \item É necessário detetar falhas e recuperar delas sem intervenção manual.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura Kubernetes: Control Plane \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O control plane toma as decisões globais sobre o cluster (agendamento, deteção e resposta a eventos).
+    \item \textbf{API server}: ponto de entrada único; todas as interações com o cluster passam por aqui.
+    \item \textbf{etcd}: base de dados chave-valor distribuída que guarda o estado completo do cluster.
+    \item \textbf{scheduler}: decide em que worker node cada novo Pod deve ser colocado.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura Kubernetes: Control Plane \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{controller manager}: corre os controladores que comparam o estado atual com o estado desejado e agem para os aproximar.
+    \item Os \textbf{worker nodes} são onde as cargas de trabalho efetivamente correm.
+    \item \textbf{kubelet}: agente que garante que os contentores descritos para o nó estão de facto a correr.
+    \item \textbf{kube-proxy} e o \textbf{container runtime} (ex.: containerd) completam o nó, tratando de rede e execução de contentores.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Objetos Principais do Kubernetes \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Pod}: unidade mínima de execução; agrupa um ou mais contentores que partilham rede e armazenamento.
+    \item \textbf{Deployment}: descreve o estado desejado de uma aplicação (imagem, número de réplicas, estratégia de atualização).
+    \item O Deployment não gere Pods diretamente — delega isso num ReplicaSet.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Objetos Principais do Kubernetes \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{ReplicaSet}: garante que um determinado número de réplicas de um Pod está sempre em execução.
+    \item \textbf{Service}: fornece um ponto de acesso estável (IP e nome) a um conjunto de Pods, que são efémeros por natureza.
+    \item \textbf{Namespace}: divisão lógica do cluster, útil para isolar ambientes ou equipas dentro do mesmo cluster físico.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Ciclo de Vida de um Pod e Self-Healing}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um Pod passa por várias fases: Pending, Running, Succeeded, Failed.
+    \item \textbf{Liveness probe}: verifica se o contentor continua saudável; se falhar, o kubelet reinicia-o.
+    \item \textbf{Readiness probe}: verifica se o contentor está pronto para receber tráfego, antes de ser incluído num Service.
+    \item Se um Pod morrer, o ReplicaSet cria automaticamente um novo, aproximando o cluster do estado desejado.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Declarativo vs Imperativo}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Modo imperativo: comandos diretos que dizem ao Kubernetes exatamente \emph{o que fazer} (ex.: \texttt{kubectl run}, \texttt{kubectl create}).
+    \item Modo declarativo: descreve-se o estado \emph{desejado} num manifesto YAML e o Kubernetes encarrega-se de o atingir.
+    \item \texttt{kubectl apply -f manifesto.yaml} aplica (ou atualiza) o estado descrito no ficheiro.
+    \item Abordagem declarativa é a recomendada em produção: reprodutível, versionável e auditável.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{O Ciclo de Reconciliação}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O Kubernetes funciona por \textbf{reconciliação contínua}: compara permanentemente o \emph{estado desejado} com o \emph{estado observado}.
+    \item Cada controlador observa o seu tipo de recurso e atua para reduzir a diferença entre os dois estados.
+    \item O estado desejado fica registado no \textbf{etcd}, através do API server; o estado observado é reportado pelos kubelets.
+    \item Consequência prática: apagar um Pod gerido por um ReplicaSet não o elimina de forma duradoura -- o controlador recria-o.
+    \item Este modelo, e não uma sequência de comandos, é o que dá ao Kubernetes a capacidade de self-healing.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tipos de Service}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{ClusterIP} (por omissão): expõe o serviço apenas dentro do cluster, num IP virtual interno.
+    \item \textbf{NodePort}: abre a mesma porta em todos os nós do cluster, tornando o serviço acessível a partir do exterior.
+    \item \textbf{LoadBalancer}: pede um balanceador externo ao fornecedor de cloud; em clusters on-premises requer uma solução adicional.
+    \item \textbf{Ingress}: não é um tipo de Service, mas um recurso próprio que encaminha tráfego HTTP/HTTPS por nome de host ou caminho.
+    \item A seleção dos Pods de destino é feita por \textbf{labels e selectors}, não por endereços fixos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{O Modelo de Rede do Kubernetes}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Regra fundamental: cada Pod tem um endereço IP próprio e todos os Pods comunicam entre si sem NAT.
+    \item Esta rede plana é implementada por um \textbf{plugin CNI} (Container Network Interface), não pelo Kubernetes em si.
+    \item Exemplos de plugins CNI: Flannel, Calico, Weave Net, Cilium.
+    \item \textbf{kube-proxy}: implementa em cada nó as regras que fazem um Service redirecionar tráfego para os Pods corretos.
+    \item \textbf{CoreDNS}: fornece resolução de nomes interna, permitindo alcançar um Service pelo nome em vez do IP.
+    \item Este modelo de rede será retomado na Aula 06, no contexto mais geral da SDN.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Configuração e Segredos}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{ConfigMap}: guarda dados de configuração não sensíveis, separando-os da imagem do contentor.
+    \item \textbf{Secret}: destinado a dados sensíveis (passwords, chaves, tokens).
+    \item Atenção: por omissão, os Secrets são apenas codificados em base64 -- \emph{não} cifrados. É preciso ativar cifra em repouso no etcd e restringir acessos por RBAC.
+    \item Ambos podem ser expostos ao contentor como variáveis de ambiente ou como ficheiros montados.
+    \item Separar configuração da imagem permite usar a mesma imagem em desenvolvimento, teste e produção.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Armazenamento Persistente}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Pods são efémeros: quando um Pod desaparece, o seu sistema de ficheiros local desaparece com ele.
+    \item \textbf{PersistentVolume (PV)}: recurso de armazenamento disponibilizado no cluster.
+    \item \textbf{PersistentVolumeClaim (PVC)}: pedido de armazenamento feito por uma aplicação, com capacidade e modo de acesso.
+    \item \textbf{StorageClass}: permite aprovisionamento dinâmico, criando o volume automaticamente quando surge um PVC.
+    \item \textbf{StatefulSet}: alternativa ao Deployment para aplicações com estado, que garante identidade e armazenamento estáveis por réplica.
+    \item Estes conceitos ligam-se diretamente às Aulas 10 e 11, sobre armazenamento.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agendamento: Requests e Limits}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Requests}: recursos que o Pod garantidamente precisa; o scheduler usa este valor para escolher um nó com capacidade suficiente.
+    \item \textbf{Limits}: teto máximo que o contentor pode consumir, aplicado através dos cgroups vistos na Aula 04.
+    \item Exceder o limite de memória leva à terminação do contentor (OOM kill); exceder o de CPU resulta apenas em \textit{throttling}.
+    \item \textbf{nodeSelector} e \textbf{affinity}: influenciam em que nós um Pod pode ou deve ser colocado.
+    \item \textbf{Taints e tolerations}: mecanismo inverso, em que um nó repele Pods que não tolerem explicitamente a sua marca.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Alternativas de Orquestração}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Docker Swarm}: solução de orquestração nativa do Docker, mais simples de configurar, mas com ecossistema e funcionalidades mais limitadas.
+    \item \textbf{HashiCorp Nomad}: orquestrador genérico, capaz de agendar não só contentores mas também outras cargas de trabalho (binários, VMs).
+    \item Kubernetes é hoje o standard de facto, com o ecossistema mais vasto e maior adoção na indústria.
+    \item A escolha depende da complexidade do caso de uso e da curva de aprendizagem que a equipa está disposta a assumir.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Orquestração é necessária para gerir contentores de forma fiável em múltiplos hosts.
+    \item Kubernetes separa control plane (API server, etcd, scheduler, controller manager) de worker nodes (kubelet, kube-proxy, runtime).
+    \item Pod, Deployment, ReplicaSet, Service e Namespace são os objetos centrais para descrever e expor aplicações.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O ciclo de reconciliação contínua entre estado desejado e observado é o que dá ao Kubernetes a capacidade de self-healing.
+    \item Services (ClusterIP, NodePort, LoadBalancer) e o modelo de rede plana via CNI expõem e interligam Pods efémeros.
+    \item ConfigMaps, Secrets e PersistentVolumes separam configuração e dados do ciclo de vida dos Pods.
+    \item Requests e limits guiam o agendamento e aplicam-se através dos cgroups vistos na Aula 04.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

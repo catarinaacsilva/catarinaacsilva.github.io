@@ -1,0 +1,356 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 05 -- Cluster Kubernetes em VMs Proxmox}{Infraestruturas de Computação na Nuvem, Aula 05}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Provisionar, a partir do Proxmox, as VMs que constituirão um cluster Kubernetes real com múltiplos nós.
+  \item Inicializar o control plane com \texttt{kubeadm} e juntar um worker node ao cluster.
+  \item Instalar um plugin de rede CNI e compreender o seu papel.
+  \item Criar um Deployment e um Service a partir de manifestos YAML declarativos.
+  \item Observar o agendamento de Pods entre nós e o mecanismo de self-healing.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item Acesso ao Proxmox VE do servidor central e ao intervalo de VMIDs atribuído.
+  \item Duas VMs Linux (Ubuntu Server LTS), criadas para este efeito: \texttt{k8s-cp} (control plane) e \texttt{k8s-w1} (worker). Recomenda-se 2 vCPU e 2~GB de RAM em cada, no mínimo.
+  \item As duas VMs devem estar na mesma rede (mesma bridge do Proxmox) e alcançar-se mutuamente.
+  \item Acesso SSH a ambas as VMs, com privilégios de \texttt{sudo}.
+\end{itemize}
+
+\textbf{Nota sobre recursos:} este guião cria duas VMs por aluno ou por grupo. Num servidor partilhado por uma turma inteira, isto pode esgotar a memória disponível. Confirme com a docente o modelo a adotar: por grupo (recomendado), ou individualmente com um número reduzido de nós. A alternativa mais leve consiste em cada grupo montar um cluster de dois nós, e partilhar observações entre grupos.
+
+\section{Introdução}
+Na Aula 04 corremos contentores num único host, com Docker. O passo seguinte -- e o tema desta aula -- é a orquestração: distribuir contentores por vários hosts, reagir automaticamente a falhas e expor serviços de forma estável.
+
+Ao contrário de uma instalação de aprendizagem num único nó, aqui vamos construir um cluster \textbf{real, com dois nós}, sobre VMs provisionadas no Proxmox. Isto permite observar coisas que um cluster de nó único não mostra: o \emph{scheduler} a decidir em que nó colocar cada Pod, a rede entre nós assegurada por um plugin CNI, e a diferença entre control plane e worker node.
+
+A ferramenta usada é o \texttt{kubeadm}, o instalador oficial do projeto Kubernetes para criar clusters conformes.
+
+\section{Parte 1 -- Provisionar as VMs no Proxmox}
+\begin{enumerate}[label=\arabic*.]
+
+  \item \textbf{Criar as duas VMs.} A partir da interface web do Proxmox (ou por CLI, como no Guião 03), crie duas VMs Ubuntu Server. Se tiver criado um template no Guião 03, clone-o -- é bastante mais rápido:
+\begin{lstlisting}
+$ qm clone <id-template> <vmid-cp> --name k8s-cp --full
+$ qm clone <id-template> <vmid-w1> --name k8s-w1 --full
+$ qm set <vmid-cp> --memory 2048 --cores 2
+$ qm set <vmid-w1> --memory 2048 --cores 2
+$ qm start <vmid-cp> && qm start <vmid-w1>
+\end{lstlisting}
+
+  \item \textbf{Definir hostnames distintos.} Em cada VM, via SSH:
+\begin{lstlisting}
+# Na VM do control plane:
+$ sudo hostnamectl set-hostname k8s-cp
+
+# Na VM do worker:
+$ sudo hostnamectl set-hostname k8s-w1
+\end{lstlisting}
+  Se as VMs foram clonadas do mesmo template, confirme também que têm endereços MAC e \texttt{machine-id} distintos (o Proxmox gera novos MACs ao clonar; para o \texttt{machine-id}, se necessário: \texttt{sudo rm -f /etc/machine-id \&\& sudo systemd-machine-id-setup}).
+
+  \item \textbf{Registar os endereços IP} de ambas as VMs -- serão necessários adiante:
+\begin{lstlisting}
+$ ip addr show
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Parte 2 -- Preparar ambos os nós}
+Os passos seguintes executam-se \textbf{em ambas as VMs}.
+
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Desativar a swap.} O kubelet exige que a swap esteja desativada:
+\begin{lstlisting}
+$ sudo swapoff -a
+$ sudo sed -i '/ swap / s/^/#/' /etc/fstab
+\end{lstlisting}
+
+  \item \textbf{Carregar os módulos de kernel necessários:}
+\begin{lstlisting}
+$ cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+$ sudo modprobe overlay
+$ sudo modprobe br_netfilter
+\end{lstlisting}
+
+  \item \textbf{Configurar os parâmetros de rede} para que o tráfego em bridge seja visto pelo iptables:
+\begin{lstlisting}
+$ cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+$ sudo sysctl --system
+\end{lstlisting}
+
+  \item \textbf{Instalar o runtime de contentores (containerd).} Note que é o mesmo containerd referido na arquitetura Docker da Aula 04:
+\begin{lstlisting}
+$ sudo apt update
+$ sudo apt install -y containerd
+$ sudo mkdir -p /etc/containerd
+$ containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
+\end{lstlisting}
+  Ative o driver de cgroups \texttt{systemd}, requisito para o kubelet funcionar corretamente:
+\begin{lstlisting}
+$ sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+$ sudo systemctl restart containerd
+$ sudo systemctl enable containerd
+\end{lstlisting}
+
+  \item \textbf{Instalar \texttt{kubeadm}, \texttt{kubelet} e \texttt{kubectl}} a partir do repositório oficial. Confirme com a docente a versão a usar; o exemplo seguinte assume a série v1.30 (ajuste se necessário):
+\begin{lstlisting}
+$ sudo apt install -y apt-transport-https ca-certificates curl gpg
+$ curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key \
+    | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+$ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' \
+    | sudo tee /etc/apt/sources.list.d/kubernetes.list
+$ sudo apt update
+$ sudo apt install -y kubelet kubeadm kubectl
+$ sudo apt-mark hold kubelet kubeadm kubectl
+\end{lstlisting}
+  O \texttt{apt-mark hold} impede atualizações automáticas que poderiam quebrar o cluster.
+
+\end{enumerate}
+
+\section{Parte 3 -- Inicializar o cluster}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Inicializar o control plane.} \emph{Apenas na VM \texttt{k8s-cp}}:
+\begin{lstlisting}
+$ sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+\end{lstlisting}
+  O valor de \texttt{--pod-network-cidr} corresponde ao intervalo esperado pelo Flannel, o plugin CNI que instalaremos a seguir. \textbf{Guarde o comando \texttt{kubeadm join} apresentado no final} -- será necessário no passo seguinte.
+
+  \item \textbf{Configurar o \texttt{kubectl}} para o utilizador normal, ainda em \texttt{k8s-cp}:
+\begin{lstlisting}
+$ mkdir -p $HOME/.kube
+$ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+$ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+$ kubectl get nodes
+\end{lstlisting}
+  O nó aparecerá em estado \texttt{NotReady} -- falta a rede.
+
+  \item \textbf{Observar porque o nó não está pronto.} Confirme que os Pods de sistema relacionados com DNS estão pendentes:
+\begin{lstlisting}
+$ kubectl get pods -n kube-system
+\end{lstlisting}
+  Os Pods do CoreDNS ficam em \texttt{Pending} porque ainda não existe rede de Pods. Isto demonstra na prática o papel do CNI discutido na teoria.
+
+  \item \textbf{Instalar o plugin CNI (Flannel):}
+\begin{lstlisting}
+$ kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+\end{lstlisting}
+  Aguarde alguns instantes e volte a verificar:
+\begin{lstlisting}
+$ kubectl get nodes
+$ kubectl get pods -n kube-system
+\end{lstlisting}
+  O nó deve agora passar a \texttt{Ready} e o CoreDNS a \texttt{Running}.
+
+  \item \textbf{Juntar o worker ao cluster.} \emph{Na VM \texttt{k8s-w1}}, execute o comando \texttt{kubeadm join} guardado anteriormente:
+\begin{lstlisting}
+$ sudo kubeadm join <IP-do-cp>:6443 --token <token> \
+    --discovery-token-ca-cert-hash sha256:<hash>
+\end{lstlisting}
+  Se tiver perdido o comando, pode gerá-lo de novo a partir do control plane:
+\begin{lstlisting}
+$ kubeadm token create --print-join-command
+\end{lstlisting}
+
+  \item \textbf{Confirmar o cluster completo,} a partir de \texttt{k8s-cp}:
+\begin{lstlisting}
+$ kubectl get nodes -o wide
+\end{lstlisting}
+  Devem aparecer dois nós em estado \texttt{Ready}, com papéis (\texttt{ROLES}) distintos.
+
+  \item \textbf{Inspecionar os componentes do control plane.} Identifique os componentes estudados na teoria a correr como Pods:
+\begin{lstlisting}
+$ kubectl get pods -n kube-system -o wide
+\end{lstlisting}
+  Localize o \texttt{kube-apiserver}, o \texttt{etcd}, o \texttt{kube-scheduler} e o \texttt{kube-controller-manager}, e repare em que nó cada um corre.
+
+\end{enumerate}
+
+\section{Parte 4 -- Implantar uma aplicação}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Criar o manifesto do Deployment}, \texttt{deployment.yaml}, com pedidos e limites de recursos:
+\begin{lstlisting}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  labels:
+    app: web-app
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+        - name: web-app
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+\end{lstlisting}
+
+  \item \textbf{Aplicar o manifesto e observar a distribuição pelos nós:}
+\begin{lstlisting}
+$ kubectl apply -f deployment.yaml
+$ kubectl get deployments
+$ kubectl get replicasets
+$ kubectl get pods -o wide
+\end{lstlisting}
+  A coluna \texttt{NODE} mostra em que nó o scheduler colocou cada Pod. Registe a distribuição obtida.
+
+  \item \textbf{Criar o Service}, \texttt{service.yaml}:
+\begin{lstlisting}
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app-service
+spec:
+  selector:
+    app: web-app
+  ports:
+    - port: 80
+      targetPort: 80
+  type: NodePort
+\end{lstlisting}
+
+  \item \textbf{Aplicar o Service e aceder à aplicação:}
+\begin{lstlisting}
+$ kubectl apply -f service.yaml
+$ kubectl get services
+\end{lstlisting}
+  Identifique a porta atribuída (no intervalo 30000--32767) e aceda através de \emph{qualquer} um dos nós:
+\begin{lstlisting}
+$ curl http://<IP-do-k8s-cp>:<nodeport>
+$ curl http://<IP-do-k8s-w1>:<nodeport>
+\end{lstlisting}
+  Confirme que ambos respondem -- é o \texttt{kube-proxy} a encaminhar o tráfego, independentemente do nó onde os Pods realmente estão.
+
+  \item \textbf{Testar a resolução de nomes interna (CoreDNS).} A partir de um Pod temporário dentro do cluster:
+\begin{lstlisting}
+$ kubectl run teste --rm -it --image=busybox:1.36 --restart=Never -- sh
+/ # wget -O- http://web-app-service
+/ # exit
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Parte 5 -- Escalar e observar o self-healing}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Escalar o número de réplicas} e observar onde são colocadas as novas:
+\begin{lstlisting}
+$ kubectl scale deployment web-app --replicas=6
+$ kubectl get pods -o wide
+\end{lstlisting}
+
+  \item \textbf{Apagar um Pod manualmente e observar a reconciliação:}
+\begin{lstlisting}
+$ kubectl get pods -l app=web-app
+$ kubectl delete pod <nome-de-um-pod>
+$ kubectl get pods -l app=web-app --watch
+\end{lstlisting}
+  Observe que, poucos segundos depois, o ReplicaSet cria um novo Pod. Interrompa com \texttt{Ctrl+C} quando confirmar.
+
+  \item \textbf{Simular a falha de um nó inteiro.} Este é o teste que um cluster de nó único não permite fazer. A partir do Proxmox, pare abruptamente a VM do worker:
+\begin{lstlisting}
+$ qm stop <vmid-w1>
+\end{lstlisting}
+  A partir de \texttt{k8s-cp}, observe a reação do cluster ao longo de alguns minutos:
+\begin{lstlisting}
+$ kubectl get nodes --watch
+$ kubectl get pods -o wide
+\end{lstlisting}
+  O nó passa a \texttt{NotReady} e, decorrido o tempo de tolerância configurado, os Pods que lá corriam são recriados no nó restante. Registe quanto tempo demorou até observar a recriação.
+
+  \item \textbf{Recuperar o nó} e confirmar que volta a integrar o cluster:
+\begin{lstlisting}
+$ qm start <vmid-w1>
+$ kubectl get nodes
+\end{lstlisting}
+
+  \item \textbf{Limpeza.} Remova os recursos aplicados. Mantenha o cluster montado se for reutilizado nas Aulas 08 e 09 (confirmar com a docente); caso contrário, pare também as VMs:
+\begin{lstlisting}
+$ kubectl delete -f service.yaml
+$ kubectl delete -f deployment.yaml
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+  \setlength\itemsep{0.2cm}
+  \item Submeta os ficheiros \texttt{deployment.yaml} e \texttt{service.yaml}, e a saída de \texttt{kubectl get nodes -o wide} com os dois nós em \texttt{Ready}.
+  \item Antes de instalar o Flannel, o nó estava \texttt{NotReady} e o CoreDNS em \texttt{Pending}. Explique porquê, com base no papel do plugin CNI no modelo de rede do Kubernetes.
+  \item Registe a distribuição de Pods pelos nós (\texttt{kubectl get pods -o wide}). Que componente do control plane tomou essa decisão e que informação usou?
+  \item Acedeu à aplicação através do IP de ambos os nós, mesmo não havendo Pods em todos eles. Que componente torna isto possível?
+  \item Quanto tempo decorreu entre parar a VM do worker e a recriação dos seus Pods no outro nó? Relacione o comportamento observado com o ciclo de reconciliação estudado na teoria.
+  \item Qual a diferença de responsabilidades entre o Deployment e o ReplicaSet que ele cria?
+  \item Definiu \texttt{requests} e \texttt{limits} no manifesto. Qual a diferença entre os dois, e através de que mecanismo do kernel (visto na Aula 04) são os limites efetivamente aplicados?
+  \item Este cluster corre sobre VMs que, por sua vez, correm sobre o Proxmox. Que vantagem tem esta arquitetura em relação a instalar o Kubernetes diretamente no servidor físico?
+\end{enumerate}
+
+\end{document}

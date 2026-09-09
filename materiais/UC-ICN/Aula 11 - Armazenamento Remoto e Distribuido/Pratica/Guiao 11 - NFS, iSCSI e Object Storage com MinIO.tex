@@ -1,0 +1,301 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 11 -- NFS, iSCSI e Object Storage com MinIO}{Infraestruturas de Computação na Nuvem, Aula 11}
+
+\section{Objetivos}
+\begin{itemize}
+    \setlength\itemsep{0.2cm}
+    \item Observar os tipos de storage de rede suportados pelo Proxmox e a sua relação com a migração ao vivo.
+    \item Configurar um servidor NFS numa VM e montar a partilha a partir de uma VM cliente.
+    \item Configurar um alvo (target) iSCSI básico e ligar-se a partir de um initiator noutra VM.
+    \item Demonstrar a diferença essencial entre acesso ao nível de ficheiro e ao nível de bloco, com acesso concorrente.
+    \item Correr o MinIO e utilizar o cliente \texttt{mc} para criar um bucket e enviar/obter um objeto.
+    \item Usar o NFS como PersistentVolume no cluster Kubernetes (opcional).
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}
+    \setlength\itemsep{0.2cm}
+    \item Duas VMs Linux no Proxmox: uma para servidor (\texttt{servidor}) e outra para cliente (\texttt{cliente}), na mesma rede. Pode reutilizar VMs de aulas anteriores.
+    \item Acesso à interface web do Proxmox, para a Parte A.
+    \item Docker instalado na VM onde se vai correr o MinIO (pode ser a mesma VM servidor).
+    \item Acesso com privilégios de administração (\texttt{sudo}) em ambas as VMs.
+    \item Opcionalmente, o cluster Kubernetes do Guião 05, para a Parte E.
+    \item Pacotes necessários:
+\begin{lstlisting}
+# Na VM servidor
+$ sudo apt update
+$ sudo apt install -y nfs-kernel-server targetcli-fb
+
+# Na VM cliente
+$ sudo apt update
+$ sudo apt install -y nfs-common open-iscsi
+\end{lstlisting}
+\end{itemize}
+
+\section{Introdução}
+Este guião cobre três formas distintas de armazenamento em rede, correspondentes aos conceitos vistos na teoria: NFS (ao nível de ficheiro, tipo NAS), iSCSI (ao nível de bloco, tipo SAN) e object storage (via MinIO, compatível com a API S3).
+
+O objetivo não é apenas configurar cada um, mas perceber \emph{porque} diferem. O exercício mais importante do guião está na Parte C: montar a mesma partilha NFS em dois clientes ao mesmo tempo funciona; fazer o equivalente com iSCSI é uma receita para corromper dados. Compreender esta diferença é compreender a distinção entre ficheiro e bloco.
+
+\section{Parte A -- Armazenamento de rede no Proxmox}
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Observar os tipos de storage suportados.} Na interface web, aceda a \emph{Datacenter} $\rightarrow$ \emph{Storage} $\rightarrow$ \emph{Add} e consulte (sem adicionar nada) a lista de tipos disponíveis. Identifique os que correspondem a armazenamento de rede: \emph{NFS}, \emph{iSCSI}, \emph{CIFS/SMB}, \emph{Ceph RBD}, entre outros.
+
+    \item \textbf{Relacionar com a migração ao vivo.} Consulte os storages atualmente configurados e a coluna que indica se são partilhados (\emph{Shared}):
+\begin{lstlisting}
+$ pvesm status
+\end{lstlisting}
+    Responda, para registo: se o disco de uma VM estiver num storage local, o que teria de acontecer para a migrar para outro nó? E se estivesse num storage partilhado por NFS ou Ceph? (Retome o conceito de migração ao vivo da Aula 03.)
+\end{enumerate}
+
+\section{Parte B -- Partilha de Ficheiros com NFS}
+\begin{enumerate}[label=\arabic*.]
+    \item Na VM \textbf{servidor}, criar a pasta a partilhar e definir permissões:
+\begin{lstlisting}
+$ sudo mkdir -p /srv/nfs/partilha
+$ sudo chown nobody:nogroup /srv/nfs/partilha
+\end{lstlisting}
+
+    \item Editar \texttt{/etc/exports} para exportar a pasta para a rede do cliente (substituir pelo IP/sub-rede real):
+\begin{lstlisting}
+/srv/nfs/partilha 192.168.56.0/24(rw,sync,no_subtree_check)
+\end{lstlisting}
+
+    \item Aplicar a exportação e reiniciar o serviço:
+\begin{lstlisting}
+$ sudo exportfs -ra
+$ sudo systemctl restart nfs-kernel-server
+\end{lstlisting}
+
+    \item Na VM \textbf{cliente}, criar o ponto de montagem e montar a partilha:
+\begin{lstlisting}
+$ sudo mkdir -p /mnt/nfs
+$ sudo mount servidor:/srv/nfs/partilha /mnt/nfs
+$ df -h /mnt/nfs
+\end{lstlisting}
+
+    \item Testar a escrita a partir do cliente e confirmar visibilidade no servidor:
+\begin{lstlisting}
+$ echo "ola via nfs" | sudo tee /mnt/nfs/teste.txt
+# no servidor:
+$ cat /srv/nfs/partilha/teste.txt
+\end{lstlisting}
+
+    \item \textbf{Testar o acesso concorrente.} Monte a \emph{mesma} partilha também no servidor (ou numa terceira VM, se disponível) e escreva a partir dos dois lados em simultâneo:
+\begin{lstlisting}
+# no cliente:
+$ echo "escrito pelo cliente" | sudo tee /mnt/nfs/concorrente.txt
+# no servidor (ou noutro cliente), imediatamente a seguir:
+$ cat /srv/nfs/partilha/concorrente.txt
+$ echo "acrescentado pelo servidor" | sudo tee -a /srv/nfs/partilha/concorrente.txt
+# de volta ao cliente:
+$ cat /mnt/nfs/concorrente.txt
+\end{lstlisting}
+    Confirme que ambos os lados veem as alterações um do outro. É o servidor NFS que gere o sistema de ficheiros e coordena os acessos -- guarde esta observação para comparar com o iSCSI.
+\end{enumerate}
+
+\section{Parte C -- Armazenamento em Bloco com iSCSI}
+\begin{enumerate}[label=\arabic*.]
+    \item Na VM \textbf{servidor}, criar um ficheiro de 500~MB para servir de disco virtual do target iSCSI:
+\begin{lstlisting}
+$ sudo mkdir -p /srv/iscsi
+$ sudo truncate -s 500M /srv/iscsi/disco0.img
+\end{lstlisting}
+
+    \item Configurar o target iSCSI com \texttt{targetcli}:
+\begin{lstlisting}
+$ sudo targetcli
+/> backstores/fileio create disco0 /srv/iscsi/disco0.img
+/> iscsi/ create iqn.2026-11.icn.estga:servidor
+/> iscsi/iqn.2026-11.icn.estga:servidor/tpg1/luns create /backstores/fileio/disco0
+/> iscsi/iqn.2026-11.icn.estga:servidor/tpg1/acls create iqn.2026-11.icn.estga:cliente
+/> saveconfig
+/> exit
+\end{lstlisting}
+
+    \item Na VM \textbf{cliente}, definir o próprio IQN (deve corresponder ao ACL criado acima), em \texttt{/etc/iscsi/initiatorname.iscsi}:
+\begin{lstlisting}
+InitiatorName=iqn.2026-11.icn.estga:cliente
+\end{lstlisting}
+
+    \item Descobrir e ligar-se ao target a partir do cliente:
+\begin{lstlisting}
+$ sudo systemctl restart open-iscsi
+$ sudo iscsiadm -m discovery -t sendtargets -p servidor
+$ sudo iscsiadm -m node --targetname iqn.2026-11.icn.estga:servidor --login
+\end{lstlisting}
+
+    \item Confirmar que o novo disco de bloco apareceu e formatá-lo/montá-lo:
+\begin{lstlisting}
+$ lsblk
+$ sudo mkfs.ext4 /dev/sdX   # substituir sdX pelo disco iSCSI identificado
+$ sudo mkdir -p /mnt/iscsi
+$ sudo mount /dev/sdX /mnt/iscsi
+\end{lstlisting}
+
+    \item \textbf{Observar a diferença essencial face ao NFS.} Repare no que acabou de fazer: teve de \emph{formatar} o dispositivo. No NFS isso nunca foi necessário, porque o sistema de ficheiros já existia do lado do servidor.
+
+    Escreva um ficheiro e confirme:
+\begin{lstlisting}
+$ echo "ola via iscsi" | sudo tee /mnt/iscsi/teste.txt
+$ ls -l /mnt/iscsi
+\end{lstlisting}
+
+    \textbf{Não faça isto:} montar este mesmo LUN em escrita a partir de um segundo cliente ao mesmo tempo. Cada cliente teria a sua própria cache e estruturas do sistema de ficheiros, sem saber da existência do outro, e o resultado seria a corrupção do ext4. É esta a diferença fundamental face ao NFS: no iSCSI o \emph{cliente} gere o sistema de ficheiros, e não há ninguém a coordenar acessos concorrentes.
+
+    Para permitir escrita simultânea sobre um dispositivo de bloco partilhado seria necessário um sistema de ficheiros de cluster (ex.\ GFS2, OCFS2), com bloqueio distribuído.
+\end{enumerate}
+
+\section{Parte D -- Object Storage com MinIO}
+\begin{enumerate}[label=\arabic*.]
+    \item Correr o MinIO num container Docker:
+\begin{lstlisting}
+$ docker run -d --name minio -p 9000:9000 -p 9001:9001 \
+    -e "MINIO_ROOT_USER=admin" -e "MINIO_ROOT_PASSWORD=minioadmin123" \
+    -v /srv/minio-data:/data \
+    minio/minio server /data --console-address ":9001"
+\end{lstlisting}
+
+    \item Instalar o cliente \texttt{mc} e configurar o alias para o servidor local:
+\begin{lstlisting}
+$ curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+$ chmod +x mc
+$ ./mc alias set localminio http://localhost:9000 admin minioadmin123
+\end{lstlisting}
+
+    \item Criar um bucket:
+\begin{lstlisting}
+$ ./mc mb localminio/dados-aula11
+\end{lstlisting}
+
+    \item Enviar (upload) um objeto para o bucket:
+\begin{lstlisting}
+$ echo "objeto de teste" > objeto.txt
+$ ./mc cp objeto.txt localminio/dados-aula11/objeto.txt
+\end{lstlisting}
+
+    \item Listar o conteúdo do bucket e obter (download) o objeto de volta:
+\begin{lstlisting}
+$ ./mc ls localminio/dados-aula11
+$ ./mc cp localminio/dados-aula11/objeto.txt objeto-descarregado.txt
+$ cat objeto-descarregado.txt
+\end{lstlisting}
+\end{enumerate}
+
+\section{Parte E -- NFS como PersistentVolume no Kubernetes (opcional)}
+Esta parte assume o cluster do Guião 05 e reutiliza o servidor NFS configurado na Parte B.
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Instalar o cliente NFS em todos os nós} do cluster:
+\begin{lstlisting}
+$ sudo apt install -y nfs-common
+\end{lstlisting}
+
+    \item \textbf{Criar o PersistentVolume e o PersistentVolumeClaim.} Crie \texttt{nfs-pv.yaml} (substitua o IP do servidor):
+\begin{lstlisting}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: <IP-do-servidor-NFS>
+    path: /srv/nfs/partilha
+  persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+\end{lstlisting}
+    Repare no modo de acesso \texttt{ReadWriteMany}: só é possível porque o NFS é armazenamento ao nível de ficheiro.
+
+    \item \textbf{Aplicar e verificar a ligação (\emph{bound}):}
+\begin{lstlisting}
+$ kubectl apply -f nfs-pv.yaml
+$ kubectl get pv,pvc
+\end{lstlisting}
+
+    \item \textbf{Montar o volume em dois Pods em nós diferentes} e confirmar que ambos veem os mesmos ficheiros:
+\begin{lstlisting}
+$ kubectl run escritor --image=busybox:1.36 --restart=Never \
+    --overrides='{"spec":{"containers":[{"name":"c","image":"busybox:1.36","command":["sh","-c","echo escrito-pelo-pod > /dados/k8s.txt; sleep 3600"],"volumeMounts":[{"name":"v","mountPath":"/dados"}]}],"volumes":[{"name":"v","persistentVolumeClaim":{"claimName":"nfs-pvc"}}]}}'
+$ kubectl run leitor --image=busybox:1.36 --restart=Never \
+    --overrides='{"spec":{"containers":[{"name":"c","image":"busybox:1.36","command":["sh","-c","sleep 3600"],"volumeMounts":[{"name":"v","mountPath":"/dados"}]}],"volumes":[{"name":"v","persistentVolumeClaim":{"claimName":"nfs-pvc"}}]}}'
+$ kubectl exec leitor -- cat /dados/k8s.txt
+\end{lstlisting}
+
+    \item \textbf{Confirmar no servidor NFS} que o ficheiro criado pelo Pod está lá:
+\begin{lstlisting}
+$ cat /srv/nfs/partilha/k8s.txt
+\end{lstlisting}
+
+    \item \textbf{Limpeza:}
+\begin{lstlisting}
+$ kubectl delete pod escritor leitor
+$ kubectl delete -f nfs-pv.yaml
+\end{lstlisting}
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+    \setlength\itemsep{0.2cm}
+    \item Capturas de ecrã (ou output copiado) de: montagem NFS bem-sucedida no cliente, \texttt{lsblk} com o disco iSCSI montado, e \texttt{mc ls} a mostrar o objeto no bucket.
+    \item No caso do NFS, o cliente acede aos dados ao nível de ficheiro ou de bloco? E no caso do iSCSI? Justifique com base no que foi montado em cada caso.
+    \item Descreva o que observou no teste de acesso concorrente ao NFS (Parte B) e a razão pela qual o mesmo não deve ser feito com o volume iSCSI. Que componente, em cada caso, é responsável por gerir o sistema de ficheiros?
+    \item Que vantagem tem o MinIO/S3 sobre o NFS quando se trata de armazenar milhões de ficheiros pequenos e não estruturados?
+    \item O acesso ao MinIO foi feito através de que tipo de API? Compare com o modelo de acesso usado no NFS e no iSCSI.
+    \item Se o disco de uma VM estiver num storage local do Proxmox, o que é necessário para a migrar para outro nó? E se estiver num storage partilhado? Relacione com a migração ao vivo (Aula 03).
+    \item (Se fez a Parte E) Porque é que o PersistentVolume NFS pôde ser declarado com \texttt{ReadWriteMany}? Que modo de acesso teria de usar se o volume fosse iSCSI, e porquê?
+    \item Indique, para cada um dos três mecanismos usados (NFS, iSCSI, MinIO), um cenário real de utilização em ambiente de cloud.
+\end{enumerate}
+
+\end{document}

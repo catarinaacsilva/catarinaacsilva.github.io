@@ -1,0 +1,280 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Redundância e Desacoplamento de Serviços}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 09}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Redundância ativa-ativa vs ativa-passiva.
+    \item Single points of failure.
+    \item Métricas de recuperação: RTO e RPO.
+    \item Motivação para o desacoplamento entre serviços.
+    \item Comunicação síncrona vs assíncrona.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Filas de mensagens e brokers: RabbitMQ e AMQP.
+    \item Componentes AMQP: exchanges, bindings e filas.
+    \item Garantias de entrega e idempotência.
+    \item Padrões de mensageria e de resiliência.
+    \item Message brokers vs event streaming.
+    \item Redundância e desacoplamento no Kubernetes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Redundância Ativa-Ativa vs Ativa-Passiva}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Redundância: manter mais do que uma instância de um componente crítico.
+    \item \textbf{Ativa-ativa}: todas as réplicas processam pedidos em simultâneo.
+    \item \textbf{Ativa-passiva}: uma réplica processa pedidos, outra(s) ficam em espera (\emph{standby}) para assumir em caso de falha.
+    \item Ativa-ativa aproveita melhor os recursos; ativa-passiva é mais simples de garantir consistência.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Single Points of Failure}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Single point of failure (SPOF)}: qualquer componente cuja falha isolada derruba todo o serviço.
+    \item Pode ser um servidor, um load balancer, uma base de dados ou até um único link de rede.
+    \item Estratégia: identificar SPOFs e introduzir redundância em cada um.
+    \item Redundância sem eliminar todos os SPOFs dá uma falsa sensação de segurança.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Métricas de Recuperação: RTO e RPO}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{RTO} (Recovery Time Objective): quanto tempo o serviço pode estar indisponível antes de o impacto ser inaceitável.
+    \item \textbf{RPO} (Recovery Point Objective): quantos dados se pode perder, medido em tempo desde o último ponto de recuperação.
+    \item Um RPO de 15 minutos implica replicação ou backups com, no máximo, esse intervalo.
+    \item Uma configuração ativa-ativa tende a dar RTO próximo de zero; restaurar a partir de backup dá um RTO de horas.
+    \item Estes valores são decisões de negócio, com custo associado: quanto mais exigentes, mais cara a infraestrutura necessária.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Porque Desacoplar Serviços}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Serviços fortemente acoplados propagam falhas em cascata: um lento, todos lentos.
+    \item Desacoplamento permite que cada serviço evolua, seja atualizado e escale de forma independente.
+    \item Reduz o impacto de uma falha isolada no sistema global.
+    \item Base para arquiteturas de microsserviços resilientes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Comunicação Síncrona vs Assíncrona}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Síncrona} (ex.\ chamadas REST diretas): o cliente espera pela resposta antes de continuar.
+    \item Simples de entender, mas acopla a disponibilidade do cliente à do serviço chamado.
+    \item \textbf{Assíncrona} (baseada em mensagens): o remetente envia e continua, sem esperar resposta imediata.
+    \item Tolera melhor picos de carga e indisponibilidades temporárias do lado recetor.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Filas de Mensagens e Brokers}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um \textbf{broker de mensagens} recebe, guarda e entrega mensagens entre produtores e consumidores.
+    \item Produtor e consumidor não precisam de estar ativos ao mesmo tempo -- desacoplamento temporal.
+    \item \textbf{RabbitMQ}: broker de mensagens amplamente usado, baseado no protocolo \textbf{AMQP}.
+    \item AMQP define exchanges, filas e regras de encaminhamento entre eles.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Componentes do AMQP}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O produtor \emph{nunca} publica diretamente numa fila: publica sempre num \textbf{exchange}.
+    \item O \textbf{binding} liga um exchange a uma fila, eventualmente com uma \emph{routing key} que atua como critério de filtragem.
+    \item \textbf{Direct}: entrega às filas cuja routing key corresponde exatamente à da mensagem.
+    \item \textbf{Fanout}: ignora a routing key e entrega a todas as filas ligadas -- é a base do publish/subscribe.
+    \item \textbf{Topic}: correspondência por padrões com \textit{wildcards} (ex.\ \texttt{logs.*.erro}).
+    \item \textbf{Headers}: encaminha com base em cabeçalhos da mensagem, em vez da routing key.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Garantias de Entrega}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{At-most-once}: a mensagem pode perder-se, mas nunca é processada duas vezes.
+    \item \textbf{At-least-once}: a mensagem nunca se perde, mas pode ser entregue mais do que uma vez.
+    \item \textbf{Exactly-once}: entregue exatamente uma vez -- difícil e dispendioso de garantir em sistemas distribuídos.
+    \item Na prática, a solução comum é \emph{at-least-once} com consumidores \textbf{idempotentes}: processar duas vezes a mesma mensagem não altera o resultado.
+    \item \textbf{Acknowledgements (ACK)}: o consumidor confirma o processamento; sem confirmação, o broker volta a entregar a mensagem.
+    \item \textbf{Durabilidade}: filas e mensagens marcadas como persistentes sobrevivem ao reinício do broker.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Padrões de Mensageria}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Work queues}: várias tarefas distribuídas por múltiplos consumidores, cada mensagem processada uma única vez.
+    \item Útil para distribuir trabalho pesado por vários workers em paralelo.
+    \item \textbf{Publish/subscribe}: uma mensagem é difundida para todos os consumidores subscritos.
+    \item Útil quando vários serviços independentes precisam de reagir ao mesmo evento.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Padrões de Resiliência}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Circuit breaker}: deteta falhas repetidas numa chamada a um serviço e passa a bloquear novas tentativas temporariamente.
+    \item Evita sobrecarregar um serviço já em dificuldades e dá-lhe tempo para recuperar.
+    \item \textbf{Retries com backoff exponencial}: repetir uma operação falhada, aumentando o intervalo entre tentativas.
+    \item Reduz a pressão sobre o sistema em falha, em vez de o inundar com pedidos repetidos imediatos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Filas de Mensagens Mortas e Contrapressão}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Dead letter queue (DLQ)}: fila para onde são desviadas mensagens que não puderam ser processadas com sucesso.
+    \item Evita que uma mensagem problemática bloqueie indefinidamente o processamento das restantes (\emph{poison message}).
+    \item \textbf{Backpressure}: quando os consumidores não acompanham o ritmo dos produtores, a fila cresce sem limite.
+    \item Mitigação: limitar o tamanho das filas, aplicar \textit{prefetch} nos consumidores, ou escalar o número de consumidores.
+    \item O tamanho da fila é, por isso, uma excelente métrica para auto-scaling -- como referido na Aula 08.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Message Brokers vs Event Streaming}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Message broker} (ex.\ RabbitMQ): a mensagem é removida da fila após ser consumida e confirmada.
+    \item Orientado a \emph{tarefas}: cada mensagem representa trabalho a executar uma vez.
+    \item \textbf{Event streaming} (ex.\ Apache Kafka): os eventos são guardados num registo ordenado e persistente (\textit{log}).
+    \item Vários consumidores leem independentemente, cada um com o seu \textit{offset}; os eventos permanecem disponíveis para releitura.
+    \item Orientado a \emph{eventos}: adequado a análise, auditoria e reprocessamento histórico.
+    \item A escolha depende do caso de uso: distribuir trabalho (broker) ou registar factos (streaming).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Redundância e Desacoplamento no Kubernetes}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Várias réplicas de um Deployment atrás de um Service constituem redundância \textbf{ativa-ativa} (Aula 08).
+    \item \textbf{PodDisruptionBudget}: garante um número mínimo de réplicas disponíveis durante operações de manutenção planeada.
+    \item \textbf{Anti-affinity}: distribui as réplicas por nós diferentes, evitando que a falha de um nó derrube todas.
+    \item Serviços com estado, como um broker de mensagens, implantam-se tipicamente com \textbf{StatefulSet} e armazenamento persistente.
+    \item O desacoplamento por mensageria mantém-se igualmente válido dentro do cluster: produtores e consumidores são Deployments independentes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Redundância ativa-ativa ou ativa-passiva ajuda a eliminar single points of failure.
+    \item Desacoplar serviços evita falhas em cascata e permite evolução independente.
+    \item Comunicação assíncrona, via filas de mensagens, reduz o acoplamento temporal entre serviços.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item No AMQP, os produtores publicam em exchanges (direct, fanout, topic, headers), que encaminham para filas através de bindings.
+    \item Work queues distribuem tarefas; publish/subscribe difunde eventos. ACKs e durabilidade sustentam a entrega \emph{at-least-once} com consumidores idempotentes.
+    \item DLQs isolam mensagens problemáticas; o tamanho da fila é uma boa métrica de auto-scaling.
+    \item Circuit breaker e retries com backoff exponencial tornam os sistemas mais resilientes; RTO e RPO quantificam os objetivos de recuperação.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

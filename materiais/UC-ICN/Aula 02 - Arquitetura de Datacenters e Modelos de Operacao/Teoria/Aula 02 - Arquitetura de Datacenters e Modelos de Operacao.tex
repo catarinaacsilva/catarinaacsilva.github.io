@@ -1,0 +1,293 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Arquitetura de Datacenters e Modelos de Operação}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 02}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Classificação Uptime Institute: os quatro Tiers.
+    \item Topologias de rede em datacenter.
+    \item Tráfego este-oeste vs norte-sul.
+    \item Cálculo de disponibilidade e "noves" de disponibilidade.
+    \item SLAs: o que contêm na prática.
+    \item Normas de classificação: Uptime, TIA-942 e EN 50600.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Modelos de operação: on-premises, colocation, cloud pública.
+    \item CapEx vs OpEx.
+    \item Regiões e zonas de disponibilidade.
+    \item Tendências: modulares, edge e sustentabilidade.
+    \item Caso de estudo: o servidor desta UC.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Classificação Uptime Institute \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O Uptime Institute define quatro níveis (Tiers) de maturidade de infraestrutura, de I a IV.
+    \item Tier I: infraestrutura básica, sem redundância; suscetível a interrupções por manutenção ou falha.
+    \item Tier II: introduz componentes redundantes (N+1), mas mantém uma única via de distribuição.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Classificação Uptime Institute \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Tier III: múltiplas vias de distribuição independentes, permitindo manutenção sem interrupção do serviço.
+    \item Tier IV: tolerância a falhas, com redundância 2N em todos os componentes críticos.
+    \item Níveis de redundância: \textbf{N} (capacidade mínima necessária), \textbf{N+1} (uma unidade extra), \textbf{2N} (duplicação completa do sistema).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Topologias de Rede em Datacenter \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Three-tier:} organização clássica em três camadas — core, aggregation e access.
+    \item A camada core interliga o datacenter ao exterior; a aggregation concentra tráfego; a access liga diretamente os servidores.
+    \item Limitação: o tráfego entre servidores em racks diferentes percorre várias camadas, introduzindo latência.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Topologias de Rede em Datacenter \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Leaf-spine} (topologia Clos): cada switch leaf liga-se a todos os switches spine, sem ligações diretas entre leafs.
+    \item Garante um número previsível e constante de saltos entre quaisquer dois servidores.
+    \item Mais adequada a tráfego este-oeste intenso, típico de aplicações distribuídas e cloud.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tráfego Este-Oeste vs Norte-Sul}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Tráfego norte-sul}: entra ou sai do datacenter, entre clientes externos e os servidores internos.
+    \item \textbf{Tráfego este-oeste}: circula entre servidores dentro do próprio datacenter (ex.\ um serviço a chamar outro).
+    \item Aplicações distribuídas e arquiteturas de microsserviços multiplicaram o volume de tráfego este-oeste.
+    \item A topologia leaf-spine foi desenhada precisamente para este cenário: qualquer par de servidores fica a igual distância (dois saltos).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Cálculo de Disponibilidade \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Disponibilidade (SLA) expressa habitualmente em percentagem de tempo operacional: os chamados "noves".
+    \item 99,9\% (três noves) corresponde a cerca de 8,76h de downtime por ano.
+    \item 99,99\% (quatro noves) corresponde a cerca de 52,6 minutos de downtime por ano.
+    \item 99,999\% (cinco noves) corresponde a cerca de 5,26 minutos de downtime por ano.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Cálculo de Disponibilidade \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Componentes em \textbf{série}: a disponibilidade combinada é o produto das disponibilidades individuais, $A = A_1 \times A_2 \times \dots \times A_n$.
+    \item Componentes em série reduzem sempre a disponibilidade total do sistema.
+    \item Componentes em \textbf{paralelo} (redundantes): $A = 1 - (1-A_1)(1-A_2)\cdots(1-A_n)$.
+    \item A redundância em paralelo é a estratégia central para atingir Tiers mais elevados.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{SLAs na Prática}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um \textbf{SLA} (Service Level Agreement) é um contrato formal entre fornecedor e cliente sobre o nível de serviço prestado.
+    \item Tipicamente inclui: percentagem de disponibilidade garantida, janelas de manutenção previstas, e tempo máximo de resposta a incidentes.
+    \item Pode incluir também \textbf{MTTR} (Mean Time To Repair) alvo e penalizações -- normalmente créditos de serviço -- se o compromisso não for cumprido.
+    \item O Tier do datacenter é um dos fatores que determina que nível de SLA é realisticamente possível oferecer.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Outras Normas de Classificação}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A classificação do Uptime Institute é a mais citada, mas não é a única.
+    \item \textbf{TIA-942}: norma norte-americana de infraestrutura de telecomunicações para datacenters, que define níveis \emph{Rated-1} a \emph{Rated-4}.
+    \item Cobre também aspetos que os Tiers não abordam em detalhe, como cablagem estruturada e disposição do espaço.
+    \item \textbf{EN 50600}: série de normas europeias sobre instalações e infraestruturas de datacenters, com classes de disponibilidade de 1 a 4.
+    \item Abrange igualmente eficiência energética e segurança física, numa abordagem mais ampla.
+    \item Os níveis das diferentes normas são comparáveis em espírito, mas não diretamente equivalentes -- convém indicar sempre a norma usada.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modelos de Operação}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{On-premises:} datacenter próprio, com controlo total sobre a infraestrutura, mas maior investimento inicial e operacional.
+    \item \textbf{Colocation:} a organização aluga espaço, energia e refrigeração num datacenter de terceiros, mantendo o controlo sobre o equipamento.
+    \item \textbf{Cloud pública:} recursos fornecidos por um terceiro, com faturação por utilização e sem gestão física da infraestrutura.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{CapEx vs OpEx}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{CapEx} (despesa de capital): investimento inicial em equipamento e instalações, amortizado ao longo de vários anos.
+    \item Modelo típico do on-premises: é preciso comprar capacidade para o pico previsto, que fica subutilizada a maior parte do tempo.
+    \item \textbf{OpEx} (despesa operacional): custo recorrente, proporcional ao consumo -- o modelo da cloud pública.
+    \item Vantagem do OpEx: alinha o custo com a procura real e evita imobilizar capital.
+    \item Contrapartida: em cargas estáveis e previsíveis a longo prazo, o custo total da cloud pode superar o de infraestrutura própria.
+    \item A decisão é económica além de técnica, e depende sobretudo da variabilidade da procura.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Regiões e Zonas de Disponibilidade}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Os fornecedores de cloud organizam a infraestrutura em \textbf{regiões}: áreas geográficas distintas, com datacenters próprios.
+    \item Cada região divide-se em \textbf{zonas de disponibilidade}: datacenters fisicamente separados, com energia e rede independentes, mas ligados por rede de baixa latência.
+    \item Distribuir réplicas por várias zonas protege contra a falha de um datacenter inteiro -- e não apenas de um servidor.
+    \item Distribuir por várias regiões protege contra falhas de maior escala e aproxima o serviço dos utilizadores.
+    \item A escolha da região é também condicionada por requisitos legais de localização dos dados (ex.\ RGPD).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tendências}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Datacenters modulares/contentorizados: unidades pré-fabricadas, de implantação rápida e capacidade escalável.
+    \item Datacenters de edge: infraestrutura de menor dimensão, próxima dos utilizadores finais, reduzindo latência.
+    \item Ambas as tendências respondem à procura crescente por proximidade geográfica e rapidez de implantação.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Sustentabilidade e Métricas Ambientais}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O consumo energético dos datacenters tornou-se uma preocupação central, económica e ambiental.
+    \item Além do \textbf{PUE} (Aula 01), o mesmo consórcio (The Green Grid) definiu métricas complementares.
+    \item \textbf{WUE} (Water Usage Effectiveness): água consumida por unidade de energia do equipamento de TI -- relevante em arrefecimento evaporativo.
+    \item \textbf{CUE} (Carbon Usage Effectiveness): emissões de carbono por unidade de energia consumida pelo equipamento de TI.
+    \item Estratégias comuns: localizar datacenters em climas frios, reaproveitar calor residual e contratar energia de fontes renováveis.
+    \item A consolidação e a virtualização (Aula 03) são, elas próprias, medidas de eficiência energética.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Caso de Estudo: o Servidor Central desta UC}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O servidor Proxmox VE usado nos laboratórios desta UC é, do ponto de vista do datacenter, um único servidor físico.
+    \item Questão de reflexão: que Tier lhe atribuiria, tendo apenas um servidor sem fonte de alimentação ou via de rede redundante?
+    \item Todas as VMs de todos os alunos correm sobre o mesmo hardware -- um exemplo direto de \textit{resource pooling} (Aula 01) e também de single point of failure (Aula 09).
+    \item Vamos observar dados reais deste servidor no Guião 02.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Os Tiers do Uptime Institute classificam datacenters segundo o nível de redundância (N, N+1, 2N).
+    \item A topologia leaf-spine substitui progressivamente a three-tier em ambientes cloud, pela previsibilidade de latência.
+    \item A disponibilidade combinada depende de componentes estarem em série (reduz) ou paralelo (aumenta).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Cada "nove" adicional de disponibilidade reduz drasticamente o downtime anual tolerável; um SLA formaliza esse compromisso, com MTTR e penalizações associadas.
+    \item Existem três grandes modelos de operação: on-premises, colocation e cloud pública, com diferentes compromissos entre controlo e custo.
+    \item Datacenters modulares e de edge respondem a necessidades de escala e latência cada vez mais exigentes; o nosso próprio servidor de laboratório é um pequeno caso de estudo destes conceitos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

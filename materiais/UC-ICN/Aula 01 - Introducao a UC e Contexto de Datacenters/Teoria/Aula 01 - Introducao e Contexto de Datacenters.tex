@@ -1,0 +1,348 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Introdução à UC e Contexto de Datacenters}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 01}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Apresentação da docente.
+    \item Objetivos da unidade curricular.
+    \item Programa da unidade curricular.
+    \item Metodologia de avaliação.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item ECTS e volume de trabalho esperado.
+    \item O que é a computação na nuvem.
+    \item Datacenters: motivação e componentes.
+    \item A infraestrutura de laboratório desta UC.
+    \item Bibliografia de referência.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{A Docente}
+\begin{itemize}
+    \setlength\itemsep{0.25cm}
+    \item Catarina Silva, doutorada em Informática (Ciências da Computação), Programa Doutoral MAPi (Universidades de Aveiro, Porto e Minho).
+    \item Professora Adjunta Convidada na ESTGA, Universidade de Aveiro; Investigadora de Pós-Doutoramento no IEETA.
+    \item Percurso profissional em infraestruturas cloud: Cloud \& Virtualization Engineer no projeto TWIN (Programa P2020 Mobilizador), responsável pela componente de virtualização e cloud, incluindo instanciação dinâmica e implantação de serviços de rede.
+    \item Membro da Cloud Security Alliance (Privacy Working Group e Compliance Automation Revolution), com experiência prática em Docker, orquestração de contentores, Terraform (Infrastructure as Code) e virtualização com Proxmox.
+    \item Docente responsável pela unidade curricular.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Objetivos da Unidade Curricular}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Descreve o contexto e identifica requisitos de operação de plataformas de computação na nuvem.
+    \item Descreve e distingue as arquiteturas e principais métodos de administração de uma plataforma de computação na nuvem.
+    \item Descreve os modelos, mecanismos e ferramentas para a administração de recursos em plataformas de computação na nuvem.
+    \item Propõe arquiteturas de desenvolvimento de software e de serviços escaláveis.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Programa da Unidade Curricular \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Estrutura típica de datacenters: arquitetura e modelos de operação.
+    \item Recursos computacionais: sistemas, virtualização e contentores.
+    \item Administração de sistemas e de recursos: orquestração, isolamento, gestão de rede centralizada, e automatização das configurações.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Programa da Unidade Curricular \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Fornecimento de serviços: disponibilidade, escalabilidade, distribuição de carga, redundância, desacoplamento.
+    \item Armazenamento de dados: arquiteturas, sistemas e protocolos para armazenamento local, remoto ou distribuído.
+    \item Tecnologias de administração de sistemas: SNMP, WBEM, WS-Management.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Avaliação}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Avaliação Discreta:} trabalhos laboratoriais (20\%), miniprojeto (40\%), teste escrito na época de exames (40\%).
+    \item \textbf{Avaliação Final (alternativa):} prova escrita única cobrindo toda a UC, classificação de 0 a 20 valores.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{ECTS e Volume de Trabalho \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A unidade curricular tem 6 ECTS.
+    \item Cada ECTS corresponde a cerca de 27h de trabalho do estudante.
+    \item No total, cerca de 162h de trabalho ao longo do semestre.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{ECTS e Volume de Trabalho \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item 3h de contacto semanais (aulas teórico-práticas).
+    \item Espera-se cerca de 5h adicionais de trabalho autónomo por semana.
+    \item Este trabalho autónomo é essencial para consolidar os conteúdos práticos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Bibliografia}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Limoncelli, T., Hogan, C., Chalup, S. (2016). \textit{The Practice of Cloud System Administration}. Addison-Wesley.
+    \item Erl, T., Puttini, R., Mahmood, Z. (2013). \textit{Cloud Computing: Concepts, Technology \& Architecture}. Prentice Hall.
+    \item Kavis, M. (2014). \textit{Architecting the Cloud: Design Decisions for Cloud Computing Service Models}. Wiley.
+    \item Burns, B., Beda, J., Hightower, K. (2022). \textit{Kubernetes: Up and Running}. O'Reilly.
+    \item Newman, S. (2021). \textit{Building Microservices}. O'Reilly.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Breve Evolução até à Cloud}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Mainframes com time-sharing} (décadas de 1960--70): vários utilizadores partilham um único computador central, por turnos de tempo de processador.
+    \item \textbf{Modelo cliente-servidor} (décadas de 1980--90): processamento distribuído entre servidores dedicados e computadores pessoais.
+    \item \textbf{Virtualização} (anos 2000): permite correr vários sistemas operativos isolados sobre o mesmo hardware físico, preparando o terreno para a cloud.
+    \item \textbf{Cloud pública}: fornecedores passam a oferecer estes recursos virtualizados como serviço, faturado por utilização, a partir de meados dos anos 2000.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{O que é a Computação na Nuvem}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Definição do NIST (\textit{National Institute of Standards and Technology}): modelo que permite acesso a um conjunto partilhado de recursos computacionais configuráveis.
+    \item Recursos disponibilizados e libertados com esforço mínimo de gestão ou interação com o fornecedor.
+    \item Assenta em cinco características essenciais, detalhadas de seguida.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{As Cinco Características Essenciais (NIST)}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Self-service sob procura}: o utilizador aprovisiona recursos sem intervenção humana do lado do fornecedor.
+    \item \textbf{Acesso alargado à rede}: recursos acessíveis através da rede, por mecanismos padronizados (ex.\ browser, API).
+    \item \textbf{Partilha de recursos} (\textit{resource pooling}): recursos físicos partilhados entre múltiplos clientes (multi-tenancy).
+    \item \textbf{Elasticidade rápida}: capacidade de aumentar ou reduzir recursos de forma quase imediata, consoante a procura.
+    \item \textbf{Serviço medido}: consumo de recursos monitorizado, controlado e reportado de forma transparente (modelo \textit{pay-per-use}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modelos de Serviço}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{IaaS} (Infrastructure as a Service): fornecimento de recursos computacionais básicos (processamento, armazenamento, rede).
+    \item \textbf{PaaS} (Platform as a Service): plataforma de desenvolvimento e execução de aplicações, sem gestão direta da infraestrutura subjacente.
+    \item \textbf{SaaS} (Software as a Service): aplicações completas disponibilizadas ao utilizador final através da rede.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modelo de Responsabilidade Partilhada}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Em qualquer modelo de serviço, a responsabilidade pela gestão e segurança divide-se entre fornecedor e cliente.
+    \item Em \textbf{IaaS}, o fornecedor garante o hardware, a virtualização e a rede; o cliente é responsável pelo sistema operativo, aplicações e dados.
+    \item Em \textbf{PaaS}, o fornecedor assume também o sistema operativo e o runtime; o cliente foca-se apenas na aplicação e nos dados.
+    \item Em \textbf{SaaS}, o fornecedor gere praticamente tudo; o cliente é responsável sobretudo pela configuração de acessos e pelos dados que introduz.
+    \item Esta unidade curricular foca-se sobretudo na camada de infraestrutura (IaaS) e na sua administração.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modelos de Implantação}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Cloud pública:} infraestrutura partilhada, gerida por um fornecedor externo, disponível a qualquer entidade.
+    \item \textbf{Cloud privada:} infraestrutura dedicada a uma única organização.
+    \item \textbf{Cloud híbrida:} combinação de infraestrutura privada e pública, com interoperabilidade entre ambas.
+    \item \textbf{Cloud comunitária:} infraestrutura partilhada por várias organizações com interesses comuns.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Porque Existem Datacenters}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Necessidade de concentrar capacidade computacional para responder a procura em escala.
+    \item Consolidação de recursos: melhor aproveitamento de servidores, rede e armazenamento.
+    \item Eficiência energética: ganhos de escala em arrefecimento, alimentação elétrica e gestão operacional.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Componentes Físicos de um Datacenter}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Racks: estruturas normalizadas para instalação de servidores e equipamento de rede.
+    \item Servidores: unidades de processamento, memória e armazenamento.
+    \item PDUs (Power Distribution Units): distribuição controlada de energia elétrica pelos racks.
+    \item Cablagem estruturada: organização física das ligações de rede e energia.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Equipamento de Rede num Datacenter}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Switches Top-of-Rack (ToR)}: ligam os servidores de um rack entre si e ao resto da rede do datacenter.
+    \item \textbf{Switches/routers de agregação e core}: interligam vários racks e ligam o datacenter ao exterior.
+    \item \textbf{Firewalls e load balancers de hardware}: controlam e distribuem o tráfego que entra e sai do datacenter.
+    \item A organização destes equipamentos em topologias será aprofundada na Aula 02.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Requisitos de Operação \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Energia: sistemas UPS (Uninterruptible Power Supply) e geradores de emergência.
+    \item Arrefecimento: unidades CRAC/CRAH (Computer Room Air Conditioning/Handling).
+    \item Organização em corredores quentes e frios para otimizar o fluxo de ar.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Requisitos de Operação \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Rede: ligações redundantes e de elevada capacidade.
+    \item Segurança física: controlo de acessos, videovigilância, deteção de incêndios.
+    \item Estes requisitos condicionam a disponibilidade e a fiabilidade do datacenter.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Métricas de Eficiência}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{PUE} (Power Usage Effectiveness): rácio entre a energia total consumida e a energia usada pelo equipamento de TI.
+    \item Um PUE próximo de 1.0 indica elevada eficiência energética.
+    \item \textbf{DCiE} (Data Center infrastructure Efficiency): inverso do PUE, expresso em percentagem.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{A Infraestrutura de Laboratório desta UC}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Os trabalhos práticos desta UC vão correr sobre um \textbf{servidor central com Proxmox VE}, já preparado pela instituição.
+    \item Proxmox VE é uma plataforma de virtualização open-source do tipo 1 (bare-metal), assente em \textbf{KVM} (máquinas virtuais) e \textbf{LXC} (contentores de sistema).
+    \item Cada aluno terá acesso à interface Proxmox para criar e gerir as suas próprias VMs/contentores, tal como um administrador faria numa infraestrutura real.
+    \item Este modelo permite exercitar, na prática, muitos dos conceitos de administração de recursos abordados ao longo do semestre.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A UC aborda a operação e administração de infraestruturas de computação na nuvem, dos datacenters à camada de serviços.
+    \item Computação na nuvem: self-service, elasticidade e serviço medido, com modelos IaaS, PaaS e SaaS.
+    \item Modelos de implantação: pública, privada, híbrida e comunitária; a responsabilidade pela gestão divide-se entre fornecedor e cliente consoante o modelo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Datacenters existem por razões de escala, consolidação e eficiência energética; PUE e DCiE são as suas métricas de referência.
+    \item Requisitos críticos: energia, arrefecimento, rede e segurança física.
+    \item Os laboratórios desta UC vão decorrer sobre um servidor central com Proxmox VE, que serviremos de base prática já no Guião 01.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

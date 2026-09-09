@@ -1,0 +1,435 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 09 -- Mensageria e Desacoplamento com RabbitMQ}{Infraestruturas de Computação na Nuvem, Aula 09}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Implantar um broker RabbitMQ no cluster Kubernetes, com armazenamento e Service próprios.
+  \item Implementar um producer e um consumer para uma fila de trabalho (\emph{work queue}), correndo como Pods.
+  \item Testar o padrão publish/subscribe com um exchange \emph{fanout} e múltiplos consumers.
+  \item Observar o efeito do desacoplamento ao parar temporariamente um consumer, e a acumulação de mensagens na fila.
+  \item Escalar o número de consumers e verificar a distribuição de trabalho.
+  \item Observar a redundância ativa-ativa e o efeito de \emph{anti-affinity} entre nós.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item O cluster Kubernetes de dois nós (Guião 05), com \texttt{kubectl} configurado.
+  \item Acesso ao Proxmox, para o teste final de falha de nó.
+  \item Conhecimentos de Deployment, Service e escalamento das Aulas 05 e 08.
+\end{itemize}
+
+\textbf{Alternativa mais leve:} se o cluster não estiver disponível, todos os exercícios podem ser feitos com Docker dentro da VM \texttt{icn-lab} -- arrancando o RabbitMQ com \texttt{docker run -d -p 5672:5672 -p 15672:15672 rabbitmq:3-management} e correndo os scripts Python diretamente na VM. Nesse caso, saltam-se as Partes 1 e 5.
+
+\section{Introdução}
+Num sistema desacoplado, os serviços comunicam através de um intermediário -- o \emph{broker} de mensagens -- em vez de se chamarem diretamente. O RabbitMQ implementa o protocolo AMQP, organizando a comunicação em torno de \emph{exchanges} (onde os produtores publicam) e \emph{filas} (de onde os consumidores retiram).
+
+Neste guião implantamos o broker no cluster Kubernetes e exploramos dois padrões: a \textbf{work queue}, em que cada mensagem é processada por um único consumer de entre vários, e o \textbf{publish/subscribe}, em que cada mensagem chega a todos os subscritores. O objetivo central é observar concretamente a propriedade que torna esta arquitetura resiliente: \emph{o produtor não é afetado quando o consumidor falha}.
+
+\section{Parte 1 -- Implantar o RabbitMQ no cluster}
+\begin{enumerate}[label=\arabic*.]
+
+  \item \textbf{Criar o manifesto} \texttt{rabbitmq.yaml}. Note que o broker guarda estado, pelo que usamos um Service dedicado e credenciais explícitas:
+\begin{lstlisting}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-cred
+type: Opaque
+stringData:
+  RABBITMQ_DEFAULT_USER: "aluno"
+  RABBITMQ_DEFAULT_PASS: "aulaicn2026"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          envFrom:
+            - secretRef:
+                name: rabbitmq-cred
+          ports:
+            - containerPort: 5672
+              name: amqp
+            - containerPort: 15672
+              name: management
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "ping"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+      nodePort: 31672
+  type: NodePort
+\end{lstlisting}
+  Usámos um \textbf{Secret} para as credenciais, aplicando o que foi visto na Aula 05. Note que, por omissão, um Secret é apenas codificado em base64 -- não cifrado.
+
+  \item \textbf{Aplicar e aguardar que fique pronto:}
+\begin{lstlisting}
+$ kubectl apply -f rabbitmq.yaml
+$ kubectl get pods -l app=rabbitmq --watch
+\end{lstlisting}
+  O arranque demora cerca de meio minuto. Espere pelo estado \texttt{Running} com \texttt{1/1 READY}.
+
+  \item \textbf{Aceder à interface de gestão} em \texttt{http://<IP-de-um-no>:31672}, com as credenciais definidas no Secret. Explore os separadores \emph{Overview}, \emph{Exchanges} e \emph{Queues}.
+
+  \item \textbf{Confirmar a resolução do Service por DNS} a partir de dentro do cluster:
+\begin{lstlisting}
+$ kubectl run dns-teste --rm -it --image=busybox:1.36 --restart=Never -- \
+    nslookup rabbitmq
+\end{lstlisting}
+  Os Pods poderão alcançar o broker simplesmente pelo nome \texttt{rabbitmq}.
+
+\end{enumerate}
+
+\section{Parte 2 -- Work queue}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Criar o producer} \texttt{send\_task.py}. Repare nas duas marcas de durabilidade: a fila é \texttt{durable} e as mensagens têm \texttt{delivery\_mode=2}:
+\begin{lstlisting}
+import pika, sys, os
+
+cred = pika.PlainCredentials(
+    os.environ.get('RABBIT_USER', 'aluno'),
+    os.environ.get('RABBIT_PASS', 'aulaicn2026'))
+params = pika.ConnectionParameters(
+    host=os.environ.get('RABBIT_HOST', 'rabbitmq'),
+    credentials=cred)
+
+connection = pika.BlockingConnection(params)
+channel = connection.channel()
+channel.queue_declare(queue='tarefas', durable=True)
+
+mensagem = ' '.join(sys.argv[1:]) or "tarefa generica"
+channel.basic_publish(
+    exchange='',
+    routing_key='tarefas',
+    body=mensagem,
+    properties=pika.BasicProperties(delivery_mode=2)
+)
+print(f"Enviado: {mensagem}")
+connection.close()
+\end{lstlisting}
+
+  \item \textbf{Criar o consumer} \texttt{worker.py}. Note o \texttt{basic\_ack} explícito e o \texttt{prefetch\_count=1}:
+\begin{lstlisting}
+import pika, time, os, socket
+
+cred = pika.PlainCredentials(
+    os.environ.get('RABBIT_USER', 'aluno'),
+    os.environ.get('RABBIT_PASS', 'aulaicn2026'))
+params = pika.ConnectionParameters(
+    host=os.environ.get('RABBIT_HOST', 'rabbitmq'),
+    credentials=cred)
+
+connection = pika.BlockingConnection(params)
+channel = connection.channel()
+channel.queue_declare(queue='tarefas', durable=True)
+
+nome = socket.gethostname()
+
+def callback(ch, method, properties, body):
+    print(f"[{nome}] Recebido: {body.decode()}", flush=True)
+    time.sleep(2)
+    print(f"[{nome}] Concluido", flush=True)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
+channel.basic_qos(prefetch_count=1)
+channel.basic_consume(queue='tarefas', on_message_callback=callback)
+print(f"[{nome}] A espera de tarefas.", flush=True)
+channel.start_consuming()
+\end{lstlisting}
+
+  \item \textbf{Correr os workers como Pods no cluster.} Para evitar construir uma imagem, usamos uma imagem Python base e injetamos o script através de um ConfigMap:
+\begin{lstlisting}
+$ kubectl create configmap worker-code --from-file=worker.py
+\end{lstlisting}
+  Crie \texttt{worker.yaml}:
+\begin{lstlisting}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: python:3.12-slim
+          command: ["sh", "-c"]
+          args:
+            - "pip install --no-cache-dir pika && python /code/worker.py"
+          envFrom:
+            - secretRef:
+                name: rabbitmq-cred
+          env:
+            - name: RABBIT_USER
+              value: "aluno"
+            - name: RABBIT_PASS
+              value: "aulaicn2026"
+            - name: RABBIT_HOST
+              value: "rabbitmq"
+          volumeMounts:
+            - name: code
+              mountPath: /code
+      volumes:
+        - name: code
+          configMap:
+            name: worker-code
+\end{lstlisting}
+\begin{lstlisting}
+$ kubectl apply -f worker.yaml
+$ kubectl get pods -l app=worker
+\end{lstlisting}
+
+  \item \textbf{Acompanhar os logs dos workers} num terminal:
+\begin{lstlisting}
+$ kubectl logs -f -l app=worker --prefix --max-log-requests=10
+\end{lstlisting}
+
+  \item \textbf{Enviar tarefas} a partir de um Pod temporário, noutro terminal:
+\begin{lstlisting}
+$ kubectl run producer --rm -it --image=python:3.12-slim --restart=Never \
+    --env="RABBIT_HOST=rabbitmq" --env="RABBIT_USER=aluno" \
+    --env="RABBIT_PASS=aulaicn2026" -- sh
+# pip install pika
+# (colar aqui o conteudo de send_task.py num ficheiro e correr varias vezes)
+\end{lstlisting}
+  Alternativa mais simples: publicar diretamente pela interface de gestão web (separador \emph{Queues} $\rightarrow$ \texttt{tarefas} $\rightarrow$ \emph{Publish message}), enviando várias mensagens seguidas.
+
+  \item \textbf{Observar a distribuição.} Nos logs, confirme que as tarefas são repartidas pelos workers ativos, e não processadas todas pelo mesmo. Registe a repartição observada.
+
+  \item \textbf{Escalar os consumers} e repetir:
+\begin{lstlisting}
+$ kubectl scale deployment worker --replicas=4
+\end{lstlisting}
+  Envie mais tarefas e compare o tempo total de processamento com o obtido com 2 workers.
+
+\end{enumerate}
+
+\section{Parte 3 -- Publish/subscribe com fanout}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Criar o publisher} \texttt{publish\_event.py}:
+\begin{lstlisting}
+import pika, sys, os
+
+cred = pika.PlainCredentials(
+    os.environ.get('RABBIT_USER', 'aluno'),
+    os.environ.get('RABBIT_PASS', 'aulaicn2026'))
+params = pika.ConnectionParameters(
+    host=os.environ.get('RABBIT_HOST', 'rabbitmq'),
+    credentials=cred)
+
+connection = pika.BlockingConnection(params)
+channel = connection.channel()
+channel.exchange_declare(exchange='eventos', exchange_type='fanout')
+
+mensagem = ' '.join(sys.argv[1:]) or "evento generico"
+channel.basic_publish(exchange='eventos', routing_key='', body=mensagem)
+print(f"Evento publicado: {mensagem}")
+connection.close()
+\end{lstlisting}
+
+  \item \textbf{Criar o subscriber} \texttt{subscribe\_event.py}. Cada instância cria a sua própria fila temporária e exclusiva, ligada ao exchange:
+\begin{lstlisting}
+import pika, os, socket
+
+cred = pika.PlainCredentials(
+    os.environ.get('RABBIT_USER', 'aluno'),
+    os.environ.get('RABBIT_PASS', 'aulaicn2026'))
+params = pika.ConnectionParameters(
+    host=os.environ.get('RABBIT_HOST', 'rabbitmq'),
+    credentials=cred)
+
+connection = pika.BlockingConnection(params)
+channel = connection.channel()
+channel.exchange_declare(exchange='eventos', exchange_type='fanout')
+
+result = channel.queue_declare(queue='', exclusive=True)
+queue_name = result.method.queue
+channel.queue_bind(exchange='eventos', queue=queue_name)
+
+nome = socket.gethostname()
+
+def callback(ch, method, properties, body):
+    print(f"[{nome}] recebeu: {body.decode()}", flush=True)
+
+channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+print(f"[{nome}] A espera de eventos.", flush=True)
+channel.start_consuming()
+\end{lstlisting}
+
+  \item \textbf{Implantar dois ou mais subscribers} (adapte o \texttt{worker.yaml}, mudando o nome, o ConfigMap e o script a executar) e publique um evento.
+
+  \item \textbf{Confirmar a diferença de comportamento:} na work queue, cada mensagem foi processada por \emph{um} worker; aqui, o mesmo evento chega a \emph{todos} os subscribers. Verifique também, na interface de gestão, que cada subscriber tem a sua própria fila ligada ao exchange \texttt{eventos}.
+
+\end{enumerate}
+
+\section{Parte 4 -- Observar o desacoplamento}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Parar todos os consumers}, mantendo o broker a correr:
+\begin{lstlisting}
+$ kubectl scale deployment worker --replicas=0
+\end{lstlisting}
+
+  \item \textbf{Continuar a enviar tarefas} (por script ou pela interface de gestão). Repare que o produtor \textbf{funciona normalmente}, sem qualquer erro, apesar de não haver ninguém a consumir.
+
+  \item \textbf{Observar a acumulação} na interface de gestão (separador \emph{Queues}) ou por linha de comandos:
+\begin{lstlisting}
+$ kubectl exec deployment/rabbitmq -- rabbitmqctl list_queues name messages
+\end{lstlisting}
+  Registe o número de mensagens acumuladas.
+
+  \item \textbf{Voltar a escalar os consumers} e verificar que as mensagens acumuladas são processadas, sem perda:
+\begin{lstlisting}
+$ kubectl scale deployment worker --replicas=3
+$ kubectl logs -f -l app=worker --prefix --max-log-requests=10
+\end{lstlisting}
+  Esta é a demonstração central do guião: o desacoplamento temporal entre produtor e consumidor.
+
+  \item \textbf{Testar a durabilidade.} Reinicie o broker e confirme que as mensagens persistentes sobrevivem:
+\begin{lstlisting}
+$ kubectl scale deployment worker --replicas=0
+# enviar algumas mensagens
+$ kubectl rollout restart deployment rabbitmq
+$ kubectl get pods -l app=rabbitmq --watch
+$ kubectl exec deployment/rabbitmq -- rabbitmqctl list_queues name messages
+\end{lstlisting}
+  \emph{Nota:} este Deployment não tem armazenamento persistente associado, pelo que o estado é reposto quando o Pod é recriado. Compare o resultado obtido com o que esperaria de um broker implantado com StatefulSet e PersistentVolume, como discutido na teoria.
+
+\end{enumerate}
+
+\section{Parte 5 -- Redundância e falha de nó}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Observar a distribuição dos workers pelos nós:}
+\begin{lstlisting}
+$ kubectl get pods -l app=worker -o wide
+\end{lstlisting}
+
+  \item \textbf{Forçar a distribuição por nós diferentes} com anti-affinity. Acrescente ao \texttt{spec.template.spec} do \texttt{worker.yaml}:
+\begin{lstlisting}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - worker
+                topologyKey: kubernetes.io/hostname
+\end{lstlisting}
+\begin{lstlisting}
+$ kubectl apply -f worker.yaml
+$ kubectl get pods -l app=worker -o wide
+\end{lstlisting}
+
+  \item \textbf{Simular a falha de um nó} com tarefas em curso. A partir do Proxmox:
+\begin{lstlisting}
+$ qm stop <vmid-w1>
+\end{lstlisting}
+  Continue a enviar tarefas e observe se o sistema continua a processá-las nos workers do nó sobrevivente:
+\begin{lstlisting}
+$ kubectl get pods -l app=worker -o wide
+$ kubectl exec deployment/rabbitmq -- rabbitmqctl list_queues name messages
+\end{lstlisting}
+
+  \item \textbf{Recuperar e limpar:}
+\begin{lstlisting}
+$ qm start <vmid-w1>
+$ kubectl delete -f worker.yaml
+$ kubectl delete configmap worker-code
+$ kubectl delete -f rabbitmq.yaml
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+  \setlength\itemsep{0.2cm}
+  \item Submeta os ficheiros \texttt{rabbitmq.yaml}, \texttt{worker.yaml}, \texttt{send\_task.py}, \texttt{worker.py}, \texttt{publish\_event.py} e \texttt{subscribe\_event.py}, e uma captura da interface de gestão com mensagens acumuladas na fila.
+  \item Qual a diferença de comportamento entre a work queue (Parte 2) e o publish/subscribe (Parte 3) quando existem múltiplos consumers? Explique com base no exchange usado em cada caso.
+  \item Descreva o que aconteceu ao producer quando reduziu os workers a zero. Que propriedade da arquitetura permite este comportamento?
+  \item Se o desacoplamento via fila não existisse e o producer chamasse o consumer diretamente (comunicação síncrona), o que aconteceria ao producer com o consumer indisponível?
+  \item Qual foi o efeito de escalar de 2 para 4 workers no tempo total de processamento? Relacione com a lei de Amdahl (Aula 08): o ganho foi proporcional ao número de workers?
+  \item O \texttt{worker.py} usa \texttt{basic\_ack} explícito. O que aconteceria a uma mensagem se o worker morresse a meio do processamento, antes do ACK? Que garantia de entrega é esta?
+  \item As mensagens sobreviveram ao reinício do broker? Explique o resultado obtido e indique que alteração ao manifesto seria necessária para as preservar.
+  \item Que efeito teve o \texttt{podAntiAffinity} na distribuição dos workers? Porque é que isto é relevante para redundância?
+  \item O broker está implantado com uma única réplica. Identifique-o como \emph{single point of failure} e proponha duas formas de o mitigar.
+\end{enumerate}
+
+\end{document}

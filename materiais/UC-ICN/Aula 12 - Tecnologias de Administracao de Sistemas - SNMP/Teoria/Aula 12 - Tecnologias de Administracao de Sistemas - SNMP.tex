@@ -1,0 +1,286 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Tecnologias de Administração de Sistemas: SNMP}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 12}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Necessidade de gestão centralizada em infraestruturas de larga escala.
+    \item Arquitetura SNMP: managers, agentes, MIB e OIDs.
+    \item A estrutura da árvore MIB e a MIB-II.
+    \item SMI e tipos de dados; ficheiros MIB.
+    \item Evolução das versões do protocolo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item SNMPv3: o modelo de segurança USM.
+    \item Operações: GET, GETNEXT/GETBULK, SET e TRAP/INFORM.
+    \item Net-SNMP: ferramentas de referência.
+    \item Monitorização: polling vs push; o que medir.
+    \item Alarmística e fadiga de alertas.
+    \item SNMP no panorama atual de monitorização.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Porque Precisamos de Gestão Centralizada}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Uma infraestrutura de cloud reúne centenas ou milhares de componentes: servidores, switches, routers, storage.
+    \item Verificar o estado de cada equipamento manualmente não escala.
+    \item É preciso um protocolo comum, independente do fabricante, para consultar e alterar o estado de qualquer dispositivo gerido.
+    \item O SNMP (Simple Network Management Protocol) surge nos anos 1980 precisamente com este objetivo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura SNMP \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Manager}: estação de gestão que consulta e recebe notificações dos dispositivos geridos.
+    \item \textbf{Agente}: software que corre no dispositivo gerido (servidor, switch, impressora) e responde ao manager.
+    \item Comunicação tipicamente sobre UDP, para minimizar o overhead de gestão sobre a rede.
+    \item Um manager pode gerir centenas de agentes distribuídos pela infraestrutura.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura SNMP \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{MIB} (Management Information Base): estrutura hierárquica que descreve todas as variáveis geríveis de um dispositivo.
+    \item \textbf{OID} (Object Identifier): identificador numérico único que endereça cada variável dentro da MIB (ex.\ \texttt{1.3.6.1.2.1.1.3.0} para o uptime do sistema).
+    \item A MIB é organizada em árvore; cada ramo pertence a uma organização ou fabricante (IANA atribui os ramos de topo).
+    \item Sem OIDs normalizados, cada fabricante teria a sua própria forma de expor a mesma informação.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{A Árvore MIB e a MIB-II}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A MIB é uma árvore hierárquica; cada nó tem um número, e o caminho da raiz até à folha forma o OID.
+    \item O ramo mais usado é \texttt{1.3.6.1}, correspondente a \texttt{iso.org.dod.internet}.
+    \item \texttt{1.3.6.1.2.1} é a \textbf{MIB-II}, o conjunto normalizado de objetos que praticamente todos os dispositivos implementam.
+    \item Grupos da MIB-II: \texttt{system} (\texttt{.1.1}), \texttt{interfaces} (\texttt{.1.2}), \texttt{ip} (\texttt{.1.4}), entre outros.
+    \item \texttt{1.3.6.1.4.1} é o ramo \textbf{enterprises}, onde cada fabricante recebe um número próprio atribuído pela IANA para as suas extensões.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{SMI, Tipos de Dados e Ficheiros MIB}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A \textbf{SMI} (Structure of Management Information) define as regras de escrita das definições da MIB.
+    \item Tipos comuns: \texttt{INTEGER}, \texttt{OCTET STRING}, \texttt{Counter32} (contador que só cresce e reinicia ao transbordar), \texttt{Gauge32} (valor que sobe e desce) e \texttt{TimeTicks} (centésimos de segundo).
+    \item A distinção entre \texttt{Counter} e \texttt{Gauge} é importante na interpretação: num contador interessa a \emph{variação} entre leituras, não o valor absoluto.
+    \item Um \textbf{ficheiro MIB} é um documento de texto que descreve estes objetos, permitindo traduzir OIDs numéricos em nomes legíveis.
+    \item Sem o ficheiro MIB correspondente, as ferramentas mostram apenas números -- funcional, mas difícil de interpretar.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Evolução das Versões \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{SNMPv1}: versão original, simples, sem mecanismos de segurança reais.
+    \item \textbf{SNMPv2c}: melhora aspetos de desempenho (ex.\ GETBULK), mas mantém a autenticação por \textit{community string}.
+    \item A community string funciona como uma palavra-passe, mas é transmitida em texto simples na rede.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Evolução das Versões \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{SNMPv3}: introduz autenticação real (verificação de identidade) e cifra do tráfego de gestão.
+    \item Corrige a principal fragilidade das versões anteriores: expor credenciais e dados de gestão em texto simples.
+    \item Apesar disso, o SNMPv2c continua muito usado em ambientes legados por simplicidade de configuração.
+    \item Em produção, SNMPv3 é a escolha recomendada sempre que a segurança da rede de gestão for uma preocupação.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{SNMPv3: o Modelo de Segurança USM}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O \textbf{USM} (User-based Security Model) substitui a \textit{community string} por utilizadores com credenciais próprias.
+    \item Três níveis de segurança: \texttt{noAuthNoPriv} (sem autenticação nem cifra), \texttt{authNoPriv} (autenticação apenas) e \texttt{authPriv} (autenticação e cifra).
+    \item Autenticação por HMAC, tipicamente com SHA; cifra tipicamente com AES.
+    \item Garante ainda \textbf{integridade} (a mensagem não foi alterada em trânsito) e proteção contra \textbf{repetição} de mensagens antigas.
+    \item \textbf{VACM} (View-based Access Control Model): define que ramos da MIB cada utilizador pode ler ou escrever.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Operações do Protocolo \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{GET}: o manager pede o valor de um OID específico ao agente.
+    \item \textbf{GETNEXT}: pede o próximo OID na árvore da MIB, útil para percorrer tabelas sem conhecer todos os OIDs.
+    \item \textbf{GETBULK} (SNMPv2c/v3): pede vários valores de uma vez, reduzindo o número de mensagens trocadas.
+    \item \textbf{SET}: o manager altera o valor de uma variável no agente (ex.\ reconfigurar um parâmetro remotamente).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Operações do Protocolo \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item As operações GET/SET são \textbf{síncronas}: o manager pergunta, o agente responde.
+    \item \textbf{TRAP}: mecanismo assíncrono em que o agente notifica o manager sem pedido prévio (ex.\ interface caiu).
+    \item \textbf{INFORM}: como a TRAP, mas com confirmação de receção pelo manager, tornando a notificação mais fiável.
+    \item Este modelo pull (GET) + push (TRAP/INFORM) cobre tanto consultas periódicas como eventos urgentes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Net-SNMP: Ferramentas de Referência}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{net-snmp}: implementação open source de referência do protocolo SNMP.
+    \item \textbf{snmpd}: daemon que corre no dispositivo gerido e implementa o papel de agente.
+    \item \textbf{snmpget} e \textbf{snmpwalk}: utilitários de linha de comandos usados pelo manager para consultar OIDs individuais ou percorrer ramos inteiros da MIB.
+    \item Disponível na generalidade das distribuições Linux, o que o torna uma base prática para aprender e testar SNMP.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Polling vs Push e o que Medir}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Polling}: o manager consulta periodicamente cada agente (GET). Simples, mas o intervalo determina a rapidez de deteção.
+    \item \textbf{Push}: o agente notifica quando algo acontece (TRAP/INFORM). Deteção imediata, mas exige que o agente esteja funcional para avisar.
+    \item Um intervalo de polling curto deteta mais depressa, mas gera mais carga de gestão sobre rede e dispositivos.
+    \item Métricas habituais: utilização de CPU e memória, espaço em disco, tráfego e erros por interface, temperatura, estado de fontes de alimentação.
+    \item Regra prática: recolher também a \emph{ausência} de resposta -- um agente que deixa de responder é, em si, um sinal relevante.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Alarmística e Fadiga de Alertas}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Recolher métricas só é útil se houver critérios claros que transformem valores em ação.
+    \item \textbf{Limiares} (\textit{thresholds}): definem a partir de que valor uma métrica gera alerta.
+    \item \textbf{Histerese}: usar limiares diferentes para disparar e para repor o alerta, evitando oscilação constante junto ao limite.
+    \item \textbf{Fadiga de alertas}: quando há alertas a mais, os operadores deixam de lhes prestar atenção -- e os importantes passam despercebidos.
+    \item Boa prática: alertar sobre \emph{sintomas com impacto no utilizador}, e deixar as restantes métricas para diagnóstico posterior.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{SNMP no Panorama Atual}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Nagios e Zabbix: sistemas de monitorização mais completos, que frequentemente usam SNMP como um dos seus métodos de recolha de dados.
+    \item Prometheus: modelo de monitorização mais recente, baseado em métricas expostas via HTTP e recolhidas por \textit{pull}.
+    \item SNMP mantém-se relevante sobretudo para equipamento de rede legado (switches, routers) que só expõe gestão por esta via.
+    \item Coexistência, não substituição total: cada tecnologia tem o seu nicho consoante o equipamento e a idade da infraestrutura.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Infraestruturas de cloud com muitos componentes exigem gestão centralizada e normalizada.
+    \item SNMP assenta em managers, agentes, MIB e OIDs para endereçar cada variável gerida.
+    \item SNMPv1 e SNMPv2c são simples mas inseguros; SNMPv3 acrescenta autenticação e cifra.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item GET/GETNEXT/GETBULK/SET são operações síncronas (polling); TRAP/INFORM notificam eventos de forma assíncrona (push).
+    \item O SNMPv3 acrescenta autenticação, cifra e controlo de acesso por vistas (USM e VACM).
+    \item Net-snmp (snmpd, snmpget, snmpwalk) é a implementação open source de referência; os ficheiros MIB traduzem OIDs em nomes legíveis.
+    \item Recolher métricas só é útil com limiares bem escolhidos: alertas a mais levam a fadiga e a incidentes ignorados.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

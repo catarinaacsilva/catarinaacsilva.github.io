@@ -1,0 +1,301 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Armazenamento de Dados: Arquiteturas e Sistemas Locais}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 10}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Tipos de armazenamento: block, file e object storage.
+    \item Armazenamento local em disco: HDD, SSD e interfaces.
+    \item Métricas de desempenho: IOPS, débito e latência.
+    \item Níveis de RAID: 0, 1, 5, 6 e 10.
+    \item Reconstrução de arrays e os seus riscos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item LVM: volumes físicos, grupos de volumes e volumes lógicos.
+    \item Thin provisioning e snapshots em LVM.
+    \item Sistemas de ficheiros: ext4, XFS, ZFS e btrfs.
+    \item Estratégias de backup e a regra 3-2-1.
+    \item Armazenamento no Proxmox VE.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tipos de Armazenamento \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Block storage}: expõe blocos brutos de dados, sem estrutura de ficheiros própria; o sistema operativo formata e gere o acesso.
+    \item Usado quando é preciso baixa latência e controlo total sobre o sistema de ficheiros, como discos de VMs e bases de dados.
+    \item \textbf{File storage}: expõe uma hierarquia de ficheiros e pastas através de um protocolo de rede (ex.\ NFS, SMB).
+    \item Adequado para partilha de ficheiros entre múltiplos utilizadores ou máquinas.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tipos de Armazenamento \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Object storage}: guarda dados como objetos identificados por uma chave, com metadados associados, acedidos via API HTTP.
+    \item Sem hierarquia de pastas real; escala horizontalmente para volumes muito grandes de dados não estruturados.
+    \item Cada abstração tem um nível de granularidade diferente: bloco (mais baixo), ficheiro (intermédio), objeto (mais alto).
+    \item A escolha depende do caso de uso: desempenho e controlo (block), partilha (file), escala e simplicidade de API (object).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Armazenamento Local em Disco}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{HDD}: discos magnéticos, mais baratos por GB, mas com latência mais alta (partes mecânicas).
+    \item \textbf{SSD}: memória flash, sem partes móveis, latência muito menor e maior débito, mas custo por GB superior.
+    \item Um único disco é um ponto único de falha e pode limitar o desempenho de aplicações exigentes.
+    \item \textbf{RAID} (Redundant Array of Independent Disks): combina vários discos para ganhar desempenho e/ou redundância.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Interfaces e Protocolos de Ligação}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{SATA}: interface generalizada, adequada a HDDs e a SSDs de gama de entrada.
+    \item \textbf{SAS}: usada em servidores; suporta maior profundidade de fila e melhor tratamento de erros.
+    \item \textbf{NVMe}: protocolo desenhado de raiz para memória flash, ligado diretamente ao barramento PCIe.
+    \item O NVMe elimina a sobrecarga dos protocolos concebidos para discos rotativos, permitindo muito mais operações em paralelo.
+    \item A escolha da interface pode ser tão determinante para o desempenho como a escolha do próprio suporte de armazenamento.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Métricas de Desempenho de Armazenamento}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{IOPS} (operações de entrada/saída por segundo): relevante em cargas com muitos acessos pequenos e aleatórios, como bases de dados.
+    \item \textbf{Débito} (\textit{throughput}, em MB/s): relevante em leituras e escritas sequenciais de grandes ficheiros.
+    \item \textbf{Latência}: tempo de resposta de uma operação individual -- frequentemente a métrica mais determinante para a experiência do utilizador.
+    \item Um HDD é limitado pelo tempo de posicionamento mecânico da cabeça; um SSD não tem essa restrição.
+    \item Ordens de grandeza típicas: um HDD ronda as centenas de IOPS aleatórios; um SSD NVMe atinge as centenas de milhares.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Níveis de RAID \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{RAID 0} (stripe): distribui os dados por todos os discos; melhora o desempenho mas não oferece redundância.
+    \item \textbf{RAID 1} (mirror): duplica os dados em dois ou mais discos; tolera a falha de um disco, sem ganho de capacidade.
+    \item \textbf{RAID 5}: distribui dados e paridade por todos os discos; tolera a falha de um disco com menor overhead de capacidade que o RAID 1.
+    \item \textbf{RAID 6}: como o RAID 5, mas com paridade dupla; tolera a falha de dois discos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Níveis de RAID \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{RAID 10}: combina mirror e stripe (mínimo de 4 discos); junta o desempenho do RAID 0 com a redundância do RAID 1.
+    \item Escolha do nível depende do equilíbrio pretendido entre desempenho, redundância e capacidade útil.
+    \item RAID protege contra falha de disco, mas não substitui backups: não protege contra erro humano ou corrupção lógica.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{RAID por Hardware vs por Software}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Hardware}: um controlador dedicado gere o array; o sistema operativo vê apenas um disco.
+    \item Vantagem: cache própria com bateria, que protege escritas em curso em caso de falha de energia. Desvantagem: dependência do fabricante para substituição.
+    \item \textbf{Software} (ex.\ \texttt{mdadm} no Linux): o array é gerido pelo sistema operativo, sem hardware específico.
+    \item Vantagem: portabilidade -- os discos podem ser movidos para outra máquina; sem custo adicional.
+    \item Sistemas de ficheiros modernos como o ZFS integram a própria funcionalidade de RAID, dispensando uma camada separada.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Reconstrução de Arrays e os Seus Riscos}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Após substituir um disco falhado, o array entra em \textbf{reconstrução} (\textit{rebuild}), recalculando os dados em falta.
+    \item Durante esse período o array está \textbf{degradado}: em RAID 5, outra falha implica perda total de dados.
+    \item A reconstrução exige leitura integral dos discos restantes, aumentando a probabilidade de detetar um erro latente precisamente no pior momento.
+    \item Com discos de grande capacidade, uma reconstrução pode demorar muitas horas ou dias.
+    \item É esta a razão pela qual o RAID 6 (paridade dupla) é recomendado em arrays de grande capacidade.
+    \item \textbf{Hot spare}: disco de reserva já instalado, que permite iniciar a reconstrução automaticamente, sem intervenção humana.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{LVM: Logical Volume Manager}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Camada de abstração entre os discos físicos e os sistemas de ficheiros.
+    \item \textbf{PV} (Physical Volume): um disco ou partição preparado para ser usado pelo LVM.
+    \item \textbf{VG} (Volume Group): agrupa um ou mais PVs num único espaço de armazenamento lógico.
+    \item \textbf{LV} (Logical Volume): partição virtual criada dentro de um VG, sobre a qual se cria um sistema de ficheiros.
+    \item Vantagem principal: redimensionamento flexível dos volumes sem reparticionar discos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Thin Provisioning em LVM}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Em LVM \emph{thin}, o espaço é retirado de um \textit{thin pool} apenas quando é efetivamente escrito.
+    \item Permite declarar volumes cuja soma excede a capacidade física real (\textit{overcommit}).
+    \item Vantagem: melhor aproveitamento do armazenamento, sobretudo quando muitos volumes ficam pouco preenchidos.
+    \item Risco: se o pool esgotar, todos os volumes que dele dependem ficam comprometidos -- exige monitorização ativa.
+    \item É o mecanismo por detrás do \texttt{local-lvm} usado por omissão no Proxmox para os discos das VMs.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Snapshots em LVM}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um snapshot captura o estado de um LV num dado instante, sem copiar imediatamente todos os dados.
+    \item Funciona por \textbf{copy-on-write}: só se copiam os blocos alterados após a criação do snapshot.
+    \item Permite obter backups consistentes de um volume em uso, sem parar a aplicação.
+    \item Também útil para testar alterações (ex.\ atualizações) com possibilidade de reverter rapidamente.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Sistemas de Ficheiros}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{ext4} e \textbf{XFS}: sistemas de ficheiros de uso geral, maduros e estáveis, comuns em servidores Linux.
+    \item \textbf{ZFS} e \textbf{btrfs}: sistemas de ficheiros \textit{copy-on-write}, com funcionalidades avançadas integradas.
+    \item Incluem checksums de dados (deteção de corrupção) e snapshots nativos, sem depender do LVM.
+    \item Escolha depende dos requisitos: simplicidade e desempenho (ext4/XFS) vs. integridade e funcionalidades avançadas (ZFS/btrfs).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{RAID Não é Backup}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O RAID protege contra a falha \emph{de um disco}. Não protege contra tudo o resto.
+    \item Não protege contra: apagar ficheiros por engano, corrupção lógica, \textit{ransomware}, incêndio ou roubo do servidor.
+    \item Num espelho, apagar um ficheiro apaga-o instantaneamente em todas as cópias.
+    \item \textbf{Regra 3-2-1}: manter 3 cópias dos dados, em 2 suportes diferentes, com 1 cópia fora das instalações.
+    \item Um backup só conta como backup depois de o restauro ter sido efetivamente testado.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Armazenamento no Proxmox VE}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O Proxmox suporta vários \emph{tipos de storage}, cada um com características próprias.
+    \item \textbf{Directory}: ficheiros de imagem (ex.\ \texttt{qcow2}) num sistema de ficheiros normal -- simples e flexível.
+    \item \textbf{LVM} e \textbf{LVM-thin}: cada disco de VM é um volume lógico; o LVM-thin acrescenta thin provisioning e snapshots.
+    \item \textbf{ZFS}: integra RAID, checksums e snapshots nativos numa única camada.
+    \item \textbf{Ceph}: armazenamento distribuído e replicado entre vários nós -- tema da Aula 11.
+    \item O comando \texttt{pvesm status} mostra os storages configurados no servidor da UC.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Block, file e object storage oferecem níveis de abstração diferentes para necessidades diferentes.
+    \item HDD e SSD têm perfis de custo e desempenho distintos; RAID combina discos para desempenho e/ou redundância.
+    \item RAID 0, 1, 5, 6 e 10 equilibram desempenho, redundância e capacidade de formas diferentes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item LVM acrescenta flexibilidade sobre discos físicos ou arrays RAID (PVs, VGs, LVs), com thin provisioning e snapshots copy-on-write.
+    \item ext4/XFS cobrem o uso geral; ZFS/btrfs trazem checksums e snapshots nativos ao sistema de ficheiros.
+    \item RAID não é backup: a regra 3-2-1 e o teste de restauro continuam indispensáveis.
+    \item O Proxmox concretiza estas opções nos seus tipos de storage (Directory, LVM-thin, ZFS, Ceph).
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

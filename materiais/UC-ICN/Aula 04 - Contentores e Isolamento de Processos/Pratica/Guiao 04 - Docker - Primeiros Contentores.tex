@@ -1,0 +1,253 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 04 -- Docker: Primeiros Contentores}{Infraestruturas de Computação na Nuvem, Aula 04}
+
+\section{Objetivos}
+\begin{itemize}
+  \item Observar diretamente as primitivas de isolamento do kernel (namespaces e cgroups) usadas por um contentor.
+  \item Correr contentores a partir de imagens públicas do Docker Hub.
+  \item Escrever um Dockerfile simples e construir uma imagem própria.
+  \item Usar volumes para persistir dados fora do ciclo de vida do contentor.
+  \item Criar uma rede Docker do tipo bridge e ligar dois contentores através dela.
+  \item Comparar um contentor de aplicação (Docker) com um contentor de sistema (LXC do Proxmox).
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}
+  \item A VM \texttt{icn-lab} no Proxmox, criada no Guião 01, com o Docker já instalado e acessível por SSH.
+  \item Acesso à Internet a partir da VM, para descarregar imagens do Docker Hub.
+  \item Editor de texto (\texttt{nano}, \texttt{vim}) dentro da VM, para escrever o Dockerfile e o código da aplicação.
+  \item Acesso à interface web do Proxmox, para a comparação final com LXC.
+\end{itemize}
+
+\section{Introdução}
+Nesta aula prática vamos explorar Docker enquanto ferramenta de gestão de contentores. Todo o trabalho decorre \textbf{dentro da VM \texttt{icn-lab}} preparada no Guião 01 -- ou seja, vamos correr contentores dentro de uma máquina virtual, que por sua vez corre sobre o hypervisor KVM do servidor Proxmox. Esta sobreposição de camadas é intencional e comum em infraestruturas reais de cloud.
+
+Começamos por observar concretamente os namespaces e cgroups estudados na teoria, passamos pelo ciclo \texttt{pull} / \texttt{run} / \texttt{stop}, escrevemos o nosso próprio Dockerfile, e terminamos com volumes, redes personalizadas e uma comparação direta com o contentor LXC visto na Aula 03.
+
+\section{Passo a Passo}
+\begin{enumerate}[label=\arabic*.]
+
+  \item \textbf{Verificar o Docker na VM.} Estabeleça a ligação SSH à sua VM e confirme que o Docker instalado no Guião 01 está operacional:
+\begin{lstlisting}
+$ ssh utilizador@IP_da_VM
+$ docker --version
+$ docker run hello-world
+\end{lstlisting}
+  O último comando descarrega uma pequena imagem de teste e confirma que o daemon está a funcionar corretamente.
+
+  \item \textbf{Observar os namespaces de um contentor.} Arranque um contentor de longa duração e compare a sua visão do sistema com a da VM que o hospeda:
+\begin{lstlisting}
+$ docker run -d --name observar alpine sleep 3600
+\end{lstlisting}
+  Compare a árvore de processos vista de dentro e de fora do contentor:
+\begin{lstlisting}
+# Dentro do contentor (namespace PID proprio):
+$ docker exec observar ps aux
+
+# Fora, na VM (o mesmo processo, outro PID):
+$ ps aux | grep sleep
+\end{lstlisting}
+  Registe o PID que o processo \texttt{sleep} tem \emph{dentro} do contentor e o PID que tem \emph{na VM}. Esta diferença é o namespace PID em ação.
+
+  \item \textbf{Listar os namespaces atribuídos ao contentor.} Obtenha o PID do processo no host e inspecione os seus namespaces:
+\begin{lstlisting}
+$ PID=$(docker inspect -f '{{.State.Pid}}' observar)
+$ sudo ls -l /proc/$PID/ns
+\end{lstlisting}
+  Identifique na listagem os namespaces \texttt{pid}, \texttt{net}, \texttt{mnt}, \texttt{uts} e \texttt{ipc} estudados na aula teórica. Compare com os do processo \texttt{init} da própria VM:
+\begin{lstlisting}
+$ sudo ls -l /proc/1/ns
+\end{lstlisting}
+  Os identificadores numéricos que diferem correspondem aos recursos efetivamente isolados.
+
+  \item \textbf{Observar o isolamento de rede e de hostname.}
+\begin{lstlisting}
+$ docker exec observar hostname
+$ docker exec observar ip addr show
+$ hostname
+$ ip addr show
+\end{lstlisting}
+  O contentor tem hostname e interfaces de rede próprios -- namespaces UTS e NET.
+
+  \item \textbf{Aplicar e verificar limites com cgroups.} Corra um contentor com memória limitada e confirme o limite efetivamente aplicado pelo kernel:
+\begin{lstlisting}
+$ docker run -d --name limitado --memory=256m --cpus=0.5 alpine sleep 3600
+$ docker stats --no-stream
+\end{lstlisting}
+  Confirme o limite diretamente no sistema de ficheiros de cgroups da VM:
+\begin{lstlisting}
+$ PID2=$(docker inspect -f '{{.State.Pid}}' limitado)
+$ cat /proc/$PID2/cgroup
+\end{lstlisting}
+  Consoante a versão de cgroups em uso, o valor do limite de memória pode ser consultado em \texttt{/sys/fs/cgroup/...} (v2, hierarquia unificada) ou em \texttt{/sys/fs/cgroup/memory/...} (v1). Verifique qual a versão ativa na sua VM:
+\begin{lstlisting}
+$ stat -fc %T /sys/fs/cgroup
+\end{lstlisting}
+  O resultado \texttt{cgroup2fs} indica cgroups v2; \texttt{tmpfs} indica v1.
+
+  \item \textbf{Limpar os contentores de observação.}
+\begin{lstlisting}
+$ docker rm -f observar limitado
+\end{lstlisting}
+
+  \item \textbf{Correr um contentor nginx.} Descarregue e execute a imagem oficial do nginx, publicando a porta 80 do contentor na porta 8080 do host:
+\begin{lstlisting}
+$ docker run -d --name web-teste -p 8080:80 nginx
+\end{lstlisting}
+  Confirme no navegador (\texttt{http://localhost:8080}) que o servidor responde. Liste os contentores em execução e pare o contentor no final:
+\begin{lstlisting}
+$ docker ps
+$ docker stop web-teste
+$ docker rm web-teste
+\end{lstlisting}
+
+  \item \textbf{Explorar um contentor alpine interativo.} Alpine é uma imagem base minimalista, muito usada como ponto de partida para outras imagens:
+\begin{lstlisting}
+$ docker run -it --rm alpine sh
+/ # cat /etc/os-release
+/ # exit
+\end{lstlisting}
+  A opção \texttt{--rm} remove automaticamente o contentor assim que este termina.
+
+  \item \textbf{Escrever uma pequena aplicação.} Crie uma pasta \texttt{app-teste/} com um ficheiro \texttt{app.py} com uma aplicação Flask muito simples:
+\begin{lstlisting}
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return "Ola a partir do meu contentor!\n"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+\end{lstlisting}
+  E um ficheiro \texttt{requirements.txt}:
+\begin{lstlisting}
+flask
+\end{lstlisting}
+
+  \item \textbf{Escrever o Dockerfile.} No mesmo diretório, crie um ficheiro \texttt{Dockerfile}:
+\begin{lstlisting}
+FROM python:3.12-alpine
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+EXPOSE 5000
+CMD ["python", "app.py"]
+\end{lstlisting}
+
+  \item \textbf{Construir a imagem.} A partir do diretório \texttt{app-teste/}:
+\begin{lstlisting}
+$ docker build -t minha-app:1.0 .
+$ docker images
+\end{lstlisting}
+
+  \item \textbf{Correr a imagem localmente.}
+\begin{lstlisting}
+$ docker run -d --name minha-app -p 5000:5000 minha-app:1.0
+$ curl http://localhost:5000
+\end{lstlisting}
+  Confirme que a resposta corresponde ao texto definido em \texttt{app.py}.
+
+  \item \textbf{Usar um volume para persistência.} Crie um volume nomeado e monte-o num contentor, para que os dados sobrevivam à remoção do contentor:
+\begin{lstlisting}
+$ docker volume create dados-teste
+$ docker run -it --rm -v dados-teste:/dados alpine sh
+/ # echo "conteudo persistente" > /dados/ficheiro.txt
+/ # exit
+$ docker run -it --rm -v dados-teste:/dados alpine cat /dados/ficheiro.txt
+\end{lstlisting}
+  Note que o ficheiro criado no primeiro contentor está disponível no segundo, mesmo o primeiro já tendo sido removido.
+
+  \item \textbf{Criar uma rede bridge personalizada.}
+\begin{lstlisting}
+$ docker network create rede-teste
+$ docker network ls
+\end{lstlisting}
+
+  \item \textbf{Ligar dois contentores através da rede personalizada.} Corra dois contentores nessa rede e confirme que conseguem comunicar pelo nome:
+\begin{lstlisting}
+$ docker run -d --name servidor --network rede-teste nginx
+$ docker run -it --rm --network rede-teste alpine sh
+/ # wget -O- http://servidor
+/ # exit
+\end{lstlisting}
+  Ao contrário da rede bridge por omissão, uma rede personalizada permite resolução de nomes entre contentores pelo nome do contentor.
+
+  \item \textbf{Comparar com um contentor de sistema (LXC).} Na aula anterior criámos um contentor LXC no Proxmox. Compare os dois modelos:
+\begin{lstlisting}
+# No contentor Docker (aplicacao): um unico processo
+$ docker run -d --name comparar nginx
+$ docker exec comparar ps aux
+\end{lstlisting}
+  Se ainda tiver (ou recriar) um contentor LXC no Proxmox, observe a diferença:
+\begin{lstlisting}
+# No node Proxmox, dentro do contentor LXC (sistema):
+$ pct enter <ctid>
+root@icn-ct:~# ps aux
+root@icn-ct:~# systemctl list-units --type=service | head
+\end{lstlisting}
+  Registe quantos processos correm em cada caso. O contentor Docker tem tipicamente um processo (mais os seus filhos diretos); o LXC tem um sistema de init completo com vários serviços.
+
+  \item \textbf{Limpeza final.}
+\begin{lstlisting}
+$ docker rm -f servidor minha-app comparar
+$ docker network rm rede-teste
+$ docker volume rm dados-teste
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+  \setlength\itemsep{0.2cm}
+  \item Registe o PID do processo \texttt{sleep} visto \emph{dentro} do contentor e \emph{na VM}. Explique a diferença com base no namespace PID.
+  \item Compare a saída de \texttt{ls -l /proc/<pid>/ns} para o contentor e para o processo 1 da VM. Que namespaces diferem, e o que significa cada um deles estar isolado?
+  \item Qual a versão de cgroups ativa na sua VM, e como a determinou? Que limite de memória foi efetivamente aplicado ao contentor \texttt{limitado}?
+  \item Qual a diferença entre a imagem \texttt{minha-app:1.0} e o contentor criado a partir dela?
+  \item Porque é que o ficheiro criado no volume \texttt{dados-teste} sobreviveu à remoção do primeiro contentor?
+  \item Explique, por palavras suas, porque é que dois contentores na rede bridge por omissão do Docker não se conseguem descobrir mutuamente pelo nome, ao contrário do que acontece numa rede personalizada.
+  \item Quantos processos observou no contentor Docker e quantos no contentor LXC? Relacione com a distinção entre contentor de aplicação e contentor de sistema.
+  \item Nesta aula, um contentor Docker corre dentro de uma VM KVM, que corre sobre o servidor Proxmox. Enumere as camadas de virtualização envolvidas e indique, para cada uma, se partilha ou não o kernel com a camada inferior.
+  \item Envie o \texttt{Dockerfile} utilizado, juntamente com uma captura de ecrã do comando \texttt{curl} sobre \texttt{localhost:5000} com a resposta da aplicação.
+\end{enumerate}
+
+\end{document}

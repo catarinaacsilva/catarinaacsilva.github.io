@@ -1,0 +1,290 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Gestão de Rede Centralizada e SDN}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 06}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Limitações da gestão de rede tradicional em datacenters.
+    \item Separação entre plano de controlo e plano de dados.
+    \item Arquitetura de Software-Defined Networking (SDN).
+    \item OpenFlow e tabelas de fluxos.
+    \item Controllers SDN e o modelo reativo vs proativo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Open vSwitch e redes de contentores/Kubernetes.
+    \item Redes overlay: VLAN, VXLAN e outros encapsulamentos.
+    \item Network Functions Virtualization (NFV).
+    \item Microssegmentação e políticas de rede.
+    \item SDN no Proxmox e no Kubernetes.
+    \item Vantagens e desafios da centralização.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gestão de Rede Tradicional}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Cada equipamento de rede (switch, router) tem o seu próprio plano de controlo, configurado individualmente.
+    \item Configuração distribuída, dispositivo a dispositivo, tipicamente via CLI proprietária.
+    \item Em datacenters com centenas ou milhares de switches, este modelo não escala: lento, sujeito a erro humano e difícil de auditar.
+    \item Motivação central da SDN: mover a inteligência de decisão para fora dos equipamentos individuais.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Plano de Controlo vs Plano de Dados}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Plano de dados (data plane)}: encaminha pacotes com base em regras já instaladas -- rápido, executado em hardware/software do switch.
+    \item \textbf{Plano de controlo (control plane)}: decide \emph{quais} são essas regras -- routing, políticas, topologia.
+    \item Nas redes tradicionais, os dois planos coexistem em cada equipamento.
+    \item Na SDN, o plano de controlo é retirado dos equipamentos e centralizado num \textbf{controller} externo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura SDN}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Camada de infraestrutura}: switches simples, apenas com plano de dados (encaminham segundo regras recebidas).
+    \item \textbf{Controller (plano de controlo)}: elemento centralizado com visão global da rede, decide as regras.
+    \item \textbf{Camada de aplicações}: software que define políticas (routing, firewall, balanceamento) através do controller.
+    \item \textbf{API southbound}: comunicação controller \(\leftrightarrow\) switches (ex.\ OpenFlow).
+    \item \textbf{API northbound}: comunicação controller \(\leftrightarrow\) aplicações.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{OpenFlow e Tabelas de Fluxos}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item OpenFlow é o protocolo southbound mais usado para comunicação entre controller e switches.
+    \item Cada switch mantém uma \textbf{tabela de fluxos}, com entradas do tipo \emph{match -- action}.
+    \item \textbf{Match}: campos do pacote (IP origem/destino, porta, protocolo, \ldots).
+    \item \textbf{Action}: encaminhar, descartar, reencaminhar para o controller, modificar cabeçalho.
+    \item Quando não há regra aplicável, o pacote é enviado ao controller, que decide e instala uma nova regra.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Anatomia de uma Entrada de Fluxo}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Cada entrada da tabela de fluxos tem, além do \emph{match} e das \emph{actions}, três elementos importantes:
+    \item \textbf{Prioridade}: quando várias entradas correspondem ao mesmo pacote, aplica-se a de maior prioridade.
+    \item \textbf{Contadores}: número de pacotes e bytes que corresponderam à regra -- base para monitorização e estatísticas.
+    \item \textbf{Timeouts}: \emph{idle timeout} (remove a entrada após um período sem uso) e \emph{hard timeout} (remove-a ao fim de um tempo fixo).
+    \item As tabelas têm capacidade limitada, pelo que a gestão de timeouts é essencial em redes com muitos fluxos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modelo Reativo vs Proativo}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Reativo}: as regras só são instaladas quando chega o primeiro pacote de um fluxo desconhecido (\textit{packet-in} para o controller).
+    \item Vantagem: as tabelas contêm apenas fluxos ativos. Desvantagem: o primeiro pacote sofre atraso e o controller pode tornar-se um estrangulamento.
+    \item \textbf{Proativo}: as regras são instaladas antecipadamente, antes de haver tráfego.
+    \item Vantagem: nenhum pacote espera pelo controller. Desvantagem: exige conhecer previamente os fluxos e ocupa espaço nas tabelas.
+    \item Implementações reais combinam frequentemente as duas abordagens.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Controllers SDN}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Ryu}: controller em Python, simples e didático; é o que usaremos no laboratório.
+    \item \textbf{OpenDaylight} e \textbf{ONOS}: plataformas de grande escala, em Java, orientadas a operadores de telecomunicações.
+    \item \textbf{Faucet}: controller leve, focado em ambientes de produção com configuração declarativa.
+    \item A \textbf{API northbound} (tipicamente REST) permite que aplicações externas definam políticas sem falar OpenFlow diretamente.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Open vSwitch (OVS)}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Open vSwitch é um switch virtual, programável via OpenFlow, amplamente usado em hipervisores e datacenters.
+    \item Substitui a bridge de rede tradicional em hosts que correm máquinas virtuais ou contentores.
+    \item Relembrando a Aula 05: as redes que o Kubernetes usa para ligar Pods entre nós assentam frequentemente em switches programáveis deste tipo.
+    \item Permite aplicar políticas de rede (isolamento, QoS, monitorização) de forma centralizada e programática.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Redes Overlay: VXLAN}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Datacenters de cloud precisam de muitas redes virtuais isoladas sobre a mesma infraestrutura física.
+    \item VLANs tradicionais limitam-se a 4094 identificadores -- insuficiente à escala de cloud.
+    \item \textbf{VXLAN} encapsula tráfego de camada 2 dentro de pacotes UDP (camada 3), criando redes overlay independentes da topologia física.
+    \item Permite milhões de segmentos de rede lógicos e mobilidade de VMs/contentores entre servidores físicos sem reconfigurar a rede física.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Encapsulamentos de Overlay}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{VXLAN}: encapsula tramas de camada 2 em UDP; identificador de 24 bits (VNI), permitindo cerca de 16 milhões de segmentos.
+    \item \textbf{GRE} e \textbf{Geneve}: alternativas de encapsulamento; o Geneve foi desenhado para ser extensível através de opções variáveis.
+    \item Terminologia VXLAN: o \textbf{VTEP} (VXLAN Tunnel Endpoint) é o ponto onde o encapsulamento é aplicado e removido.
+    \item Custo: o cabeçalho adicional reduz o espaço útil de cada pacote, obrigando a ajustar o MTU da rede subjacente.
+    \item Distinção útil: a rede física subjacente designa-se \textbf{underlay}; a rede virtual construída sobre ela, \textbf{overlay}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Network Functions Virtualization (NFV)}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Conceito complementar da SDN: substituir equipamento de rede dedicado por software em servidores genéricos.
+    \item Exemplos de funções virtualizadas: firewalls, balanceadores de carga, routers, gateways de VPN.
+    \item \textbf{SDN vs NFV}: a SDN trata de \emph{como} o tráfego é encaminhado; a NFV trata de \emph{onde} correm as funções de rede.
+    \item \textbf{Service chaining}: encadear várias funções virtualizadas pelas quais o tráfego deve passar sequencialmente.
+    \item Vantagem central: elasticidade -- instanciar ou remover funções de rede tão facilmente como qualquer outra carga de trabalho.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Microssegmentação e Políticas de Rede}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Modelo tradicional: um perímetro fortificado (firewall na fronteira) e confiança implícita no interior da rede.
+    \item Problema: uma vez ultrapassado o perímetro, um atacante move-se lateralmente com pouca resistência.
+    \item \textbf{Microssegmentação}: aplicar políticas de segurança ao nível de cada carga de trabalho, e não apenas na fronteira.
+    \item A programabilidade da SDN torna isto viável em escala: as políticas são definidas centralmente e aplicadas em cada switch virtual.
+    \item No Kubernetes, o recurso \textbf{NetworkPolicy} concretiza esta ideia, restringindo que Pods podem comunicar entre si.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{SDN no Proxmox e no Kubernetes}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O Proxmox VE liga as VMs através de \textbf{bridges Linux} (ex.\ \texttt{vmbr0}) -- foi o que usámos nos guiões anteriores.
+    \item Dispõe também de um módulo \textbf{SDN} próprio, que permite definir \emph{zonas} (incluindo VXLAN) e \emph{VNets} sobre a infraestrutura física.
+    \item No Kubernetes, o plugin CNI instalado na Aula 05 desempenha exatamente o papel de camada de rede programável.
+    \item O Flannel, por omissão, cria uma rede overlay entre os nós -- tipicamente com encapsulamento VXLAN.
+    \item Ou seja: o cluster montado na aula anterior já usava, sem o dizermos explicitamente, os conceitos desta aula.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Vantagens e Desafios da Centralização}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Vantagens}: visão global da rede, políticas consistentes, automação, programabilidade (rede tratada como software).
+    \item \textbf{Desafio}: o controller é um ponto crítico -- se falhar, pode comprometer toda a rede.
+    \item Mitigação: controllers em cluster (alta disponibilidade), replicando o padrão já visto para outros serviços na Aula 08/09.
+    \item \textbf{Segurança}: o canal controller-switch tem de ser protegido, pois concentra o poder de decisão de toda a rede.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item SDN separa o plano de controlo (centralizado) do plano de dados (distribuído pelos switches).
+    \item OpenFlow é o protocolo southbound típico, baseado em tabelas de fluxos match-action.
+    \item Open vSwitch materializa este modelo em hipervisores e infraestrutura de contentores.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item VXLAN e outros encapsulamentos criam redes overlay escaláveis sobre um underlay físico, essenciais em datacenters multi-tenant.
+    \item NFV virtualiza as próprias funções de rede; a microssegmentação aplica políticas por carga de trabalho, não só no perímetro.
+    \item O Flannel do cluster da Aula 05 e as bridges/SDN do Proxmox são instâncias concretas destes conceitos.
+    \item A centralização traz consistência e automação, mas exige atenção à disponibilidade e segurança do controller.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

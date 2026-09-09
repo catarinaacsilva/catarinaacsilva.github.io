@@ -1,0 +1,303 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 08 -- Balanceamento de Carga e Escalabilidade no Kubernetes}{Infraestruturas de Computação na Nuvem, Aula 08}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Implantar uma aplicação que identifica qual a instância que respondeu, para observar a distribuição de carga.
+  \item Verificar que o Service do Kubernetes distribui pedidos pelas réplicas disponíveis.
+  \item Configurar \emph{liveness} e \emph{readiness probes} e observar o efeito de uma instância deixar de estar saudável.
+  \item Escalar o serviço manualmente e, de seguida, automaticamente com um Horizontal Pod Autoscaler (HPA).
+  \item Executar um \emph{rolling update} sem interrupção de serviço e observar o comportamento durante a atualização.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item O cluster Kubernetes de dois nós montado no Guião 05, com \texttt{kubectl} configurado no control plane.
+  \item Acesso ao Proxmox, para simular a falha de um nó no exercício final.
+  \item Para a parte do HPA: o \texttt{metrics-server} instalado no cluster (o guião indica como fazê-lo).
+\end{itemize}
+
+\textbf{Se o cluster da Aula 05 já não estiver disponível:} volte a segui-lo para o remontar, ou peça à docente o cluster de demonstração. Este guião assume-o como ponto de partida.
+
+\section{Introdução}
+Na Aula 05 vimos o Kubernetes como orquestrador; nesta aula usamo-lo para estudar concretamente disponibilidade e escalabilidade. O objeto central é o \textbf{Service}: além de dar um ponto de acesso estável, ele funciona como balanceador de carga interno, distribuindo pedidos pelas réplicas saudáveis de uma aplicação.
+
+Vamos implantar uma aplicação que devolve o nome do Pod que respondeu -- o que torna a distribuição de carga imediatamente visível --, configurar health checks, e observar o que acontece quando uma réplica adoece, quando a carga aumenta, e quando se atualiza a aplicação em produção.
+
+\section{Parte 1 -- Implantar uma aplicação identificável}
+\begin{enumerate}[label=\arabic*.]
+
+  \item \textbf{Criar o manifesto} \texttt{app.yaml}. Usamos a imagem \texttt{hashicorp/http-echo}, que responde com um texto fixo, e a variável \texttt{POD\_NAME} obtida da própria API do Kubernetes (\emph{downward API}) para identificar a instância:
+\begin{lstlisting}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: nginxdemos/hello:plain-text
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-svc
+spec:
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 80
+  type: NodePort
+\end{lstlisting}
+  A imagem \texttt{nginxdemos/hello:plain-text} devolve, em texto simples, o nome do servidor que respondeu -- exatamente o que precisamos para ver a distribuição.
+
+  \item \textbf{Aplicar e confirmar:}
+\begin{lstlisting}
+$ kubectl apply -f app.yaml
+$ kubectl get pods -o wide
+$ kubectl get svc web-svc
+\end{lstlisting}
+  Registe a porta NodePort atribuída e em que nós os Pods ficaram colocados.
+
+  \item \textbf{Observar a distribuição de carga.} Faça vários pedidos seguidos e conte quantas vezes cada Pod respondeu:
+\begin{lstlisting}
+$ for i in $(seq 1 30); do \
+    curl -s http://localhost:<nodeport> | grep -i "server name"; \
+  done | sort | uniq -c
+\end{lstlisting}
+  Deverá ver os pedidos repartidos pelas três réplicas. Registe a contagem obtida.
+
+  \item \textbf{Confirmar que o balanceamento funciona a partir de qualquer nó:} repita a partir do IP do outro nó do cluster e compare.
+
+\end{enumerate}
+
+\section{Parte 2 -- Health checks em ação}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Observar os \emph{endpoints} do Service.} O Service só encaminha tráfego para Pods considerados prontos:
+\begin{lstlisting}
+$ kubectl get endpoints web-svc
+\end{lstlisting}
+  Registe quantos endereços estão listados.
+
+  \item \textbf{Tornar um Pod não-saudável.} Escolha um Pod e sabote o conteúdo servido, de modo a que a probe deixe de obter resposta:
+\begin{lstlisting}
+$ kubectl get pods -l app=web
+$ kubectl exec -it <nome-do-pod> -- sh -c "kill 1" || true
+\end{lstlisting}
+  Em alternativa, mais controlado, edite temporariamente o Deployment para apontar a \texttt{readinessProbe} para um caminho inexistente:
+\begin{lstlisting}
+$ kubectl patch deployment web --type=json \
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe/httpGet/path","value":"/nao-existe"}]'
+\end{lstlisting}
+
+  \item \textbf{Observar a reação do cluster:}
+\begin{lstlisting}
+$ kubectl get pods -l app=web
+$ kubectl get endpoints web-svc
+$ kubectl describe pod <nome-do-pod> | tail -20
+\end{lstlisting}
+  Repare na coluna \texttt{READY} (ex.\ \texttt{0/1}) e na diminuição do número de endpoints: os Pods que falham a readiness probe são retirados do balanceamento, mas \emph{não} são reiniciados.
+
+  \item \textbf{Confirmar que o serviço continua disponível} enquanto houver réplicas saudáveis, e depois reverter a alteração:
+\begin{lstlisting}
+$ kubectl patch deployment web --type=json \
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe/httpGet/path","value":"/"}]'
+$ kubectl get endpoints web-svc
+\end{lstlisting}
+
+  \item \textbf{Distinguir readiness de liveness.} Consulte a contagem de reinícios dos Pods:
+\begin{lstlisting}
+$ kubectl get pods -l app=web
+\end{lstlisting}
+  A coluna \texttt{RESTARTS} regista as ações da \emph{liveness} probe (que reinicia o contentor), não da \emph{readiness} (que apenas o retira do tráfego).
+
+\end{enumerate}
+
+\section{Parte 3 -- Escalar}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Escalamento manual (horizontal):}
+\begin{lstlisting}
+$ kubectl scale deployment web --replicas=6
+$ kubectl get pods -o wide
+$ kubectl get endpoints web-svc
+\end{lstlisting}
+  Repita a contagem de distribuição da Parte 1 e compare com o resultado obtido com 3 réplicas.
+
+  \item \textbf{Instalar o metrics-server}, necessário para o auto-scaling:
+\begin{lstlisting}
+$ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+\end{lstlisting}
+  Num cluster de laboratório com certificados autoassinados, é normalmente necessário permitir TLS inseguro:
+\begin{lstlisting}
+$ kubectl patch deployment metrics-server -n kube-system --type=json \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+\end{lstlisting}
+  Aguarde e confirme que as métricas ficam disponíveis:
+\begin{lstlisting}
+$ kubectl top nodes
+$ kubectl top pods
+\end{lstlisting}
+
+  \item \textbf{Criar o Horizontal Pod Autoscaler:}
+\begin{lstlisting}
+$ kubectl scale deployment web --replicas=2
+$ kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=8
+$ kubectl get hpa
+\end{lstlisting}
+
+  \item \textbf{Gerar carga} para provocar o escalamento automático. Num terminal separado, lance um Pod que faça pedidos continuamente:
+\begin{lstlisting}
+$ kubectl run gerador-carga --rm -it --image=busybox:1.36 --restart=Never -- \
+    sh -c "while true; do wget -q -O- http://web-svc; done"
+\end{lstlisting}
+
+  \item \textbf{Observar o HPA a reagir}, noutro terminal:
+\begin{lstlisting}
+$ kubectl get hpa --watch
+\end{lstlisting}
+  Acompanhe a coluna de utilização de CPU e o número de réplicas. Registe quanto tempo demorou até serem criadas novas réplicas.
+
+  \item \textbf{Parar a carga} (\texttt{Ctrl+C} no gerador) e observar o \emph{scale-down}. Note que a redução é deliberadamente mais lenta do que o aumento, para evitar oscilações:
+\begin{lstlisting}
+$ kubectl get hpa --watch
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Parte 4 -- Rolling update sem downtime}
+\begin{enumerate}[label=\arabic*.,resume]
+
+  \item \textbf{Preparar a monitorização contínua.} Num terminal, faça pedidos ininterruptos ao serviço para detetar qualquer falha durante a atualização:
+\begin{lstlisting}
+$ while true; do \
+    curl -s -o /dev/null -w "%{http_code} " http://localhost:<nodeport>; \
+    sleep 0.3; \
+  done
+\end{lstlisting}
+
+  \item \textbf{Desencadear um rolling update} noutro terminal, alterando a imagem:
+\begin{lstlisting}
+$ kubectl set image deployment/web web=nginxdemos/hello:latest
+$ kubectl rollout status deployment/web
+\end{lstlisting}
+
+  \item \textbf{Observar a substituição gradual}, num terceiro terminal:
+\begin{lstlisting}
+$ kubectl get pods -l app=web --watch
+\end{lstlisting}
+  Repare que os Pods novos só recebem tráfego depois de passarem a readiness probe, e que os antigos só são removidos depois disso. Verifique no primeiro terminal se apareceu algum código diferente de \texttt{200}.
+
+  \item \textbf{Consultar o histórico e reverter:}
+\begin{lstlisting}
+$ kubectl rollout history deployment/web
+$ kubectl rollout undo deployment/web
+$ kubectl rollout status deployment/web
+\end{lstlisting}
+
+  \item \textbf{Teste final: falha de um nó com carga ativa.} Mantendo o \texttt{curl} contínuo a correr, pare a VM do worker a partir do Proxmox:
+\begin{lstlisting}
+$ qm stop <vmid-w1>
+\end{lstlisting}
+  Observe no terminal de monitorização se houve interrupção de serviço, e no cluster a redistribuição:
+\begin{lstlisting}
+$ kubectl get nodes
+$ kubectl get pods -o wide
+\end{lstlisting}
+  Volte a arrancar a VM no final:
+\begin{lstlisting}
+$ qm start <vmid-w1>
+\end{lstlisting}
+
+  \item \textbf{Limpeza:}
+\begin{lstlisting}
+$ kubectl delete hpa web
+$ kubectl delete -f app.yaml
+\end{lstlisting}
+
+\end{enumerate}
+
+\section{Entregável / Questões de Verificação}
+\begin{enumerate}[label=\alph*)]
+  \setlength\itemsep{0.2cm}
+  \item Submeta o \texttt{app.yaml} e a contagem de distribuição de pedidos (\texttt{sort | uniq -c}) obtida com 3 e com 6 réplicas.
+  \item Qual a diferença de comportamento entre a \emph{readiness probe} e a \emph{liveness probe}? Que evidência concreta observou que distingue as duas?
+  \item Quando um Pod deixou de passar a readiness probe, o que aconteceu ao número de \emph{endpoints} do Service? Que conceito da aula teórica isto ilustra?
+  \item Registe a evolução do HPA (utilização de CPU e número de réplicas) durante o teste de carga. Quanto tempo demorou a reagir? Trata-se de uma política reativa ou preditiva?
+  \item Porque é que o \emph{scale-down} é mais lento do que o \emph{scale-up}? Que problema esta assimetria evita?
+  \item Durante o rolling update, observou algum código HTTP diferente de 200? Explique, com base nas probes, porque é que o serviço se manteve disponível.
+  \item Ao parar a VM do worker com carga ativa, houve interrupção? Compare o comportamento observado com o que aconteceria se a aplicação fosse \emph{stateful} com sessões em memória.
+  \item Este serviço é \emph{stateless}. Que alterações seriam necessárias para escalar horizontalmente uma aplicação que guarda sessões de utilizador em memória?
+  \item O Service do Kubernetes faz balanceamento de camada 4 ou de camada 7? Justifique, e indique que recurso do Kubernetes usaria se precisasse de encaminhar por caminho de URL.
+\end{enumerate}
+
+\end{document}

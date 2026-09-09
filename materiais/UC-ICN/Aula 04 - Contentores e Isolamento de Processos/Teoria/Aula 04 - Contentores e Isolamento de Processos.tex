@@ -1,0 +1,298 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Contentores e Isolamento de Processos}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 04}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Contentores vs máquinas virtuais.
+    \item Primitivas Linux de isolamento: namespaces e cgroups.
+    \item Union filesystems e imagens em camadas.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Arquitetura Docker: daemon, CLI, containerd, runc.
+    \item Registries de imagens e versionamento por tags.
+    \item Redes e volumes em Docker.
+    \item Boas práticas e segurança de contentores.
+    \item Contentores de aplicação vs contentores de sistema.
+    \item OCI: portabilidade entre runtimes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Contentores vs Máquinas Virtuais}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Contentores partilham o kernel do sistema operativo do host, ao contrário das VMs, que virtualizam hardware e correm um kernel próprio.
+    \item Overhead muito menor: sem hipervisor completo nem sistema operativo convidado duplicado.
+    \item Arranque quase instantâneo, tipicamente em segundos (ou menos), em vez dos minutos típicos de uma VM.
+    \item Contrapartida: isolamento menos forte do que numa VM, já que dependem inteiramente das primitivas de isolamento do kernel do host.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Namespaces Linux \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Namespaces dão a cada processo uma visão isolada de um determinado recurso do sistema, criando a ilusão de máquina dedicada.
+    \item \textbf{PID}: árvore de processos própria, isolada da do host.
+    \item \textbf{NET}: pilha de rede própria (interfaces, rotas, portas).
+    \item \textbf{MNT}: sistema de ficheiros e pontos de montagem próprios.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Namespaces Linux \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{UTS}: hostname e domainname próprios.
+    \item \textbf{IPC}: mecanismos de comunicação entre processos isolados (semáforos, filas de mensagens).
+    \item \textbf{USER}: mapeamento de identificadores de utilizador e grupo, permitindo root dentro do contentor sem privilégios no host.
+    \item Um contentor Docker é, na prática, um processo Linux normal ao qual foram atribuídos vários destes namespaces.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Cgroups: Limitação de Recursos}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Enquanto os namespaces isolam o que um processo \emph{vê}, os cgroups (control groups) limitam o que um processo pode \emph{consumir}.
+    \item Limitação de CPU: quota e período de utilização atribuídos a um grupo de processos.
+    \item Limitação de memória: teto máximo, com possibilidade de terminar o processo (OOM kill) se for excedido.
+    \item Limitação de I/O: controlo de largura de banda de leitura/escrita em disco por grupo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Cgroups: Versões e Funcionamento}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Os cgroups são expostos pelo kernel através de um sistema de ficheiros virtual, tipicamente em \texttt{/sys/fs/cgroup}.
+    \item Escrever valores nesses ficheiros define os limites aplicados a um grupo de processos.
+    \item \textbf{cgroups v1}: hierarquias separadas e independentes para cada tipo de recurso (CPU, memória, I/O).
+    \item \textbf{cgroups v2}: hierarquia única e unificada, com um modelo de delegação mais coerente; é o modelo usado por omissão nas distribuições Linux recentes.
+    \item Sem cgroups, um único contentor descontrolado poderia consumir toda a memória ou CPU do host.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Isolamento Não é Segurança Absoluta}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Todos os contentores de um host partilham o mesmo kernel: uma vulnerabilidade no kernel é uma superfície de ataque comum.
+    \item \textbf{Capabilities}: o Linux divide os privilégios de root em capacidades individuais (ex.\ \texttt{CAP\_NET\_ADMIN}); um contentor deve receber apenas as estritamente necessárias.
+    \item \textbf{Seccomp}: filtra as chamadas de sistema (\textit{syscalls}) que um processo pode invocar, reduzindo a superfície exposta do kernel.
+    \item \textbf{AppArmor} e \textbf{SELinux}: mecanismos de controlo de acesso obrigatório, que restringem o que cada processo pode aceder.
+    \item Quando é exigido isolamento forte (ex.\ entre clientes diferentes), uma VM continua a ser mais segura do que um contentor.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Union Filesystems e Imagens em Camadas}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item OverlayFS combina múltiplos diretórios (camadas) numa única vista de sistema de ficheiros.
+    \item Uma imagem Docker é composta por várias camadas só de leitura, empilhadas umas sobre as outras.
+    \item Ao correr um contentor, é adicionada uma camada de escrita (writable layer) no topo, específica dessa instância.
+    \item Copy-on-write: alterações a ficheiros de camadas inferiores são copiadas para a camada de escrita antes de modificadas, preservando a imagem original.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura Docker \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Docker CLI}: interface de linha de comandos usada pelo utilizador.
+    \item \textbf{dockerd}: daemon que recebe os pedidos da CLI (ou da API) e gere imagens, redes e volumes.
+    \item \textbf{containerd}: runtime de alto nível, responsável pelo ciclo de vida dos contentores (criação, execução, paragem).
+    \item \textbf{runc}: runtime de baixo nível que efetivamente cria o contentor, aplicando namespaces e cgroups.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquitetura Docker \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um Dockerfile descreve, em passos declarativos, como construir uma imagem (imagem base, dependências, código, comando de arranque).
+    \item Cada instrução do Dockerfile gera, em regra, uma nova camada da imagem.
+    \item O comando \texttt{docker build} executa estes passos e produz a imagem final.
+    \item A imagem resultante pode depois ser instanciada em um ou mais contentores com \texttt{docker run}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Registries de Imagens}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um registry é um repositório de imagens Docker, de onde estas podem ser descarregadas (\texttt{pull}) ou para onde podem ser enviadas (\texttt{push}).
+    \item Docker Hub é o registry público de referência, com imagens oficiais e da comunidade.
+    \item Organizações usam também registries privados, para imagens internas ou proprietárias.
+    \item Versionamento por tags: identificam versões específicas de uma imagem (ex.: \texttt{nginx:1.25}, \texttt{minha-app:latest}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Redes em Docker}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{bridge}: rede virtual isolada no host, usada por omissão; os contentores comunicam entre si e saem para o exterior por NAT.
+    \item Numa rede bridge \emph{personalizada}, o Docker fornece resolução de nomes: um contentor alcança outro pelo seu nome.
+    \item \textbf{host}: o contentor usa diretamente a pilha de rede do host, sem isolamento de rede (sem namespace NET próprio).
+    \item \textbf{none}: sem qualquer interface de rede, para cargas de trabalho totalmente isoladas.
+    \item Publicação de portas (\texttt{-p 8080:80}) mapeia uma porta do host para uma porta do contentor.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Persistência: Volumes e Bind Mounts}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A camada de escrita de um contentor desaparece quando este é removido -- por omissão, os dados não persistem.
+    \item \textbf{Volumes}: geridos pelo Docker, guardados numa área própria do host; a forma recomendada de persistir dados.
+    \item \textbf{Bind mounts}: mapeiam um diretório concreto do host para dentro do contentor; úteis em desenvolvimento, mas dependentes da estrutura do host.
+    \item \textbf{tmpfs}: armazenamento apenas em memória, que nunca chega ao disco -- adequado a dados sensíveis ou temporários.
+    \item Separar dados do ciclo de vida do contentor é essencial para tratar contentores como recursos descartáveis.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Boas Práticas na Construção de Imagens}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Usar imagens base minimalistas (ex.\ Alpine, ou variantes \textit{slim}) para reduzir tamanho e superfície de ataque.
+    \item \textbf{Multi-stage builds}: compilar numa fase intermédia e copiar apenas o resultado final para a imagem entregue.
+    \item Ordenar as instruções do Dockerfile do menos ao mais volátil, para aproveitar a cache de camadas (ex.\ instalar dependências antes de copiar o código).
+    \item \texttt{.dockerignore}: evita enviar ficheiros desnecessários para o contexto de build.
+    \item Não incluir segredos (passwords, chaves) na imagem: ficam registados nas camadas e são recuperáveis.
+    \item Correr a aplicação com um utilizador sem privilégios, em vez de root.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Contentores de Aplicação vs de Sistema}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Contentor de aplicação} (Docker): corre tipicamente um único processo/serviço; é efémero e descartável.
+    \item Não tem um sistema de init completo; o ciclo de vida do contentor é o ciclo de vida desse processo.
+    \item \textbf{Contentor de sistema} (LXC, visto na Aula 03): comporta-se como uma máquina Linux completa, com \texttt{systemd} e múltiplos serviços.
+    \item Ambos usam as mesmas primitivas do kernel (namespaces e cgroups) -- a diferença está na forma de utilização, não na tecnologia de base.
+    \item Nos laboratórios desta UC usamos os dois: LXC no Proxmox para máquinas de sistema, Docker para empacotar aplicações.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{OCI: Open Container Initiative}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Iniciativa que define especificações abertas e neutras de fornecedor para formatos de contentores.
+    \item \textbf{image-spec}: define o formato de uma imagem de contentor, independente da ferramenta que a construiu.
+    \item \textbf{runtime-spec}: define como um runtime deve criar e executar um contentor a partir dessa imagem.
+    \item Garante portabilidade: a mesma imagem pode correr em diferentes runtimes compatíveis com OCI, como runc, crun ou gVisor.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Contentores partilham o kernel do host, oferecendo menor overhead e arranque quase instantâneo face a VMs.
+    \item Namespaces isolam o que um processo vê (PID, NET, MNT, UTS, IPC, USER); cgroups limitam o que consome (CPU, memória, I/O).
+    \item OverlayFS e imagens em camadas permitem reutilização eficiente de camadas comuns entre imagens.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Docker articula dockerd, containerd e runc para transformar um Dockerfile numa imagem e, depois, num contentor em execução.
+    \item Registries (como o Docker Hub) distribuem imagens versionadas por tags; redes bridge e volumes tratam de comunicação e persistência.
+    \item O isolamento de contentores não é absoluto: capabilities, seccomp e AppArmor/SELinux reforçam-no, mas uma VM continua a isolar melhor.
+    \item OCI garante portabilidade das imagens entre diferentes runtimes de contentores.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,275 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage[portuguese]{babel}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=BgCream}
+\setbeamercolor{normal text}{fg=TextEspresso}
+\setbeamercolor{structure}{fg=TextEspresso}
+
+\setbeamertemplate{itemize item}{\color{NudeTaupe}\textendash}
+\setbeamertemplate{itemize subitem}{\color{NudeTaupe}\(\circ\)}
+
+\setbeamerfont{title}{size=\huge, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+
+\setbeamertemplate{title page}{
+  \vspace*{1.5cm}
+  \begin{center}
+    \usebeamerfont{title}\textcolor{TextEspresso}{\inserttitle}\par
+    \vspace{0.35cm}
+    {\large\textcolor{NudeTaupe}{\insertsubtitle}}\par
+    \vspace{0.6cm}
+    {\color{NudeTaupe}\rule{2.5cm}{0.5pt}}\par
+    \vspace{0.8cm}
+    \usebeamerfont{author}\textcolor{TextEspresso}{\insertauthor}\par
+    \vspace{0.3cm}
+    \usebeamerfont{institute}\small\textcolor{NudeTaupe}{\insertinstitute \quad|\quad \insertdate}
+  \end{center}
+}
+
+\setbeamertemplate{frametitle}{
+  \vspace*{0.8cm}
+  \usebeamerfont{frametitle}\insertframetitle\par
+  \vspace*{-0.1cm}
+  {\color{NudeTaupe}\rule{1.5cm}{0.5pt}}
+  \vspace*{0.2cm}
+}
+
+\newenvironment{ideiachave}{
+  \vspace{0.5cm}
+  \begin{center}
+  \color{TextEspresso}
+  \itshape\Large
+}{
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\usepackage{csquotes}
+
+\title{Disponibilidade e Escalabilidade de Serviços}
+\subtitle{Infraestruturas de Computação na Nuvem, Aula 08}
+\author{Catarina Silva}
+\institute{ESTGA, Universidade de Aveiro}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Disponibilidade e escalabilidade como atributos de qualidade.
+    \item Escalabilidade vertical vs horizontal.
+    \item Serviços com e sem estado (\textit{stateless} vs \textit{stateful}).
+    \item Auto-scaling: métricas e políticas.
+    \item Balanceamento de carga: algoritmos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Load balancing de camada 4 vs camada 7.
+    \item Health checks e remoção automática de instâncias.
+    \item Estratégias de implantação sem downtime.
+    \item Caching e CDNs.
+    \item Limites da escalabilidade: a lei de Amdahl.
+    \item Escalabilidade e auto-scaling no Kubernetes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Disponibilidade e Escalabilidade como Atributos de Qualidade}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Retomando a Aula 02: SLAs definem compromissos de disponibilidade (ex.\ 99,9\%) associados a Tiers de datacenter.
+    \item Disponibilidade: capacidade de o serviço responder corretamente, mesmo com falhas parciais.
+    \item Escalabilidade: capacidade de o serviço acompanhar o crescimento da procura sem degradar o desempenho.
+    \item Ambos os atributos dependem de arquitetura, não apenas de hardware mais potente.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Escalabilidade Vertical vs Horizontal}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Scale-up (vertical)}: aumentar os recursos de uma única instância (mais CPU, mais RAM).
+    \item Limite físico e custo crescente; ponto único de falha mantém-se.
+    \item \textbf{Scale-out (horizontal)}: acrescentar mais instâncias a correr em paralelo.
+    \item Requer aplicações preparadas para correr em múltiplas instâncias (sem estado local crítico).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Serviços Sem Estado e Com Estado}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Stateless}: cada pedido é independente; qualquer instância pode responder a qualquer pedido.
+    \item É esta propriedade que torna a escalabilidade horizontal simples -- acrescentar instâncias não exige coordenação.
+    \item \textbf{Stateful}: a instância guarda estado relativo ao cliente (ex.\ sessão em memória), pelo que os pedidos seguintes têm de voltar à mesma.
+    \item Estratégia habitual: externalizar o estado para um armazenamento partilhado (base de dados, cache distribuída como Redis).
+    \item \textbf{Session affinity} (ou \emph{sticky sessions}): alternativa em que o balanceador envia sempre o mesmo cliente para a mesma instância -- mais simples, mas prejudica a distribuição de carga e a tolerância a falhas.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Auto-Scaling: Métricas}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Decisão de escalar (para cima ou para baixo) baseada em métricas monitorizadas continuamente.
+    \item Utilização de \textbf{CPU} e de memória das instâncias existentes.
+    \item \textbf{Latência} das respostas ao utilizador final.
+    \item Tamanho de \textbf{filas} de pedidos ou de mensagens pendentes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Auto-Scaling: Políticas Reativas vs Preditivas}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Reativas}: escalar quando uma métrica ultrapassa um limiar (ex.\ CPU $>$ 70\%).
+    \item Simples de implementar, mas reagem depois do problema já estar a acontecer.
+    \item \textbf{Preditivas}: antecipam a procura com base em padrões históricos (ex.\ hora de ponta diária).
+    \item Reduzem o atraso de arranque de novas instâncias, mas exigem modelos e histórico de dados.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Balanceamento de Carga: Algoritmos \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Um \textbf{load balancer} distribui pedidos por um conjunto de instâncias equivalentes.
+    \item \textbf{Round-robin}: distribui pedidos sequencialmente, um a um, por cada instância.
+    \item \textbf{Least connections}: envia o próximo pedido para a instância com menos ligações ativas.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Balanceamento de Carga: Algoritmos \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Hashing consistente}: usa uma função de hash (ex.\ sobre o IP do cliente) para mapear pedidos sempre à mesma instância.
+    \item Útil para manter afinidade de sessão sem necessitar de partilha de estado entre instâncias.
+    \item A escolha do algoritmo depende do padrão de carga e da necessidade (ou não) de afinidade.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Load Balancing: Camada 4 vs Camada 7}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Camada 4} (transporte, TCP/UDP): decide o encaminhamento com base em IP e porta, sem olhar ao conteúdo.
+    \item Mais rápido e simples, mas com pouca informação sobre a aplicação.
+    \item \textbf{Camada 7} (aplicação, HTTP): decide com base em conteúdo -- URL, cabeçalhos, cookies.
+    \item Permite routing mais inteligente (ex.\ por caminho do pedido), ao custo de mais processamento.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Health Checks}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O load balancer verifica periodicamente se cada instância está saudável (ex.\ pedido HTTP a \texttt{/health}).
+    \item Instâncias que falham os health checks são removidas automaticamente do conjunto de balanceamento.
+    \item Quando voltam a responder corretamente, são reintegradas sem intervenção manual.
+    \item Mecanismo essencial para disponibilidade: falhas parciais não afetam o utilizador final.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Estratégias de Implantação Sem Downtime}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Rolling update}: substituem-se as instâncias gradualmente, algumas de cada vez, mantendo o serviço disponível.
+    \item \textbf{Blue-green}: mantêm-se dois ambientes completos; o tráfego é comutado de uma vez do antigo para o novo, permitindo reverter depressa.
+    \item \textbf{Canary}: encaminha-se uma pequena fração do tráfego para a nova versão, aumentando-a progressivamente se não houver erros.
+    \item Todas dependem de health checks fiáveis para detetar problemas antes de afetarem todos os utilizadores.
+    \item O Kubernetes implementa o rolling update por omissão nos Deployments (Aula 05).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Caching e Redes de Distribuição de Conteúdo}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Escalar nem sempre significa acrescentar instâncias: evitar trabalho repetido é frequentemente mais eficaz.
+    \item \textbf{Cache} em memória (ex.\ Redis, Memcached): guarda resultados de operações dispendiosas, reduzindo a carga sobre a base de dados.
+    \item \textbf{CDN} (Content Delivery Network): replica conteúdo estático por servidores geograficamente distribuídos, próximos dos utilizadores.
+    \item Benefícios: menor latência para o utilizador e menor carga sobre a infraestrutura de origem.
+    \item Custo: gerir a \emph{invalidação} da cache -- garantir que conteúdo desatualizado não é servido indefinidamente.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Limites da Escalabilidade: a Lei de Amdahl}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Nem todos os sistemas escalam linearmente com o número de instâncias acrescentadas.
+    \item A \textbf{lei de Amdahl} estabelece que o ganho máximo é limitado pela fração do trabalho que \emph{não} pode ser paralelizada.
+    \item Se 10\% do trabalho for inerentemente sequencial, o ganho máximo teórico fica limitado a cerca de 10 vezes, por muitas instâncias que se acrescentem.
+    \item Em sistemas distribuídos, o gargalo é muitas vezes um recurso partilhado -- tipicamente a base de dados.
+    \item Implicação prática: acrescentar instâncias sem eliminar o estrangulamento comum traz retornos rapidamente decrescentes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Escalabilidade no Kubernetes}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Escalamento manual}: alterar o número de réplicas de um Deployment (\texttt{kubectl scale}), como fizemos na Aula 05.
+    \item \textbf{HPA} (Horizontal Pod Autoscaler): ajusta automaticamente o número de Pods com base em métricas como a utilização de CPU.
+    \item O HPA depende do \textbf{metrics-server} estar instalado no cluster para obter essas métricas.
+    \item \textbf{VPA} (Vertical Pod Autoscaler): ajusta os \emph{requests} e \emph{limits} de cada Pod, em vez do número de réplicas.
+    \item \textbf{Cluster Autoscaler}: acrescenta ou remove \emph{nós} ao cluster quando os existentes ficam sem capacidade.
+    \item O Service faz o papel de balanceador interno, distribuindo tráfego pelos Pods saudáveis.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Disponibilidade e escalabilidade são atributos de qualidade ligados a SLAs e Tiers.
+    \item Escalar verticalmente tem limites; escalar horizontalmente exige arquitetura adequada.
+    \item Auto-scaling usa métricas (CPU, latência, filas) e políticas reativas ou preditivas.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Balanceamento de carga distribui pedidos: round-robin, least connections, hashing consistente. Camada 4 é mais rápida; camada 7 decide pelo conteúdo.
+    \item Health checks garantem que só instâncias saudáveis recebem tráfego, e sustentam as estratégias de implantação sem downtime (rolling, blue-green, canary).
+    \item Caching e CDNs escalam evitando trabalho repetido; a lei de Amdahl lembra que há sempre um limite imposto pela parte não paralelizável.
+    \item No Kubernetes, o HPA automatiza o escalamento horizontal e o Service faz o balanceamento interno.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \vspace*{3cm}
+  \begin{center}
+    \Huge\bfseries\textcolor{TextEspresso}{Obrigada.}\par
+    \vspace{0.5cm}
+    {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
+    \vspace{0.5cm}
+    \Large\textcolor{TextEspresso}{\itshape Questões e comentários}
+  \end{center}
+\end{frame}
+
+\end{document}
