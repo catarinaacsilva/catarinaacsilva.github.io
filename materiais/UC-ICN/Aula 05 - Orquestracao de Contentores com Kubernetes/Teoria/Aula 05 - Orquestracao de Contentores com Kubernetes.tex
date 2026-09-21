@@ -86,6 +86,7 @@
     \item O ciclo de reconciliação e o modelo declarativo.
     \item Tipos de Service e o modelo de rede do Kubernetes.
     \item Configuração, segredos e armazenamento persistente.
+    \item Cargas de trabalho não contínuas: Job e CronJob.
     \item Agendamento: requests, limits e afinidade.
     \item Alternativas de orquestração: Swarm e Nomad.
 \end{itemize}
@@ -125,6 +126,16 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Arquitetura do Cluster}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-arquitetura.png}
+\end{center}
+\vfill
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Objetos Principais do Kubernetes \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -143,6 +154,16 @@
     \item \textbf{Namespace}: divisão lógica do cluster, útil para isolar ambientes ou equipas dentro do mesmo cluster físico.
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{Do Manifesto ao Pod em Execução}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-objetos.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Ciclo de Vida de um Pod e Self-Healing}
@@ -177,6 +198,16 @@
     \item Este modelo, e não uma sequência de comandos, é o que dá ao Kubernetes a capacidade de self-healing.
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{O Ciclo, Visualmente}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-reconciliacao.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Tipos de Service}
@@ -229,6 +260,17 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Cargas de Trabalho Não Contínuas: Job e CronJob}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Nem toda a carga de trabalho é um serviço permanente: um \textbf{Job} corre um Pod até este terminar com sucesso, em vez de o manter continuamente ativo.
+    \item O Kubernetes garante que o Job é concluído mesmo que um Pod falhe a meio -- recria-o e tenta de novo, respeitando um número máximo de tentativas.
+    \item Útil para tarefas pontuais: migrações de base de dados, processamento em lote, geração de relatórios.
+    \item \textbf{CronJob}: agenda Jobs para correr periodicamente, com uma sintaxe semelhante ao \texttt{cron} do Unix (ex.: backups noturnos).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
 \frametitle{Agendamento: Requests e Limits}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -267,7 +309,7 @@
     \setlength\itemsep{0.4cm}
     \item O ciclo de reconciliação contínua entre estado desejado e observado é o que dá ao Kubernetes a capacidade de self-healing.
     \item Services (ClusterIP, NodePort, LoadBalancer) e o modelo de rede plana via CNI expõem e interligam Pods efémeros.
-    \item ConfigMaps, Secrets e PersistentVolumes separam configuração e dados do ciclo de vida dos Pods.
+    \item ConfigMaps, Secrets e PersistentVolumes separam configuração e dados do ciclo de vida dos Pods; Jobs e CronJobs cobrem cargas de trabalho pontuais ou periódicas.
     \item Requests e limits guiam o agendamento e aplicam-se através dos cgroups vistos na Aula 04.
 \end{itemize}
 \end{frame}

@@ -5,6 +5,7 @@
 \usepackage[portuguese]{babel}
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \definecolor{TextEspresso}{HTML}{4A4238}
 \definecolor{NudeTaupe}{HTML}{BFAFA6}
 \definecolor{SoftBlush}{HTML}{D9C5B2}
@@ -134,10 +135,14 @@ $ snmpget -v2c -c icnturma IP_da_VM 1.3.6.1.2.1.2.2.1.10.2
 \end{lstlisting}
   O OID \texttt{ifInOctets} é do tipo \texttt{Counter32}: só cresce. Registe os dois valores e calcule a diferença dividida pelo intervalo -- obtém assim o débito médio em bytes por segundo. Este é exatamente o cálculo que qualquer sistema de monitorização faz internamente.
 
-  Compare com um valor do tipo \texttt{Gauge}, que sobe e desce livremente:
+  Compare agora com um valor do tipo \texttt{Gauge32}, que sobe e desce livremente.
+  O OID \texttt{tcpCurrEstab} indica quantas ligações TCP estão estabelecidas neste momento:
 \begin{lstlisting}
-$ snmpwalk -v2c -c icnturma IP_da_VM 1.3.6.1.2.1.25.2.3.1
+$ snmpget -v2c -c icnturma IP_da_VM 1.3.6.1.2.1.6.9.0
+$ sleep 5
+$ snmpget -v2c -c icnturma IP_da_VM 1.3.6.1.2.1.6.9.0
 \end{lstlisting}
+  Aqui o valor absoluto \emph{é} informativo, e pode diminuir entre leituras -- ao contrário do contador anterior.
 
   \item \textbf{Configurar o recetor de traps.} Na máquina manager, instale e configure um recetor de traps simples:
 \begin{lstlisting}

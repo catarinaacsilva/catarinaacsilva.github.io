@@ -10,6 +10,14 @@
 ## Prática / laboratório
 - Guiao 13 - WBEM com SFCB e Revisao do Semestre.tex
 
+## Manual técnico
+- Manual 13 - WBEM com SFCB e Revisao.tex
+
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a13-mib-vs-cim
+- a13-paradigmas
+
 ## Notas para o docente
 Última aula do semestre. Retomar explicitamente o SNMP da Aula 12 para justificar a motivação do CIM (modelo orientado a objetos vs árvore plana de OIDs).
 

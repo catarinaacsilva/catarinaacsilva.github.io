@@ -74,7 +74,7 @@
     \setlength\itemsep{0.4cm}
     \item Contentores vs máquinas virtuais.
     \item Primitivas Linux de isolamento: namespaces e cgroups.
-    \item Union filesystems e imagens em camadas.
+    \item Union filesystems, imagens em camadas e as suas limitações.
 \end{itemize}
 \end{frame}
 
@@ -87,7 +87,7 @@
     \item Redes e volumes em Docker.
     \item Boas práticas e segurança de contentores.
     \item Contentores de aplicação vs contentores de sistema.
-    \item OCI: portabilidade entre runtimes.
+    \item OCI e a convergência com máquinas virtuais leves.
 \end{itemize}
 \end{frame}
 
@@ -148,6 +148,16 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Namespaces Isolam, Cgroups Limitam}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a04-namespaces-cgroups.png}
+\end{center}
+\vfill
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Isolamento Não é Segurança Absoluta}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -167,6 +177,18 @@
     \item Uma imagem Docker é composta por várias camadas só de leitura, empilhadas umas sobre as outras.
     \item Ao correr um contentor, é adicionada uma camada de escrita (writable layer) no topo, específica dessa instância.
     \item Copy-on-write: alterações a ficheiros de camadas inferiores são copiadas para a camada de escrita antes de modificadas, preservando a imagem original.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{OverlayFS na Prática: Limitações}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item No host, cada contentor corresponde a um diretório em \texttt{/var/lib/docker/overlay2/<ID>/}: \texttt{merged} (a vista final, dentro do contentor) e \texttt{diff} (só as alterações dessa camada).
+    \item OverlayFS não suporta todas as operações POSIX -- é uma união de diretórios, não um sistema de ficheiros completo.
+    \item Abrir um ficheiro para escrita depois de já estar aberto para leitura obriga a copiá-lo primeiro para a camada de escrita: os dois descritores deixam de apontar para o mesmo ficheiro.
+    \item \texttt{rename} não é suportado diretamente: a aplicação tem de copiar e depois apagar o original, o que é mais lento e ocupa mais espaço.
+    \item Consequência prática: aplicações com padrões de I/O intensivos beneficiam de um volume (fora do overlay) em vez da camada de escrita.
 \end{itemize}
 \end{frame}
 
@@ -264,12 +286,23 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Contentores como Máquinas Virtuais Leves}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A fronteira entre contentor e VM (Aula 03) está a esbater-se: se o runtime e o formato de imagem seguem OCI, a implementação por baixo deixa de ser relevante para quem usa o contentor.
+    \item \textbf{Kata Containers}: implementa a mesma interface OCI, mas cada "contentor" corre dentro de uma micro-VM leve (com o seu próprio kernel), combinando a portabilidade de Docker com o isolamento de hardware de uma VM.
+    \item \textbf{gVisor}: outra abordagem híbrida -- intercepta as \textit{syscalls} do contentor num kernel de utilizador, sem chegar a expor o kernel real do host.
+    \item Motivação: cargas multi-tenant (ex.\ funções de clientes diferentes no mesmo host) em que o isolamento fraco de um contentor tradicional é insuficiente.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Contentores partilham o kernel do host, oferecendo menor overhead e arranque quase instantâneo face a VMs.
     \item Namespaces isolam o que um processo vê (PID, NET, MNT, UTS, IPC, USER); cgroups limitam o que consome (CPU, memória, I/O).
-    \item OverlayFS e imagens em camadas permitem reutilização eficiente de camadas comuns entre imagens.
+    \item OverlayFS e imagens em camadas permitem reutilização eficiente de camadas comuns entre imagens, à custa de limitações POSIX (escrita concorrente, rename) que justificam o uso de volumes para I/O intensivo.
 \end{itemize}
 \end{frame}
 
@@ -279,7 +312,7 @@
     \setlength\itemsep{0.4cm}
     \item Docker articula dockerd, containerd e runc para transformar um Dockerfile numa imagem e, depois, num contentor em execução.
     \item Registries (como o Docker Hub) distribuem imagens versionadas por tags; redes bridge e volumes tratam de comunicação e persistência.
-    \item O isolamento de contentores não é absoluto: capabilities, seccomp e AppArmor/SELinux reforçam-no, mas uma VM continua a isolar melhor.
+    \item O isolamento de contentores não é absoluto: capabilities, seccomp e AppArmor/SELinux reforçam-no, mas uma VM continua a isolar melhor -- por isso soluções como Kata Containers e gVisor aproximam as duas abordagens.
     \item OCI garante portabilidade das imagens entre diferentes runtimes de contentores.
 \end{itemize}
 \end{frame}

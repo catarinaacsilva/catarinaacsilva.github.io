@@ -10,6 +10,15 @@
 ## Prática / laboratório
 - Guiao 12 - Monitorizacao com Net-SNMP.tex
 
+## Manual técnico
+- Manual 12 - Monitorizacao com Net-SNMP.tex
+
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a12-arquitetura-snmp
+- a12-arvore-mib
+- m12-duas-vms
+
 ## Notas para o docente
 Esta é a primeira das duas aulas do bloco C6; vale a pena relembrar brevemente a escala de infraestruturas de cloud vista no início do semestre (C1) para justificar a necessidade de gestão centralizada.
 

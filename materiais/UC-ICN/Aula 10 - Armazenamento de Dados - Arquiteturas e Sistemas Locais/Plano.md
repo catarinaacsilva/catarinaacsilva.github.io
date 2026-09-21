@@ -10,6 +10,14 @@
 ## Prática / laboratório
 - Guiao 10 - Armazenamento Local com LVM e RAID.tex
 
+## Manual técnico
+- Manual 10 - Armazenamento Local com LVM e RAID.tex
+
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a10-niveis-raid
+- a10-pilha-armazenamento
+
 ## Notas para o docente
 Dar ênfase à distinção entre as três abstrações de armazenamento (bloco, ficheiro, objeto), pois será usada nas duas aulas seguintes.
 

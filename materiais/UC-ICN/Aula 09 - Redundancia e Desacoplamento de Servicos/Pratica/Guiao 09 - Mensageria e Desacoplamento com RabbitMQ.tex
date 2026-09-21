@@ -5,6 +5,7 @@
 \usepackage[portuguese]{babel}
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \definecolor{TextEspresso}{HTML}{4A4238}
 \definecolor{NudeTaupe}{HTML}{BFAFA6}
 \definecolor{SoftBlush}{HTML}{D9C5B2}
@@ -50,7 +51,7 @@
 
 \section{Pré-requisitos e Material}
 \begin{itemize}[itemsep=0.2cm]
-  \item O cluster Kubernetes de dois nós (Guião 05), com \texttt{kubectl} configurado.
+  \item O cluster Kubernetes de dois nós (Guião 05), com \texttt{kubectl} configurado e o \emph{taint} do control plane removido (necessário para o exercício de anti-affinity).
   \item Acesso ao Proxmox, para o teste final de falha de nó.
   \item Conhecimentos de Deployment, Service e escalamento das Aulas 05 e 08.
 \end{itemize}
@@ -228,16 +229,19 @@ spec:
           command: ["sh", "-c"]
           args:
             - "pip install --no-cache-dir pika && python /code/worker.py"
-          envFrom:
-            - secretRef:
-                name: rabbitmq-cred
           env:
-            - name: RABBIT_USER
-              value: "aluno"
-            - name: RABBIT_PASS
-              value: "aulaicn2026"
             - name: RABBIT_HOST
               value: "rabbitmq"
+            - name: RABBIT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-cred
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBIT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-cred
+                  key: RABBITMQ_DEFAULT_PASS
           volumeMounts:
             - name: code
               mountPath: /code
@@ -250,6 +254,7 @@ spec:
 $ kubectl apply -f worker.yaml
 $ kubectl get pods -l app=worker
 \end{lstlisting}
+  Repare que as credenciais \textbf{não} aparecem em texto simples neste manifesto: são lidas do Secret com \texttt{secretKeyRef}. Isto permite versionar o \texttt{worker.yaml} num repositório sem expor a password -- ao contrário do que aconteceria se a escrevesse em \texttt{value:}.
 
   \item \textbf{Acompanhar os logs dos workers} num terminal:
 \begin{lstlisting}
@@ -378,7 +383,8 @@ $ kubectl exec deployment/rabbitmq -- rabbitmqctl list_queues name messages
 $ kubectl get pods -l app=worker -o wide
 \end{lstlisting}
 
-  \item \textbf{Forçar a distribuição por nós diferentes} com anti-affinity. Acrescente ao \texttt{spec.template.spec} do \texttt{worker.yaml}:
+  \item \textbf{Forçar a distribuição por nós diferentes} com anti-affinity.
+  Acrescente o bloco seguinte ao \texttt{spec.template.spec} do \texttt{worker.yaml}:
 \begin{lstlisting}
       affinity:
         podAntiAffinity:
@@ -421,7 +427,13 @@ $ kubectl delete -f rabbitmq.yaml
 \section{Entregável / Questões de Verificação}
 \begin{enumerate}[label=\alph*)]
   \setlength\itemsep{0.2cm}
-  \item Submeta os ficheiros \texttt{rabbitmq.yaml}, \texttt{worker.yaml}, \texttt{send\_task.py}, \texttt{worker.py}, \texttt{publish\_event.py} e \texttt{subscribe\_event.py}, e uma captura da interface de gestão com mensagens acumuladas na fila.
+  \item Submeta os seguintes ficheiros:
+\begin{lstlisting}
+rabbitmq.yaml       worker.yaml
+send_task.py        worker.py
+publish_event.py    subscribe_event.py
+\end{lstlisting}
+  Junte uma captura da interface de gestão a mostrar mensagens acumuladas na fila.
   \item Qual a diferença de comportamento entre a work queue (Parte 2) e o publish/subscribe (Parte 3) quando existem múltiplos consumers? Explique com base no exchange usado em cada caso.
   \item Descreva o que aconteceu ao producer quando reduziu os workers a zero. Que propriedade da arquitetura permite este comportamento?
   \item Se o desacoplamento via fila não existisse e o producer chamasse o consumer diretamente (comunicação síncrona), o que aconteceria ao producer com o consumer indisponível?

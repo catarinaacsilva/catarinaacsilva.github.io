@@ -5,6 +5,7 @@
 \usepackage[portuguese]{babel}
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \definecolor{TextEspresso}{HTML}{4A4238}
 \definecolor{NudeTaupe}{HTML}{BFAFA6}
 \definecolor{SoftBlush}{HTML}{D9C5B2}
@@ -52,7 +53,9 @@
 \section{Pré-requisitos e Material}
 \begin{itemize}
     \setlength\itemsep{0.2cm}
-    \item Duas VMs Linux no Proxmox: uma para servidor (\texttt{servidor}) e outra para cliente (\texttt{cliente}), na mesma rede. Pode reutilizar VMs de aulas anteriores.
+    \item Duas VMs Linux no Proxmox, na mesma rede: uma no papel de servidor
+    (\texttt{servidor}) e outra no de cliente (\texttt{cliente}). Pode reutilizar VMs
+    de aulas anteriores.
     \item Acesso à interface web do Proxmox, para a Parte A.
     \item Docker instalado na VM onde se vai correr o MinIO (pode ser a mesma VM servidor).
     \item Acesso com privilégios de administração (\texttt{sudo}) em ambas as VMs.
@@ -294,7 +297,9 @@ $ kubectl delete -f nfs-pv.yaml
     \item Que vantagem tem o MinIO/S3 sobre o NFS quando se trata de armazenar milhões de ficheiros pequenos e não estruturados?
     \item O acesso ao MinIO foi feito através de que tipo de API? Compare com o modelo de acesso usado no NFS e no iSCSI.
     \item Se o disco de uma VM estiver num storage local do Proxmox, o que é necessário para a migrar para outro nó? E se estiver num storage partilhado? Relacione com a migração ao vivo (Aula 03).
-    \item (Se fez a Parte E) Porque é que o PersistentVolume NFS pôde ser declarado com \texttt{ReadWriteMany}? Que modo de acesso teria de usar se o volume fosse iSCSI, e porquê?
+    \item (Se fez a Parte E) O volume NFS foi declarado com o modo de acesso
+    \texttt{ReadWriteMany}. Porque é que isso foi possível? Que modo teria de usar
+    se o volume fosse iSCSI, e porquê?
     \item Indique, para cada um dos três mecanismos usados (NFS, iSCSI, MinIO), um cenário real de utilização em ambiente de cloud.
 \end{enumerate}
 

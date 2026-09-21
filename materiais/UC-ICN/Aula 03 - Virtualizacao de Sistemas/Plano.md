@@ -7,14 +7,15 @@
 ## Teoria
 - Aula 03 - Virtualizacao de Sistemas.tex
 
-## Prática / laboratório
-- Guiao 03 - Virtualizacao com KVM e LXC no Proxmox.tex
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a03-hypervisors
+- a03-vm-vs-contentor
+- m03-tres-kernels
 
 ## Notas para o docente
-Esta aula assume o ambiente Proxmox preparado no Guião 01. O guião prático foi redesenhado para usar exclusivamente o servidor central (`qm` para KVM, `pct` para LXC), em vez de VirtualBox no portátil de cada aluno.
+Aula expositiva, sem componente laboratorial. O diagrama `m03-tres-kernels` (node Proxmox, VM KVM, contentor LXC) é o recurso central para tornar concreta, só com slides, a diferença entre virtualização completa e virtualização ao nível do SO — vale a pena parar nele e não o passar depressa.
 
-Ponto pedagógico central do laboratório: a comparação das **três versões de kernel** (node Proxmox, VM KVM, contentor LXC). É o momento em que a diferença entre virtualização completa e virtualização ao nível do SO deixa de ser abstrata — reservar tempo para que todos cheguem lá com calma.
+Ponto que costuma gerar confusão: o "problema do x86" (instruções sensíveis não privilegiadas) e porque é que isso obrigou a três soluções diferentes (tradução binária, paravirtualização, assistência de hardware) em vez de uma só. Ligar sempre estas técnicas a um exemplo de VMM concreto (VMware, Xen, KVM) para não ficar abstrato.
 
-Antes da aula, confirmar: (a) se os alunos têm acesso à shell do node ou se a componente CLI terá de ser demonstrada pela docente com os alunos a usar a interface web; (b) o nome do storage disponível (`pvesm status`) e o template LXC já descarregado (`pveam list`), pois o download é demorado e deve estar feito à partida; (c) um valor de referência de `sysbench` medido no node, para o caso de os alunos não terem acesso direto.
-
-Atenção à capacidade do servidor partilhado: com uma turma inteira a criar VMs e contentores em simultâneo, insistir no passo de limpeza no final da aula. Liga-se à Aula 04, que aprofunda as primitivas de kernel (namespaces e cgroups) que tornam o LXC visto hoje possível.
+Liga-se à Aula 04, que aprofunda as primitivas de kernel (namespaces e cgroups) que tornam o LXC aqui apresentado possível.

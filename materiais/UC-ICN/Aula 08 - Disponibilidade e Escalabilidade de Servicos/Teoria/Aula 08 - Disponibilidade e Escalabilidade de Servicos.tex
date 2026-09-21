@@ -84,7 +84,8 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Load balancing de camada 4 vs camada 7.
+    \item Load balancing de camada 4 vs camada 7, e como se combinam à escala.
+    \item Balanceamento global: DNS e edge locations.
     \item Health checks e remoção automática de instâncias.
     \item Estratégias de implantação sem downtime.
     \item Caching e CDNs.
@@ -114,6 +115,16 @@
     \item Requer aplicações preparadas para correr em múltiplas instâncias (sem estado local crítico).
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{Crescer para Cima ou para o Lado}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a08-scale.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Serviços Sem Estado e Com Estado}
@@ -181,6 +192,29 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Balanceamento em Camadas: um Caso Real}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item À escala, camada 4 e camada 7 não são alternativas -- combinam-se em cascata. Exemplo documentado publicamente pela Facebook (Engineering, 2015):
+    \item Um único servidor aplicacional satura depressa $\rightarrow$ acrescenta-se um balanceador \textbf{L7} (decide por conteúdo, ex.\ proxygen) à frente de várias instâncias.
+    \item O L7LB também satura $\rightarrow$ acrescenta-se um balanceador \textbf{L4} (ex.\ IPVS) à frente de vários L7LBs, distribuído por \textbf{ECMP} (Equal-Cost Multi-Path) ao nível do router.
+    \item O mesmo padrão repete-se: dezenas de servidores por cluster, dezenas de clusters por datacenter, múltiplos datacenters -- cada nível resolve um gargalo do nível anterior, não o problema todo de uma vez.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Balanceamento Global: DNS e Edge Locations}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Antes de qualquer balanceador L4/L7 ser contactado, o cliente resolve um nome DNS -- esse é o primeiro (e mais grosseiro) nível de balanceamento.
+    \item \textbf{DNS geográfico/por latência}: o servidor DNS responde com o IP do \textit{edge} ou datacenter mais próximo do cliente, não sempre o mesmo IP para todos.
+    \item ``Mais próximo'' não é só distância geográfica: sistemas como o Cartographer (Facebook) medem latência real entre resolvers de ISPs e cada \textit{edge}, porque a rota mais curta no mapa nem sempre é a mais rápida.
+    \item Impacto concreto: um pedido HTTPS Seul-Oregon direto pode demorar $\sim$600\,ms só no \textit{handshake}; passando por um edge em Tóquio mais próximo, cai para $\sim$240\,ms -- o mesmo raciocínio das Regiões e Zonas de Disponibilidade da Aula 02.
+    \item Este nível global é o que torna as CDNs (adiante) eficazes: aproxima o ponto de entrada do utilizador antes de qualquer balanceamento interno acontecer.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
 \frametitle{Health Checks}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -190,6 +224,16 @@
     \item Mecanismo essencial para disponibilidade: falhas parciais não afetam o utilizador final.
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{Readiness vs Liveness}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a08-health-checks.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Estratégias de Implantação Sem Downtime}
@@ -202,6 +246,16 @@
     \item O Kubernetes implementa o rolling update por omissão nos Deployments (Aula 05).
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{Rolling Update, Passo a Passo}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a08-rolling-update.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Caching e Redes de Distribuição de Conteúdo}
@@ -254,7 +308,8 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Balanceamento de carga distribui pedidos: round-robin, least connections, hashing consistente. Camada 4 é mais rápida; camada 7 decide pelo conteúdo.
+    \item Balanceamento de carga distribui pedidos: round-robin, least connections, hashing consistente. Camada 4 é mais rápida; camada 7 decide pelo conteúdo -- e, à escala, combinam-se em cascata (L4 à frente de L7).
+    \item O primeiro nível de balanceamento é o DNS: resolve o cliente para o datacenter/edge mais próximo em latência real, não apenas em distância no mapa.
     \item Health checks garantem que só instâncias saudáveis recebem tráfego, e sustentam as estratégias de implantação sem downtime (rolling, blue-green, canary).
     \item Caching e CDNs escalam evitando trabalho repetido; a lei de Amdahl lembra que há sempre um limite imposto pela parte não paralelizável.
     \item No Kubernetes, o HPA automatiza o escalamento horizontal e o Service faz o balanceamento interno.

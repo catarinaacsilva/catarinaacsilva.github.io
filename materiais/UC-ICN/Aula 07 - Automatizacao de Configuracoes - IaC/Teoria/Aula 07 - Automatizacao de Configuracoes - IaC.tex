@@ -72,6 +72,7 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
+    \item DevOps: a tensão entre desenvolvimento e operações.
     \item Motivação: dos scripts manuais à automatização.
     \item Infrastructure as Code (IaC).
     \item Declarativo vs imperativo; idempotência.
@@ -90,6 +91,17 @@
     \item Infraestrutura mutável vs imutável.
     \item Gestão de segredos.
     \item CI/CD e GitOps aplicados a infraestrutura.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{DevOps: a Tensão Entre Desenvolvimento e Operações}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Historicamente, as equipas de \textbf{Dev} (criar e evoluir software) e \textbf{Ops} (manter a infraestrutura estável) têm objetivos em tensão: uma quer mudar depressa, a outra quer que nada quebre.
+    \item Sintoma clássico: ``funciona na minha máquina'' (Dev) contra ``não é o servidor, é o teu código'' (Ops) -- cada equipa desconfia da outra.
+    \item Resposta tradicional (burocracia, processos rígidos, aprovações manuais) tende a piorar o problema: mais lentidão, sem mais qualidade.
+    \item \textbf{DevOps}: cultura e conjunto de práticas que aproxima as duas equipas, apoiada em infraestrutura flexível, versionamento, integração contínua e automatização -- o tema desta aula.
 \end{itemize}
 \end{frame}
 
@@ -208,6 +220,17 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Ansible vs Puppet vs Chef: Prós e Contras}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Ansible}: curva de aprendizagem suave (YAML, sem DSL própria), sem agentes -- mas menos expressivo que uma linguagem completa e mais lento em parques muito grandes.
+    \item \textbf{Puppet}: comunidade madura, interface web completa, mas a linguagem declarativa própria tem uma curva de aprendizagem mais acentuada e o modelo baseado em dependências pode complicar-se em projetos grandes.
+    \item \textbf{Chef}: máximo controlo e flexibilidade (as ``recipes'' são código Ruby real), mas exige saber Ruby e tende a gerar bases de código mais complexas.
+    \item Não há uma escolha universalmente certa: a decisão pesa simplicidade operacional, dimensão do parque e o perfil técnico da equipa.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
 \frametitle{Terraform e Provisionamento Declarativo}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -230,6 +253,16 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{As Duas Camadas, Lado a Lado}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a07-provisionamento-config.png}
+\end{center}
+\vfill
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Terraform: o Ficheiro de Estado}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -240,6 +273,16 @@
     \item \textbf{Drift}: alterações feitas manualmente fora do Terraform passam a divergir do estado registado, e serão revertidas na aplicação seguinte.
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{O Ciclo Plan / Apply}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a07-plan-apply.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Infraestrutura Mutável vs Imutável}
@@ -292,9 +335,10 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
+    \item DevOps nasce da tensão entre Dev (mudar depressa) e Ops (manter estável); automatização é a resposta prática a essa tensão.
     \item Configuração manual leva a drift, erros e falta de reprodutibilidade.
     \item IaC trata a infraestrutura como código: versionado, idempotente, repetível.
-    \item Ansible (agentless, SSH, YAML) vs Puppet/Chef (agent-based).
+    \item Ansible (agentless, SSH, YAML) vs Puppet/Chef (agent-based) -- cada um com o seu compromisso entre simplicidade e controlo.
 \end{itemize}
 \end{frame}
 

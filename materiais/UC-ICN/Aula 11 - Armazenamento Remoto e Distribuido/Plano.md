@@ -10,6 +10,15 @@
 ## Prática / laboratório
 - Guiao 11 - NFS, iSCSI e Object Storage com MinIO.tex
 
+## Manual técnico
+- Manual 11 - NFS iSCSI e Object Storage.tex
+
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a11-cap-pacelc
+- a11-nas-vs-san
+- m11-concorrencia
+
 ## Notas para o docente
 Esta aula assenta diretamente nos conceitos de armazenamento local da Aula 10, pelo que vale a pena começar com uma revisão rápida de block vs. file vs. object storage antes de introduzir NAS/SAN.
 

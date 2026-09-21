@@ -77,6 +77,7 @@
     \item Hypervisors tipo 1 vs tipo 2.
     \item Estratégias de virtualização de CPU.
     \item Os anéis de privilégio e o problema do x86.
+    \item Trap-and-emulate: como o hypervisor intervém.
 \end{itemize}
 \end{frame}
 
@@ -85,6 +86,8 @@
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Virtualização de memória, rede e armazenamento.
+    \item Memory overcommit: KSM e ballooning.
+    \item Virtualização de I/O: emulação, passthrough e SR-IOV.
     \item Formatos de disco virtual e thin provisioning.
     \item Snapshots e clones.
     \item Migração ao vivo e overhead de virtualização.
@@ -127,6 +130,16 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{As Duas Arquiteturas de Hypervisor}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a03-hypervisors.png}
+\end{center}
+\vfill
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Estratégias de Virtualização de CPU}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -150,6 +163,17 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Trap-and-Emulate: Como o Hypervisor Intervém}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Popek e Goldberg classificam as instruções em três tipos: \textbf{seguras} (sem impacto global, executam livremente), \textbf{sensíveis} (acedem a hardware ou tabelas de páginas) e \textbf{privilegiadas} (geram uma exceção -- \textit{trap} -- se executadas em modo utilizador).
+    \item O código convidado corre como uma aplicação normal; quando emite uma instrução sensível, o processador gera um \textit{trap} e devolve o controlo ao hypervisor.
+    \item O hypervisor apanha o \textit{trap}, emula o efeito da instrução (por exemplo, uma escrita em disco vira uma escrita num ficheiro) e devolve o controlo ao convidado, que não nota a interrupção.
+    \item Este mecanismo aplica-se a múltiplos subsistemas: CPU e registos, unidade de gestão de memória (tabelas de páginas), controlador de interrupções e temporizadores, e dispositivos periféricos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
 \frametitle{Virtualização de Memória e Rede \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -166,6 +190,17 @@
     \item Virtualização de rede: um \textbf{vSwitch} (switch virtual) interliga as interfaces de rede virtuais das VMs entre si e com a rede física.
     \item Permite criar redes isoladas, VLANs virtuais e políticas de tráfego sem alterar o cablagem física.
     \item Virtualização de armazenamento: discos virtuais (ficheiros) que abstraem o armazenamento físico subjacente, permitindo snapshots e migração.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Memory Overcommit: KSM e Ballooning}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Num servidor partilhado por várias VMs, atribuir a cada uma a memória máxima "no papel" desperdiça RAM real -- a maior parte de um SO fica em cache e buffers raramente usados.
+    \item \textbf{KSM} (Kernel Samepage Merging): o hypervisor deteta páginas de memória idênticas entre VMs semelhantes (o mesmo binário, as mesmas bibliotecas) e funde-as numa só página física, com \textit{copy-on-write} caso uma VM a modifique.
+    \item \textbf{Ballooning}: um driver dentro do convidado "infla" um balão, reclamando memória que o SO convidado liberta (via \textit{page cache}); o hypervisor reatribui essa memória a outras VMs sem que o convidado perceba que foi retirada.
+    \item Ambos os mecanismos permitem \textit{overcommit} de memória com segurança, mas dependem de suporte explícito na plataforma -- no Proxmox, são opções configuráveis por VM.
 \end{itemize}
 \end{frame}
 
@@ -194,12 +229,24 @@
 \end{frame}
 
 \begin{frame}
-\frametitle{Migração ao Vivo (Live Migration)}
+\frametitle{Migração ao Vivo \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Permite mover uma VM em execução de um host físico para outro, sem interrupção percetível do serviço.
-    \item O estado da memória é copiado de forma incremental para o host de destino, enquanto a VM continua ativa na origem.
+    \item Uma VM em execução é, no fundo, três coisas: \textbf{ficheiros} (discos, muitas vezes já acessíveis nos dois hosts via armazenamento partilhado), \textbf{configuração} (endereços de rede, descrição de hardware) e \textbf{contexto} (memória RAM e estado do CPU).
+    \item Fases típicas: \textit{setup} (o destino reserva recursos), \textit{push} (o estado de memória é copiado enquanto a VM continua ativa na origem), \textit{stop-and-copy} (pequena pausa para migrar o último estado e reconfigurar a rede) e \textit{pull} (a VM arranca no destino, procurando dados que ainda faltem).
     \item Fundamental para balanceamento de carga entre hosts e para manutenção de hardware sem downtime.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Migração ao Vivo \textcolor{NudeTaupe}{\small(2/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Stop-and-copy}: a VM pára, todo o estado é copiado, a VM arranca no destino. Simples, mas com downtime elevado.
+    \item \textbf{Pre-copy} (a abordagem mais comum): as páginas de memória são copiadas iterativamente enquanto a VM corre na origem; só as páginas "sujas" na última ronda exigem uma pausa curta antes de transferir o controlo.
+    \item \textbf{Post-copy}: a VM arranca quase de imediato no destino, e as páginas em falta são pedidas à origem à medida que são acedidas -- menor tempo até ao arranque, mas com risco de faltas de página se a rede for lenta.
+    \item \textbf{Migração híbrida}: combina as duas anteriores, copiando a maior parte antecipadamente e recorrendo a \textit{post-copy} apenas para o resto.
 \end{itemize}
 \end{frame}
 
@@ -210,6 +257,17 @@
     \item Toda a camada de abstração introduzida pelo hypervisor tem um custo de desempenho, ainda que reduzido com suporte de hardware.
     \item Cenários onde o bare-metal ainda é preferível: cargas de trabalho com requisitos extremos de latência ou I/O, como bases de dados de alto desempenho ou computação de alta performance (HPC).
     \item A decisão entre virtualizar ou não depende do compromisso entre flexibilidade operacional e desempenho máximo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Virtualização de I/O: Emulação, Passthrough e SR-IOV}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item I/O é tipicamente o maior gargalo da virtualização: ao contrário de cálculo puro (maioritariamente instruções seguras), acesso a dispositivos envolve com frequência instruções sensíveis, logo mais intervenção do hypervisor.
+    \item \textbf{Emulação}: o acesso ao dispositivo gera um \textit{trap}, o hypervisor emula o comportamento do periférico. Máxima compatibilidade, menor desempenho.
+    \item \textbf{Passthrough} (I/O direto): um dispositivo físico (ou parte dele) é atribuído diretamente à VM; o convidado usa o driver nativo, com desempenho quase nativo -- à custa de o host perder acesso a esse dispositivo.
+    \item \textbf{SR-IOV} (Single Root IO Virtualization): extensão do PCI Express em que uma placa (rede, GPU, RAID) se apresenta como uma função física (gerida pelo host) e múltiplas funções virtuais, cada uma atribuível diretamente a uma VM diferente -- o melhor dos dois mundos para hardware que o suporte.
 \end{itemize}
 \end{frame}
 
@@ -243,9 +301,19 @@
     \item Integra numa única interface os dois modelos: \textbf{KVM} para VMs completas e \textbf{LXC} para contentores de sistema.
     \item Gestão por interface web ou por linha de comandos: \texttt{qm} para VMs KVM, \texttt{pct} para contentores LXC.
     \item Suporta snapshots, clones, templates e migração entre nós -- todos os conceitos vistos nesta aula.
-    \item No Guião 03 vamos criar e comparar diretamente uma VM KVM e um contentor LXC.
+    \item É a plataforma que vai suportar o projeto prático da segunda metade do semestre.
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{O que Cada Modelo Duplica}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a03-vm-vs-contentor.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
@@ -253,7 +321,7 @@
     \setlength\itemsep{0.4cm}
     \item A virtualização permite consolidação, isolamento e portabilidade de cargas de trabalho.
     \item Hypervisors tipo 1 (bare-metal) dominam em produção; tipo 2 (hosted) são úteis em desenvolvimento.
-    \item Virtualização completa, paravirtualização e suporte de hardware (VT-x/AMD-V) são as três grandes estratégias de virtualização de CPU.
+    \item Virtualização completa, paravirtualização e suporte de hardware (VT-x/AMD-V) são as três grandes estratégias de virtualização de CPU, todas a lidar com o mesmo problema: instruções sensíveis que o hypervisor tem de apanhar (trap) e emular.
 \end{itemize}
 \end{frame}
 
@@ -261,8 +329,9 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Memória, rede e armazenamento são também virtualizados, com mecanismos próprios (EPT, vSwitch, discos qcow2/raw com thin provisioning).
-    \item Snapshots, clones e templates são as ferramentas operacionais do dia-a-dia; a migração ao vivo permite manutenção sem downtime.
+    \item Memória, rede e armazenamento são também virtualizados, com mecanismos próprios (EPT, KSM/ballooning, vSwitch, discos qcow2/raw com thin provisioning).
+    \item I/O pode ser emulado, passado diretamente à VM (passthrough) ou particionado com SR-IOV, consoante o compromisso entre compatibilidade e desempenho.
+    \item Snapshots, clones e templates são as ferramentas operacionais do dia-a-dia; a migração ao vivo (pre-copy, post-copy ou híbrida) permite manutenção sem downtime.
     \item Existe sempre algum overhead; em cenários de desempenho extremo, o bare-metal continua a ser preferível.
     \item KVM (VMs) e LXC (contentores de sistema) coexistem no Proxmox VE, a plataforma usada nesta UC.
 \end{itemize}

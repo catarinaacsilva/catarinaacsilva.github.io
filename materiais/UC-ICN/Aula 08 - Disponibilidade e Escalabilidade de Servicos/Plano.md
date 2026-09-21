@@ -7,16 +7,15 @@
 ## Teoria
 - Aula 08 - Disponibilidade e Escalabilidade de Servicos.tex
 
-## Prática / laboratório
-- Guiao 08 - Balanceamento de Carga e Escalabilidade no Kubernetes.tex
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a08-health-checks
+- a08-rolling-update
+- a08-scale
 
 ## Notas para o docente
-Retomar explicitamente os conceitos de SLA e Tiers da Aula 02 para ancorar a discussão sobre disponibilidade.
+Aula expositiva, sem componente laboratorial. Retomar explicitamente os conceitos de SLA e Tiers da Aula 02 para ancorar a discussão sobre disponibilidade, e os objetos do Kubernetes da Aula 05 para ancorar a discussão sobre escalabilidade (HPA/VPA/Cluster Autoscaler).
 
-O guião prático foi redesenhado para assentar no **cluster Kubernetes da Aula 05**, em vez de contentores Docker soltos com Nginx/HAProxy. Isto dá continuidade ao semestre e permite exercícios mais ricos: HPA com carga real, rolling update monitorizado com `curl` contínuo, e queda de um nó inteiro pelo Proxmox durante o serviço.
+O diagrama `a08-rolling-update`, descrito passo a passo, é o recurso central para tornar tangível a ligação entre health checks (readiness/liveness) e implantação sem downtime, mesmo sem execução ao vivo de um `curl` contínuo.
 
-**Pré-requisito crítico:** o cluster da Aula 05 tem de estar montado. Decidir logo na Aula 05 se fica de pé entre aulas — se não, prever tempo de remontagem, ou ter um cluster de demonstração pronto.
-
-**Risco técnico:** o `metrics-server` requer quase sempre a flag `--kubelet-insecure-tls` em clusters kubeadm de laboratório (certificados autoassinados); o guião já inclui o patch, mas convém validar antes. Sem metrics-server, o HPA fica com métricas `<unknown>` e a Parte 3 não funciona.
-
-Momento mais demonstrativo da aula: o rolling update com o `curl` contínuo a mostrar `200` ininterruptos — torna tangível a ligação entre health checks e implantação sem downtime. Esta aula estabelece a base que a Aula 09 complementa com redundância e desacoplamento.
+Esta aula estabelece a base que a Aula 09 complementa com redundância e desacoplamento.

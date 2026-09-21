@@ -1,0 +1,463 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable,listings}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\definecolor{SageMuted}{HTML}{7E8F7C}
+\definecolor{ClayWarn}{HTML}{B5795C}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.6em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4\baselineskip}{0.7\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.1\baselineskip}{0.5\baselineskip}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false,
+  frame=none,
+  aboveskip=0pt, belowskip=0pt
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+
+% ---- Caixa: comandos a executar ----
+\newtcblisting{terminal}{
+  listing only, breakable,
+  colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt, top=5pt, bottom=5pt,
+  listing options={basicstyle=\ttfamily\small, breaklines=true, columns=fullflexible}
+}
+
+% ---- Caixa: saida esperada ----
+\newtcblisting{saida}{
+  listing only, breakable,
+  colback=white, colframe=SoftBlush,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt, top=5pt, bottom=5pt,
+  title={\small\bfseries\color{TextEspresso}Saída esperada},
+  coltitle=TextEspresso, colbacktitle=SoftBlush!45,
+  fonttitle=\small\bfseries,
+  listing options={basicstyle=\ttfamily\footnotesize, breaklines=true, columns=fullflexible}
+}
+
+% ---- Caixa: ponto de verificacao ----
+\newtcolorbox{verificar}{
+  breakable, colback=SageMuted!8, colframe=SageMuted,
+  boxrule=0.6pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt,
+  title={\small\bfseries Confirme antes de avançar},
+  coltitle=white, colbacktitle=SageMuted, fonttitle=\small\bfseries
+}
+
+% ---- Caixa: aviso ----
+\newtcolorbox{atencao}{
+  breakable, colback=ClayWarn!8, colframe=ClayWarn,
+  boxrule=0.6pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt,
+  title={\small\bfseries Atenção},
+  coltitle=white, colbacktitle=ClayWarn, fonttitle=\small\bfseries
+}
+
+% ---- Caixa: nota/contexto ----
+\newtcolorbox{nota}{
+  breakable, colback=NudeTaupe!10, colframe=NudeTaupe,
+  boxrule=0.5pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt
+}
+
+% ---- Cabecalho do manual ----
+\newcommand{\manualtitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Manual Técnico #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+% ---- Entrada de troubleshooting ----
+\newcommand{\problema}[1]{\vspace{0.35cm}\noindent{\bfseries\color{TextEspresso}#1}\par\nopagebreak\vspace{0.1cm}}
+
+\setlist[itemize]{itemsep=0.22cm, topsep=0.2cm}
+\setlist[enumerate]{itemsep=0.22cm, topsep=0.2cm}
+
+\begin{document}
+\manualtitle{13}{WBEM com SFCB e Revisão do Semestre}{Aula 13}
+
+\section*{Como usar este manual}
+
+Última aula. Tem três partes: explorar um CIMOM com WBEM, comparar com uma API REST moderna, e rever o semestre.
+
+\begin{atencao}
+\textbf{Aviso honesto sobre esta aula.} O SFCB e os seus \emph{providers} são software antigo e pouco mantido, e o empacotamento varia entre versões de distribuição. É possível que algum passo falhe.
+
+Se isso acontecer, \textbf{não perca tempo a insistir}: registe a mensagem de erro exata e peça a alternativa à docente. Analisar e documentar o erro conta como trabalho -- é, aliás, exatamente o que aconteceria num contexto profissional ao lidar com tecnologia legada.
+\end{atencao}
+
+\section*{Antes de começar}
+
+\begin{itemize}
+  \item[$\square$] Uma VM Linux ligada, com \texttt{sudo}
+  \item[$\square$] Os materiais dos guiões anteriores à mão (para a revisão)
+  \item[$\square$] Opcional: token de leitura da API do Proxmox, para a Parte 2
+\end{itemize}
+
+\section{Parte 1 -- Explorar um CIMOM}
+
+\subsection{Instalar}
+
+\begin{terminal}
+$ sudo apt update
+$ sudo apt install -y sfcb sblim-cmpi-base cim-schema wbemcli
+$ sudo systemctl enable --now sfcb
+$ sudo systemctl status sfcb
+\end{terminal}
+
+\begin{nota}
+Os três pacotes têm papéis distintos: \texttt{sfcb} é o \textbf{CIMOM} (o servidor); \texttt{sblim-cmpi-base} traz os \textbf{providers} que traduzem entre o modelo CIM e o sistema real; \texttt{cim-schema} contém as definições das classes. Sem os providers, o CIMOM corre mas não tem dados para expor.
+\end{nota}
+
+Confirme que está a escutar:
+\begin{terminal}
+$ sudo ss -lntp | grep 5989
+\end{terminal}
+
+\subsection{Testar por linha de comandos}
+
+Antes de escrever código, confirme que o CIMOM responde:
+
+\begin{terminal}
+$ wbemcli -nl ein 'https://root:<password>@localhost:5989/root/cimv2:CIM_OperatingSystem'
+\end{terminal}
+
+\begin{saida}
+localhost:5989/root/cimv2:Linux_OperatingSystem.CreationClassName=...,
+   CSCreationClassName="Linux_ComputerSystem",CSName="icn-lab",Name="Ubuntu"
+\end{saida}
+
+\begin{atencao}
+A autenticação é o ponto mais frágil. Se falhar, experimente:
+\begin{itemize}
+  \item As credenciais do utilizador \texttt{root} local (se tiver password definida)
+  \item As suas próprias credenciais de utilizador da VM
+  \item Consultar \texttt{/etc/sfcb/sfcb.cfg} para ver o método configurado
+\end{itemize}
+Se nada funcionar, registe o erro e avance para a Parte 2 -- a docente indicará como obter os dados.
+\end{atencao}
+
+\subsection{Instalar o cliente Python}
+
+\begin{terminal}
+$ sudo apt install -y python3-venv
+$ python3 -m venv ~/wbem-env
+$ ~/wbem-env/bin/pip install pywbem
+\end{terminal}
+
+\subsection{Enumerar classes}
+
+\begin{terminal}
+$ nano explorar_cim.py
+\end{terminal}
+
+Copie o script do Guião 13 (substituindo \texttt{PASSWORD} pela sua).
+
+\begin{terminal}
+$ ~/wbem-env/bin/python explorar_cim.py | head -30
+\end{terminal}
+
+\begin{saida}
+=== Classes CIM disponiveis (root/cimv2) ===
+CIM_ComputerSystem
+CIM_LogicalDisk
+CIM_OperatingSystem
+CIM_Process
+Linux_ComputerSystem
+...
+\end{saida}
+
+\begin{nota}
+Repare nos prefixos: \texttt{CIM\_} são classes do modelo normalizado da DMTF; \texttt{Linux\_} são especializações que herdam das primeiras. É o mecanismo de \textbf{herança} do CIM em funcionamento.
+\end{nota}
+
+\subsection{Listar propriedades de uma instância}
+
+Adapte o segundo script do guião e execute-o. Compare com a Aula 12: aqui as propriedades têm \textbf{nomes descritivos e tipos}, em vez de OIDs numéricos.
+
+\subsection{O exercício central: associações}
+
+Esta é a operação que \textbf{não tem equivalente no SNMP}.
+
+\begin{terminal}
+$ nano associacoes.py
+\end{terminal}
+
+Copie o terceiro script do Guião 13.
+
+\begin{terminal}
+$ ~/wbem-env/bin/python associacoes.py
+\end{terminal}
+
+\begin{saida}
+Sistema: root/cimv2:Linux_ComputerSystem.CreationClassName=...,Name="icn-lab"
+
+=== Associacoes (References) ===
+  Linux_CSProcessor
+  Linux_RunningOS
+  Linux_ComputerSystemProcess
+
+=== Objetos associados (Associators) ===
+  Linux_Processor
+  Linux_OperatingSystem
+  Linux_UnixProcess
+\end{saida}
+
+\begin{verificar}
+Partindo de \emph{um} objeto (o sistema), descobriu automaticamente os processadores, o sistema operativo e os processos que lhe pertencem -- sem saber previamente que existiam. Registe as associações encontradas e, para cada uma, o que representa no mundo real.
+\end{verificar}
+
+\begin{nota}
+\textbf{Porque é isto significativo?} Na MIB do SNMP, a relação entre um sistema e os seus discos teria de ser inferida por convenção de índices numéricos. No CIM, a relação é ela própria um objeto que se pode consultar e percorrer. É a diferença entre uma lista e um grafo.
+\end{nota}
+
+\subsection{Classes têm métodos}
+
+Execute o quarto script do guião, que mostra as propriedades-chave e os métodos de uma classe.
+
+\begin{verificar}
+A classe define \textbf{métodos} -- ações que se podem invocar. No SNMP só existem operações genéricas de leitura e escrita sobre variáveis. É outra diferença estrutural.
+\end{verificar}
+
+\subsection{Comparar com o SNMP}
+
+Se ainda tiver o agente da Aula 12 acessível:
+
+\begin{terminal}
+$ snmpget -v2c -c icnturma <IP-do-agente> 1.3.6.1.2.1.1.5.0
+\end{terminal}
+
+Compare com a forma WBEM de obter a mesma informação. Registe as duas.
+
+\section{Parte 2 -- API REST do Proxmox (opcional)}
+
+\begin{terminal}
+$ curl -k -H "Authorization: PVEAPIToken=<user>@pve!<token>=<segredo>" \
+    https://<IP-do-servidor>:8006/api2/json/nodes
+\end{terminal}
+
+\begin{saida}
+{"data":[{"node":"pve-estga","status":"online","maxcpu":32,
+  "maxmem":134926512128,"uptime":3721045}]}
+\end{saida}
+
+\begin{terminal}
+$ curl -k -H "Authorization: PVEAPIToken=..." \
+    https://<IP-do-servidor>:8006/api2/json/nodes/<node>/status
+\end{terminal}
+
+\subsection{Os três paradigmas lado a lado}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & \textbf{Como se identifica} & \textbf{Formato} \\
+\midrule
+SNMP & OID numérico & Tipos SMI \\
+WBEM & Classe + chaves & Objetos CIM \\
+REST & URL & JSON \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{verificar}
+Os três resolvem o mesmo problema -- consultar o estado de um sistema remoto -- com 40 anos de distância entre eles. O que mudou foram as ferramentas, não o problema.
+\end{verificar}
+
+\section{Parte 3 -- Revisão do semestre}
+
+Percorra os blocos e assinale o que consegue explicar \textbf{sem consultar}. O que ficar por assinalar é o seu plano de estudo para o teste.
+
+\subsection*{C1 -- Datacenters (Aulas 01--02)}
+\begin{itemize}
+  \item[$\square$] As cinco características essenciais da cloud (NIST)
+  \item[$\square$] Distinguir IaaS, PaaS e SaaS, e quem é responsável por quê em cada
+  \item[$\square$] Os quatro Tiers e o que distingue o Tier III do Tier II
+  \item[$\square$] Calcular disponibilidade em série e em paralelo
+  \item[$\square$] Explicar PUE e o que significa um valor próximo de 1
+  \item[$\square$] Distinguir tráfego este-oeste de norte-sul
+\end{itemize}
+
+\subsection*{C2 -- Recursos computacionais (Aulas 03--04)}
+\begin{itemize}
+  \item[$\square$] Hypervisor tipo 1 vs tipo 2, com exemplos
+  \item[$\square$] \textbf{Porque o contentor partilha o kernel do host e a VM não}
+  \item[$\square$] O que fazem os namespaces e o que fazem os cgroups
+  \item[$\square$] Explicar thin provisioning e o risco que introduz
+  \item[$\square$] Distinguir snapshot, clone completo e template
+  \item[$\square$] Contentor de aplicação vs contentor de sistema
+\end{itemize}
+
+\subsection*{C3 -- Administração de recursos (Aulas 05--07)}
+\begin{itemize}
+  \item[$\square$] Os componentes do control plane e o que cada um faz
+  \item[$\square$] O ciclo de reconciliação e porque dá self-healing
+  \item[$\square$] Para que serve um Service, dado que os Pods são efémeros
+  \item[$\square$] \textbf{Porque um nó fica \texttt{NotReady} sem plugin CNI}
+  \item[$\square$] Separação entre plano de controlo e plano de dados
+  \item[$\square$] Distinguir overlay de underlay
+  \item[$\square$] Explicar idempotência com um exemplo concreto
+  \item[$\square$] Provisionamento vs gestão de configuração
+  \item[$\square$] Para que serve o ficheiro de estado do Terraform
+\end{itemize}
+
+\subsection*{C4 -- Fornecimento de serviços (Aulas 08--09)}
+\begin{itemize}
+  \item[$\square$] Scale-up vs scale-out, e os limites de cada um
+  \item[$\square$] Porque um serviço stateless escala mais facilmente
+  \item[$\square$] \textbf{Readiness vs liveness probe}
+  \item[$\square$] Round-robin vs least connections vs hashing consistente
+  \item[$\square$] Camada 4 vs camada 7
+  \item[$\square$] Porque o scale-down é mais lento que o scale-up
+  \item[$\square$] Redundância ativa-ativa vs ativa-passiva
+  \item[$\square$] \textbf{Porque o produtor não é afetado quando o consumidor cai}
+  \item[$\square$] Distinguir RTO de RPO
+\end{itemize}
+
+\subsection*{C5 -- Armazenamento (Aulas 10--11)}
+\begin{itemize}
+  \item[$\square$] Block, file e object storage, com um exemplo de cada
+  \item[$\square$] RAID 1 vs RAID 5 vs RAID 6
+  \item[$\square$] Porque o período de reconstrução é o de maior risco
+  \item[$\square$] A pilha PV $\rightarrow$ VG $\rightarrow$ LV
+  \item[$\square$] Como funciona um snapshot copy-on-write
+  \item[$\square$] \textbf{Porque RAID não substitui backup}
+  \item[$\square$] \textbf{Porque dois clientes podem escrever no NFS mas não no mesmo LUN iSCSI}
+  \item[$\square$] Enunciar o teorema CAP
+\end{itemize}
+
+\subsection*{C6 -- Administração de sistemas (Aulas 12--13)}
+\begin{itemize}
+  \item[$\square$] Manager, agente, MIB e OID
+  \item[$\square$] Counter vs Gauge, e porque o valor absoluto de um contador não chega
+  \item[$\square$] \textbf{Porque o SNMPv2c é inseguro e o que o v3 acrescenta}
+  \item[$\square$] Polling vs push
+  \item[$\square$] O que é fadiga de alertas
+  \item[$\square$] \textbf{O que as associações CIM permitem que o SNMP não permite}
+  \item[$\square$] Para que serve a gestão fora-de-banda
+\end{itemize}
+
+\subsection{Exercício de síntese}
+
+Escolha \emph{um} cenário -- por exemplo, «uma loja online com picos no Natal» -- e escreva um parágrafo por bloco, indicando que tecnologias usaria e porquê.
+
+\begin{nota}
+Este exercício não é entregue, mas é a melhor preparação possível para as questões de aplicação do teste, que tipicamente pedem exatamente isto: dado um cenário, propor e justificar uma arquitetura.
+\end{nota}
+
+\section{Problemas frequentes}
+
+\problema{\texttt{sfcb.service failed to start}}
+Veja a razão concreta:
+\begin{terminal}
+$ sudo journalctl -u sfcb -n 30 --no-pager
+\end{terminal}
+Frequentemente falta gerar os certificados:
+\begin{terminal}
+$ sudo sfcbrepos -f
+$ sudo systemctl restart sfcb
+\end{terminal}
+
+\problema{\texttt{Authentication failed} no \texttt{wbemcli} ou no \texttt{pywbem}}
+O problema mais comum desta aula. Veja o método de autenticação configurado:
+\begin{terminal}
+$ grep -i auth /etc/sfcb/sfcb.cfg
+\end{terminal}
+Se estiver \texttt{doBasicAuth: true}, use credenciais válidas do sistema. Se nada funcionar, registe o erro e siga em frente.
+
+\problema{\texttt{EnumerateClassNames} devolve lista vazia}
+Os providers não estão instalados ou registados:
+\begin{terminal}
+$ sudo apt install -y sblim-cmpi-base
+$ sudo sfcbrepos -f
+$ sudo systemctl restart sfcb
+\end{terminal}
+
+\problema{\texttt{Nenhuma instancia de CIM\_ComputerSystem encontrada}}
+Nesta instalação a classe pode chamar-se \texttt{Linux\_ComputerSystem}. Liste primeiro as classes disponíveis e ajuste o script ao que existir.
+
+\problema{\texttt{pip install pywbem} falha}
+Faltam dependências de compilação:
+\begin{terminal}
+$ sudo apt install -y build-essential python3-dev libssl-dev
+\end{terminal}
+
+\problema{Erro de certificado no \texttt{pywbem}}
+Confirme que tem \texttt{no\_verification=True} na criação da \texttt{WBEMConnection}.
+
+\problema{\texttt{curl} à API do Proxmox devolve \texttt{401}}
+O formato do cabeçalho é exigente. Tem de ser exatamente:
+\begin{terminal}
+PVEAPIToken=utilizador@realm!nome-do-token=segredo
+\end{terminal}
+Confirme que incluiu o \texttt{!} e o realm (\texttt{@pve}).
+
+\section{Referência rápida}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Operação pywbem} & \textbf{Para que serve} \\
+\midrule
+\texttt{EnumerateClassNames()} & Que classes existem \\
+\texttt{EnumerateInstances(cls)} & Instâncias com todas as propriedades \\
+\texttt{EnumerateInstanceNames(cls)} & Apenas as referências \\
+\texttt{GetClass(cls)} & Definição da classe (propriedades, métodos) \\
+\texttt{ReferenceNames(obj)} & Associações que partem do objeto \\
+\texttt{AssociatorNames(obj)} & Objetos associados \\
+\texttt{InvokeMethod(...)} & Executar um método da classe \\
+\midrule
+\texttt{sudo sfcbrepos -f} & Reconstruir o repositório de classes \\
+\texttt{journalctl -u sfcb -n 30} & Diagnosticar o CIMOM \\
+\texttt{wbemcli -nl ein 'https://...'} & Enumerar por linha de comandos \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Checklist final}
+
+\begin{itemize}
+  \item[$\square$] Instalei o SFCB e confirmei que escuta no porto 5989
+  \item[$\square$] Enumerei classes e listei propriedades de uma instância
+  \item[$\square$] \textbf{Naveguei por associações e registei o que encontrei}
+  \item[$\square$] Vi que uma classe CIM define métodos, e não só propriedades
+  \item[$\square$] Comparei a forma WBEM com a forma SNMP de obter a mesma informação
+  \item[$\square$] (Opcional) Consultei a API REST do Proxmox e comparei os três paradigmas
+  \item[$\square$] Percorri a checklist de revisão e identifiquei os pontos a estudar
+  \item[$\square$] Fiz o exercício de síntese com um cenário à minha escolha
+  \item[$\square$] Confirmei a data de entrega do miniprojeto e a data do teste
+\end{itemize}
+
+\end{document}

@@ -7,8 +7,12 @@
 ## Teoria
 - Aula 02 - Arquitetura de Datacenters e Modelos de Operacao.tex
 
-## Prática / laboratório
-- Guiao 02 - Analise de Arquitetura e Disponibilidade de Datacenters.tex
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a02-serie-paralelo
+- a02-topologias
 
 ## Notas para o docente
-Aula centrada em cálculo e raciocínio analítico mais do que em execução prática; reservar tempo em aula para os exercícios de disponibilidade, que costumam gerar dúvidas sobre a diferença entre série e paralelo. A parte de ping/traceroute serve sobretudo para tornar tangível o conceito de topologia de rede. Liga-se à Aula 03, que passa da infraestrutura física para a camada de virtualização de sistemas.
+Aula expositiva, sem componente laboratorial. O ponto que mais gera dúvidas é a diferença entre disponibilidade em série e em paralelo — vale a pena resolver em aula, ao vivo, pelo menos um exemplo de cada (e um caso misto), em vez de apenas apresentar as fórmulas. O caso de estudo do servidor central desta UC funciona bem como âncora concreta para discutir Tier e pontos únicos de falha, mesmo sem acesso prático à interface.
+
+Liga-se à Aula 03, que passa da infraestrutura física para a camada de virtualização de sistemas.

@@ -10,6 +10,16 @@
 ## Prática / laboratório
 - Guiao 09 - Mensageria e Desacoplamento com RabbitMQ.tex
 
+## Manual técnico
+- Manual 09 - Mensageria e Desacoplamento com RabbitMQ.tex
+
+## Diagramas
+Fonte editável (`.drawio`) e PNG em `Diagramas/`:
+- a09-amqp
+- a09-padroes
+- a09-sinc-assinc
+- m09-desacoplamento
+
 ## Notas para o docente
 Retomar o balanceamento de carga da Aula 08 como forma de redundância ativa-ativa, contrastando com o modelo ativa-passiva (failover).
 

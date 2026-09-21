@@ -97,7 +97,7 @@
 \frametitle{Classificação Uptime Institute \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O Uptime Institute define quatro níveis (Tiers) de maturidade de infraestrutura, de I a IV.
+    \item O Uptime Institute classifica a \emph{topologia} da infraestrutura em quatro níveis (Tiers), de I a IV, segundo a redundância e a tolerância a falhas.
     \item Tier I: infraestrutura básica, sem redundância; suscetível a interrupções por manutenção ou falha.
     \item Tier II: introduz componentes redundantes (N+1), mas mantém uma única via de distribuição.
 \end{itemize}
@@ -134,6 +134,16 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Three-Tier vs Leaf-Spine}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a02-topologias.png}
+\end{center}
+\vfill
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Tráfego Este-Oeste vs Norte-Sul}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -165,6 +175,16 @@
     \item A redundância em paralelo é a estratégia central para atingir Tiers mais elevados.
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{Série vs Paralelo, Lado a Lado}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a02-serie-paralelo.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{SLAs na Prática}
@@ -255,7 +275,7 @@
     \item O servidor Proxmox VE usado nos laboratórios desta UC é, do ponto de vista do datacenter, um único servidor físico.
     \item Questão de reflexão: que Tier lhe atribuiria, tendo apenas um servidor sem fonte de alimentação ou via de rede redundante?
     \item Todas as VMs de todos os alunos correm sobre o mesmo hardware -- um exemplo direto de \textit{resource pooling} (Aula 01) e também de single point of failure (Aula 09).
-    \item Vamos observar dados reais deste servidor no Guião 02.
+    \item Vale a pena, no momento, tentar estimar a disponibilidade combinada deste cenário com as fórmulas de série/paralelo vistas nesta aula.
 \end{itemize}
 \end{frame}
 
