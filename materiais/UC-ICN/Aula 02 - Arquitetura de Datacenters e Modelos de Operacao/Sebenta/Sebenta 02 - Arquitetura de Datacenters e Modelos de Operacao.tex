@@ -1,0 +1,259 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{02}{Arquitetura de Datacenters e Modelos de Operação}{Aula 02}
+
+\section*{Como usar esta sebenta}
+
+Este documento acompanha os slides projetados na aula. Cada página seguinte reproduz um slide e junta, logo a seguir, o texto que desenvolve por extenso a matéria resumida nesse slide. A aula inclui sete perguntas de escolha múltipla, pensadas para pensar e debater antes de ver a resposta no slide seguinte. Vale a pena fazer o mesmo aqui: tentar responder antes de ler a explicação.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+Esta é a segunda aula da unidade curricular, e desce da teoria geral da Aula 01 para o objeto mais concreto desta cadeira: o datacenter físico. A aula está organizada em três partes, e a dificuldade cresce propositadamente ao longo delas. Começa com o que é um datacenter, para quem nunca parou para pensar nisso com cuidado, e termina com decisões de arquitetura e de custo que só fazem sentido depois de perceber bem os fundamentos. Ao longo da aula há sete perguntas de escolha múltipla, pensadas para debater em grupo antes de ver a resposta no slide seguinte, além de casos práticos e exemplos resolvidos passo a passo. Esta sebenta segue a mesma ordem dos slides e desenvolve por escrito cada um deles.
+}
+
+\pagina{slides/slide-02.png}{
+Esta primeira parte trata dos fundamentos: o que é, fisicamente, um datacenter, que sistemas o compõem, e como se classifica o nível de redundância dessa infraestrutura segundo o vocabulário do Uptime Institute. Não pressupõe qualquer conhecimento prévio, é o ponto de partida para quem nunca olhou para dentro de um datacenter.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda parte sobe um nível de complexidade e entra na rede interna do datacenter e na matemática da disponibilidade. Vê-se como se desenha a rede que liga os servidores entre si, como se calcula a disponibilidade combinada de vários componentes, e o que um SLA compromete de facto, para além do que promete em publicidade.
+}
+
+\pagina{slides/slide-04.png}{
+A terceira e última parte afasta-se da arquitetura física e olha para quem opera o datacenter, onde, e a que custo. Compara os modelos de operação disponíveis, a lógica financeira por trás de cada um, a forma como os grandes fornecedores de cloud distribuem a infraestrutura pelo mundo, e fecha com um exercício que aplica tudo isto ao próprio servidor usado nos laboratórios desta cadeira.
+}
+
+\pagina{slides/slide-05.png}{
+Antes de qualquer classificação ou fórmula, vale a pena parar num ponto que se costuma dar como adquirido: o que é, fisicamente, um datacenter. É um edifício, ou parte de um edifício, construído para uma única função, manter servidores ligados, alimentados e frios, de forma ininterrupta. Não é apenas uma sala cheia de computadores. É a combinação de vários sistemas que têm todos de funcionar em simultâneo, sem exceção nenhuma: alimentação elétrica, arrefecimento, rede e o próprio espaço físico, com os seus racks, pavimento técnico e segurança de acesso. O resto desta aula estuda precisamente como estes quatro sistemas se organizam, se classificam por nível de redundância, e se pagam.
+}
+
+\pagina{slides/slide-06.png}{
+O diagrama mostra estes quatro sistemas em conjunto, tal como se encaixam fisicamente num datacenter simples. A energia elétrica chega, passa por um UPS ou gerador que a mantém estável mesmo que a rede elétrica externa falhe, e alimenta as filas de racks na sala de servidores. O arrefecimento, tipicamente equipamento CRAC ou CRAH, mantém essa mesma sala dentro da temperatura de operação segura. E a ligação à rede exterior é o que liga tudo isto ao resto do mundo. Repare como cada seta representa uma dependência: se qualquer uma quebrar, a sala inteira fica em risco.
+}
+
+\pagina{slides/slide-07.png}{
+Cada um dos quatro sistemas descritos tem os seus próprios pontos de falha, um transformador que dispara sem aviso, um chiller que avaria a meio da noite, uma fibra óptica cortada por obras na rua, um piso técnico que inunda com um cano rebentado. A pergunta que atravessa toda esta aula não é isto pode falhar, porque a resposta é sempre sim, mais cedo ou mais tarde. A pergunta certa é sempre quando isto falhar, o que acontece a seguir. É esta segunda pergunta, e não a primeira, que dá origem aos Tiers, às topologias redundantes e aos SLAs que vêm a seguir.
+}
+
+\pagina{slides/slide-08.png}{
+Este primeiro exercício de escolha múltipla pega no cenário mais simples possível, um datacenter sem qualquer redundância elétrica, e pede para prever o que acontece quando essa única linha de energia falha. Vale a pena pensar na resposta, e discuti-la com o colega ao lado, antes de avançar para o slide seguinte, que a revela e explica.
+}
+
+\pagina{slides/slide-09.png}{
+A resposta detalhada está no próprio slide anterior. Vale apenas reforçar a ligação com o que vem a seguir: um datacenter sem qualquer alternativa à sua única fonte de energia é, por definição, o cenário mais básico da classificação que estamos prestes a estudar, o Tier I. Guarde este exemplo, porque os Tiers seguintes vão-se definir precisamente pelas alternativas que este cenário não tem.
+}
+
+\pagina{slides/slide-10.png}{
+Se toda a falha é, mais cedo ou mais tarde, inevitável, a pergunta que realmente interessa fazer é quantos caminhos alternativos existem antes de o serviço parar de vez. A esse número de caminhos alternativos chama-se redundância, e mede-se com um vocabulário de três níveis que vai reaparecer ao longo de todo o semestre. N é a capacidade mínima necessária para operar, sem qualquer margem de segurança. N+1 acrescenta uma unidade extra de reserva, uma bomba a mais, um gerador a mais. 2N duplica por completo o sistema, como se existissem dois datacenters sobrepostos, prontos a substituir um ao outro a qualquer momento. É exatamente este vocabulário, N, N+1 e 2N, que o Uptime Institute usa para definir os seus quatro Tiers, o assunto dos dois próximos slides.
+}
+
+\pagina{slides/slide-11.png}{
+O Uptime Institute é uma organização privada que, desde os anos noventa, mantém um sistema de classificação hoje usado internacionalmente para descrever o nível de redundância de um datacenter. Convém perceber bem o que os Tiers classificam. Não avaliam o desempenho da infraestrutura nem a qualidade do equipamento instalado. Avaliam apenas a topologia, isto é, como os componentes críticos de energia e arrefecimento estão organizados e quantas vias independentes existem até cada equipamento. Um Tier I corresponde ao caso mais simples: uma única via de alimentação e de arrefecimento, sem qualquer componente de reserva. Qualquer manutenção ou avaria obriga a interromper o serviço, porque não existe caminho alternativo. O Tier II já introduz redundância de componentes, chamada N+1, o que significa que existe pelo menos uma unidade a mais do que o estritamente necessário para operar. Mantém, contudo, uma única via de distribuição, pelo que uma falha nessa via continua a afetar o serviço todo.
+}
+
+\pagina{slides/slide-12.png}{
+O salto qualitativo dá-se no Tier III, que passa a ter múltiplas vias de distribuição independentes entre a fonte de energia e o equipamento. Isto permite retirar uma via de serviço para manutenção sem que o datacenter deixe de funcionar, algo impossível nos dois níveis anteriores. O Tier IV eleva ainda mais a exigência: pede redundância 2N em todos os componentes considerados críticos, ou seja, duas instalações completas e independentes a funcionar em paralelo, de tal forma que a falha de qualquer uma delas, sozinha, não tem impacto visível no serviço prestado. Estes três níveis, N, N+1 e 2N, vão reaparecer ao longo do semestre sempre que se discutir tolerância a falhas. E não são exclusivos de datacenters: o mesmo raciocínio aplica-se a discos, a réplicas de uma base de dados ou a instâncias de uma aplicação.
+}
+
+\pagina{slides/slide-13.png}{
+Este segundo exercício tem uma armadilha deliberada: descreve um datacenter com energia e rede muito bem duplicadas, e pergunta que Tier lhe atribuiria. É tentador responder Tier III ou IV só de olhar para os números de vias. Vale a pena ler o enunciado com atenção antes de escolher.
+}
+
+\pagina{slides/slide-14.png}{
+A explicação completa está no slide anterior, mas o ponto central merece ser repetido de outra forma: a classificação de um datacenter não é a média das suas partes, é o mínimo delas. Um único sistema sem redundância, mesmo que todos os outros estejam duplicados, transforma-se automaticamente no fator limitante de todo o edifício. É um erro de raciocínio comum, e vale a pena guardá-lo para não o repetir mais tarde, quando avaliarmos a arquitetura de um serviço inteiro e não apenas de um datacenter.
+}
+
+\pagina{slides/slide-15.png}{
+A topologia three-tier foi durante muito tempo a organização de referência para a rede interna de um datacenter, e ainda hoje é comum encontrá-la em infraestruturas mais antigas. Estrutura-se em três camadas com funções distintas. A camada core faz a ligação entre o datacenter e o exterior, concentrando o tráfego que entra e sai. A camada de aggregation, situada no meio, agrega o tráfego vindo de vários switches de acesso antes de o entregar ao core. A camada access é a que liga fisicamente os servidores, um a um. O problema desta organização aparece quando dois servidores em racks diferentes precisam de comunicar entre si: o tráfego tem de subir até à aggregation, por vezes até ao core, e voltar a descer, atravessando várias camadas mesmo que os dois servidores estejam fisicamente próximos um do outro. Cada salto adicional é latência que se acrescenta ao caminho.
+}
+
+\pagina{slides/slide-16.png}{
+A topologia leaf-spine, também conhecida por Clos em referência ao desenho de redes de comutação telefónica dos anos cinquenta, resolve o problema anterior de forma direta: elimina a hierarquia. Cada switch leaf liga-se a todos os switches spine existentes, e nunca existem ligações diretas entre dois leafs. O resultado é que, entre quaisquer dois servidores ligados a leafs diferentes, o caminho tem sempre exatamente dois saltos, subir a um spine e descer ao leaf de destino, seja qual for a posição física dos dois servidores. Esta previsibilidade vale sobretudo quando o tráfego entre servidores é intenso e imprevisível, como acontece em aplicações distribuídas nas quais qualquer componente pode ter de falar com qualquer outro. É um padrão típico de arquiteturas de microsserviços e de clusters, como os que vamos ver nas Aulas 05 e 06.
+}
+
+\pagina{slides/slide-17.png}{
+O diagrama junta as duas topologias lado a lado, precisamente para que a diferença estrutural salte à vista. Do lado da three-tier, siga um caminho entre dois servidores em racks distintos e repare como obriga a subir até à aggregation, nalguns casos até ao core, antes de voltar a descer. Do lado da leaf-spine, escolha qualquer par de leafs e conte os saltos: são sempre dois, nunca mais, seja qual for o par escolhido. É esta comparação visual que explica, sem fórmulas, a razão de engenharia por trás da migração generalizada para leaf-spine nos datacenters construídos para suportar cloud e aplicações distribuídas modernas.
+}
+
+\pagina{slides/slide-18.png}{
+A distinção entre tráfego norte-sul e este-oeste não é sobre tecnologia, é sobre a direção do fluxo de dados relativamente ao datacenter. O tráfego norte-sul é o que atravessa a fronteira do datacenter, entre um cliente externo, por exemplo um browser em casa de um utilizador, e um servidor lá dentro. O tráfego este-oeste nunca sai do datacenter, circula entre servidores internos, tipicamente quando um serviço chama outro para conseguir completar um pedido. Durante décadas o tráfego norte-sul dominou o dimensionamento das redes, porque as aplicações eram maioritariamente monolíticas e comunicavam pouco entre si. A adoção de arquiteturas distribuídas e de microsserviços inverteu essa proporção. Hoje, num sistema típico, um único pedido de um utilizador pode gerar dezenas de chamadas internas entre serviços antes de a resposta estar pronta a devolver. É esta mudança de padrão que torna a leaf-spine preferível à three-tier: garante a mesma distância curta entre quaisquer dois servidores, e não apenas entre os servidores e a saída para o exterior.
+}
+
+\pagina{slides/slide-19.png}{
+Este caso pega no cenário mais realista possível: uma aplicação de streaming de vídeo, decomposta em duzentos microsserviços que comunicam constantemente entre si, com muito mais tráfego interno do que tráfego vindo dos clientes externos. Vale a pena parar aqui os dois minutos sugeridos no slide, e discutir em grupo qual das duas topologias estudadas faz mais sentido, antes de avançar para a pergunta de escolha múltipla que se segue e que revisita exatamente este mesmo cenário.
+}
+
+\pagina{slides/slide-20.png}{
+A pergunta retoma o caso prático anterior e pede uma escolha concreta entre as duas topologias. Se já discutiu o caso em grupo, esta pergunta deve confirmar, ou pôr à prova, a conclusão a que chegou.
+}
+
+\pagina{slides/slide-21.png}{
+A resposta, e a razão por trás dela, estão detalhadas no slide anterior. Vale reforçar a ideia central: com duzentos microsserviços a comunicarem entre si, qualquer par pode ter de falar a qualquer momento, e é exatamente esse padrão de comunicação imprevisível entre pares que a leaf-spine foi desenhada para servir bem, ao garantir sempre a mesma distância curta entre quaisquer dois pontos da rede.
+}
+
+\pagina{slides/slide-22.png}{
+Antes de entrar nas fórmulas de disponibilidade, vale a pena garantir que o conceito de base está claro. Disponibilidade é, em termos simples, a fração de tempo em que um sistema está a funcionar corretamente, expressa normalmente em percentagem. Pode também pensar-se nela como uma probabilidade: um componente com 99\% de disponibilidade está operacional, em média, 99\% do tempo, o que equivale a dizer que há 1\% de hipótese de o encontrar em falha num instante qualquer, escolhido ao acaso. É esta forma de pensar, em termos de probabilidade, que permite combinar vários componentes numa única fórmula para o sistema inteiro, que é exatamente a matéria dos dois próximos slides.
+}
+
+\pagina{slides/slide-23.png}{
+A disponibilidade de um sistema exprime-se normalmente como a percentagem de tempo em que esteve operacional durante um determinado período, e é costume falar dela em termos do número de noves que apresenta. A diferença entre noves sucessivos parece pequena quando se olha só para a percentagem, mas é enorme assim que se converte em tempo real de indisponibilidade. Três noves, isto é 99,9\%, permitem cerca de oito horas e quarenta e cinco minutos de paragem por ano. Subir para quatro noves, 99,99\%, reduz essa margem para pouco mais de cinquenta e dois minutos anuais. Cinco noves, 99,999\%, deixam apenas cerca de cinco minutos por ano inteiro. Cada nove adicional não é um upgrade incremental, é normalmente uma mudança de ordem de grandeza na arquitetura necessária para o sustentar.
+}
+
+\pagina{slides/slide-24.png}{
+Estas duas fórmulas são o instrumento com que se calcula, a partir da disponibilidade de cada componente individual, a disponibilidade do sistema como um todo. Quando os componentes estão em série, ou seja, quando todos têm de estar a funcionar para que o sistema funcione, a disponibilidade combinada é o produto das disponibilidades individuais. Como qualquer probabilidade inferior a um, multiplicar várias delas só pode reduzir o resultado. Acrescentar componentes em série piora sempre a disponibilidade total, mesmo que cada componente isolado seja muito fiável. A situação inverte-se com componentes em paralelo, nos quais basta um estar a funcionar para o sistema continuar operacional. Aí a disponibilidade combinada aproxima-se de um à medida que se acrescentam réplicas, porque a fórmula calcula a probabilidade complementar de todas falharem ao mesmo tempo.
+}
+
+\pagina{slides/slide-25.png}{
+O diagrama ilustra visualmente a diferença entre as duas configurações. Na série, os componentes estão encadeados um a seguir ao outro, e um corte em qualquer ponto do caminho interrompe tudo o resto. No paralelo existem várias vias entre a origem e o destino, e só a falha simultânea de todas interrompe o serviço. Os dois próximos slides mostram exatamente como se calculam estes dois números com dados concretos.
+}
+
+\pagina{slides/slide-26.png}{
+Este primeiro exemplo resolvido aplica a fórmula da série a um caso concreto: um router e uma base de dados sem réplica, cada um com a sua própria disponibilidade individual, ligados de tal forma que ambos têm de funcionar para o serviço funcionar. Siga o cálculo linha a linha e repare especialmente na conclusão: o resultado combinado fica sempre abaixo do pior dos dois componentes, nunca acima. Isto acontece sempre em série, seja qual for o número de componentes envolvidos.
+}
+
+\pagina{slides/slide-27.png}{
+Este segundo exemplo aplica a fórmula do paralelo a dois servidores web idênticos, redundantes entre si. Note como o raciocínio do cálculo é inverso ao da série: em vez de multiplicar as disponibilidades diretamente, calcula-se primeiro a probabilidade de ambos falharem ao mesmo tempo, e depois subtrai-se esse valor a um. O resultado, como seria de esperar depois do slide anterior, supera qualquer um dos dois componentes individuais. É este mecanismo, e não hardware mais caro, que permite a sistemas construídos com máquinas medianas atingirem disponibilidades elevadas.
+}
+
+\pagina{slides/slide-28.png}{
+Esta pergunta combina, deliberadamente, os dois exercícios anteriores numa só arquitetura: um componente em série com um par de componentes em paralelo. É o tipo de cálculo que vai reaparecer sempre que se analisa a disponibilidade de um sistema real, que raramente é puramente série ou puramente paralelo. Tente calcular antes de olhar para as opções.
+}
+
+\pagina{slides/slide-29.png}{
+O cálculo completo está detalhado no slide anterior, mas vale a pena insistir no erro mais comum, representado pela opção B. É tentador multiplicar diretamente as disponibilidades dos dois servidores como se estivessem em série, ignorando que estão em paralelo entre si. A disciplina que evita este erro é sempre a mesma: antes de multiplicar ou combinar seja o que for, identifique primeiro, com clareza, que configuração cada par de componentes tem entre si.
+}
+
+\pagina{slides/slide-30.png}{
+Um SLA formaliza em contrato aquilo que os Tiers e o cálculo de disponibilidade descrevem tecnicamente. Não é um documento de marketing, é um compromisso com consequências reais: define a percentagem de disponibilidade garantida, as janelas de manutenção previamente acordadas em que interrupções não contam para esse número, e o tempo máximo que o fornecedor tem para responder quando surge um incidente. Inclui muitas vezes também um MTTR alvo, o tempo médio esperado para reparar uma falha, e penalizações, normalmente sob a forma de créditos de serviço, caso o compromisso não seja cumprido. Importa perceber a relação entre o Tier de um datacenter e o SLA que consegue oferecer. Um fornecedor não promete quatro noves de disponibilidade a partir de uma instalação Tier I, porque a própria topologia física não o permite, seja qual for a qualidade da operação.
+}
+
+\pagina{slides/slide-31.png}{
+A classificação em Tiers do Uptime Institute é a mais conhecida e citada, mas não é a única em uso. A norte-americana TIA-942 nasceu no contexto das telecomunicações e usa uma escala própria, de Rated-1 a Rated-4, com espírito semelhante ao dos Tiers mas cobrindo também aspetos que estes não detalham, como a organização da cablagem estruturada e a disposição do espaço físico. Na Europa é frequente encontrar referência à norma EN 50600, organizada em classes de disponibilidade numeradas de um a quatro, que além da redundância aborda também eficiência energética e segurança física de forma mais ampla do que os Tiers. Estas escalas são comparáveis em espírito, todas distinguem níveis crescentes de redundância, mas não são diretamente equivalentes número a número. Ao descrever um datacenter é sempre boa prática indicar explicitamente qual das normas está a ser usada.
+}
+
+\pagina{slides/slide-32.png}{
+Esta pergunta desloca-se do cálculo técnico para a leitura de contratos, um aspeto tão importante quanto a matemática das secções anteriores. Distingue, na prática, o que um fornecedor anuncia publicamente do que assina efetivamente. Pense em como responderia se fosse a sua própria empresa a sofrer esta situação.
+}
+
+\pagina{slides/slide-33.png}{
+A explicação está no slide anterior. Fica aqui o alerta prático que fundamenta a resposta: números de disponibilidade em páginas de marketing não têm qualquer valor contratual. O único documento que conta, para efeitos de compensação, é o SLA efetivamente assinado, com um indicador e um objetivo bem definidos. Ler esse documento com atenção, antes de assinar, é tão parte do trabalho de um engenheiro de infraestrutura como saber calcular disponibilidade combinada.
+}
+
+\pagina{slides/slide-34.png}{
+Existem, no essencial, três formas de uma organização dispor de infraestrutura de computação, e a diferença entre elas está em quem possui e opera cada camada. No modelo on-premises a organização é dona do datacenter, do edifício ao servidor, e controla por completo a infraestrutura, ao custo de um investimento inicial elevado e de uma responsabilidade operacional constante, que inclui energia, arrefecimento e pessoal especializado. No colocation a organização continua dona do equipamento, mas aluga o espaço físico, a energia e o arrefecimento a um datacenter de terceiros, partilhando assim os custos fixos da instalação sem abdicar do controlo sobre as máquinas. Na cloud pública deixa de haver equipamento próprio: os recursos são geridos inteiramente pelo fornecedor e faturados de acordo com o consumo. Estes três modelos não competem apenas em preço. Competem sobretudo na fronteira entre aquilo que a organização decide controlar e aquilo que prefere delegar.
+}
+
+\pagina{slides/slide-35.png}{
+A escolha entre estes três modelos tem uma leitura financeira que vale a pena tornar explícita. CapEx designa despesa de capital, o investimento feito uma vez, à partida, em equipamento e instalações, e depois amortizado contabilisticamente ao longo de vários anos. É o modelo típico do on-premises: a organização tem de comprar capacidade suficiente para o pico de procura que antecipa, o que deixa grande parte dessa capacidade parada e desperdiçada na maior parte do tempo. OpEx designa despesa operacional, um custo recorrente e proporcional ao que efetivamente se consome, o modelo característico da cloud pública. A vantagem do OpEx é alinhar o custo com a procura real e evitar imobilizar capital que poderia ser aplicado noutro lugar. Não é, porém, vantajosa em todos os cenários. Para cargas de trabalho estáveis e previsíveis ao longo de vários anos, o custo total acumulado da cloud pode acabar por superar o de possuir a própria infraestrutura.
+}
+
+\pagina{slides/slide-36.png}{
+O diagrama resume visualmente os dois modelos lado a lado. Do lado do CapEx, siga a sequência: um investimento grande e único no início, dimensionado para o pico de procura previsto, resulta invariavelmente em capacidade parada durante a maior parte do tempo de vida do equipamento. Do lado do OpEx, a sequência é diferente: pagamentos recorrentes, proporcionais ao consumo real, com a capacidade a ajustar-se automaticamente à procura observada, sem nunca imobilizar capital à partida. Nenhum dos dois é universalmente melhor, cada um serve um padrão de procura diferente, como o próximo caso prático explora.
+}
+
+\pagina{slides/slide-37.png}{
+Este caso contrasta deliberadamente dois extremos: uma startup sem histórico nem capital, incapaz de prever se vai ter cem ou cem mil utilizadores dentro de seis meses, e uma fábrica com décadas de operação, cuja procura de processamento mal varia de mês para mês. Vale a pena discutir, antes de avançar, se o mesmo modelo de operação serve bem as duas, ou se a resposta certa depende inteiramente do padrão de procura de cada uma.
+}
+
+\pagina{slides/slide-38.png}{
+A pergunta foca-se apenas na primeira das duas empresas do caso anterior, a startup. Pondere os dois fatores que o enunciado destaca, a incerteza da procura e a escassez de capital, e veja qual dos dois pesa mais na decisão.
+}
+
+\pagina{slides/slide-39.png}{
+A explicação está detalhada no slide anterior. Vale a pena notar, também, a resposta implícita para a segunda empresa do caso prático: com uma procura estável há uma década, a incerteza que justifica o OpEx da startup simplesmente não existe, e o CapEx on-premises tende a compensar a prazo. Não há uma resposta certa universal entre os dois modelos, há apenas uma resposta certa para cada padrão de procura.
+}
+
+\pagina{slides/slide-40.png}{
+Os grandes fornecedores de cloud organizam a sua infraestrutura segundo uma hierarquia geográfica pensada para conter falhas. No topo estão as regiões, áreas geográficas distintas e distantes entre si, cada uma com os seus próprios datacenters. Dentro de cada região existem várias zonas de disponibilidade, datacenters fisicamente separados que têm fontes de energia e ligações de rede independentes entre si, mas que comunicam através de rede de latência muito baixa, suficientemente rápida para que aplicações distribuídas repliquem dados entre zonas sem penalizar de forma sensível o desempenho. Espalhar réplicas de um serviço por várias zonas de uma mesma região protege contra a falha de um datacenter inteiro, e não apenas de um servidor isolado. Espalhar por várias regiões protege contra falhas de escala ainda maior, como um desastre natural, e tem o benefício adicional de aproximar o serviço dos utilizadores espalhados por diferentes partes do mundo. A escolha da região não é apenas técnica: obriga muitas vezes a respeitar requisitos legais sobre onde os dados podem fisicamente residir, como acontece com o RGPD na União Europeia.
+}
+
+\pagina{slides/slide-41.png}{
+Duas tendências recentes merecem destaque. Os datacenters modulares, também chamados contentorizados porque muitas vezes vêm literalmente dentro de um contentor de transporte marítimo, são unidades pré-fabricadas de fábrica, prontas a ligar assim que chegam ao local de destino. Permitem expandir a capacidade de um datacenter em semanas, em vez dos meses ou anos típicos de uma construção tradicional, e a capacidade total cresce simplesmente acrescentando mais módulos junto dos já existentes. Os datacenters de edge seguem uma lógica diferente: em vez de serem grandes e centralizados, são pequenos e numerosos, colocados fisicamente perto dos utilizadores finais, por vezes numa central telefónica de bairro ou junto de uma antena de telecomunicações. O objetivo aqui não é capacidade, é latência. Aproximar o processamento de quem o consome reduz drasticamente o tempo de resposta em aplicações sensíveis ao atraso, como jogos online ou veículos autónomos.
+}
+
+\pagina{slides/slide-42.png}{
+O consumo energético de um datacenter deixou de ser apenas uma linha de custo operacional para se tornar também uma questão de escrutínio público e regulatório. Já conhecemos da Aula 01 o PUE, que relaciona a energia total consumida pela instalação com a energia efetivamente usada pelo equipamento de TI. O mesmo consórcio que definiu essa métrica, o The Green Grid, propôs indicadores complementares para outras dimensões ambientais. O WUE mede a água consumida por unidade de energia do equipamento de TI, uma métrica particularmente relevante em instalações que recorrem a arrefecimento evaporativo. O CUE mede as emissões de carbono associadas a essa mesma energia consumida. Na prática, as estratégias mais comuns para melhorar estes indicadores incluem instalar datacenters em climas frios, reaproveitar o calor residual gerado pelos servidores para aquecer edifícios próximos, e contratar energia proveniente de fontes renováveis. E convém sublinhar um ponto que passa facilmente despercebido: a consolidação e a virtualização, que vamos ver já na Aula 03, são também, na sua essência, medidas de eficiência energética.
+}
+
+\pagina{slides/slide-43.png}{
+Esta última pergunta testa uma confusão comum, e perigosa na prática: assumir que a garantia de disponibilidade de uma zona de cloud se transfere automaticamente para qualquer aplicação lá instalada. Pense em tudo o que pode correr mal numa aplicação que nunca é culpa do fornecedor de cloud.
+}
+
+\pagina{slides/slide-44.png}{
+A explicação está no slide anterior. Vale a pena reter a ideia central como regra geral, útil muito além desta aula: a garantia de disponibilidade de um fornecedor é sempre um teto para o que é tecnicamente possível, nunca uma garantia automática do que a aplicação vai efetivamente entregar. Entre o teto do fornecedor e a disponibilidade real sentida pelo utilizador fica toda a arquitetura que a equipa decide construir, ou não construir, por cima.
+}
+
+\pagina{slides/slide-45.png}{
+Este é um bom momento para aplicar os conceitos da aula a algo concreto e próximo: o próprio servidor Proxmox usado nos laboratórios. Do ponto de vista da classificação que estudámos, este servidor é, estruturalmente, um único ponto: um só servidor físico, com uma só fonte de alimentação e uma só ligação de rede. Pare um momento e pense em que Tier o colocaria, sabendo que não existe qualquer via redundante de energia nem de rede. A resposta, com base no que vimos na Pergunta 1 e nos dois slides seguintes, só pode ser Tier I, porque não há qualquer redundância presente. Todas as máquinas virtuais de todos os alunos da turma correm sobre este mesmo hardware físico, o que ilustra em pequena escala dois conceitos que atravessam o semestre inteiro. Por um lado, resource pooling, a partilha eficiente de um recurso finito entre múltiplos consumidores, já discutida na Aula 01. Por outro lado, single point of failure, um único ponto cuja falha derruba todo o sistema de uma vez, que vamos retomar com mais detalhe na Aula 09. Fica como exercício de reflexão tentar estimar, com as fórmulas de série e paralelo vistas nesta aula, qual seria a disponibilidade combinada aproximada de um cenário como este.
+}
+
+\pagina{slides/slide-46.png}{
+Feche-se aqui o primeiro bloco de ideias da aula, agora bastante mais rico do que os dois slides com que este bloco começaria numa versão mais curta. Um datacenter só é tão fiável quanto o seu sistema menos redundante, energia, arrefecimento, rede ou espaço, como a Pergunta 2 deixou claro com o seu truque. Os Tiers do Uptime Institute dão um vocabulário comum para descrever essa redundância, do Tier I sem qualquer reserva até ao Tier IV com duplicação completa de tudo o que é crítico. Ao nível da rede interna, a topologia leaf-spine tem vindo a substituir a three-tier tradicional precisamente porque garante uma distância curta e previsível entre quaisquer dois servidores, como o caso prático do serviço de streaming ilustrou. E, do ponto de vista matemático, a disponibilidade combinada de um sistema depende inteiramente de como os seus componentes estão organizados, em série só pode piorar, em paralelo só pode melhorar, e os exemplos resolvidos mostraram como calculá-la passo a passo.
+}
+
+\pagina{slides/slide-47.png}{
+O segundo bloco deslocou o olhar da arquitetura física para quem opera e onde. Cada nove adicional de disponibilidade reduz de forma drástica, e não linear, o tempo de indisponibilidade tolerável ao longo de um ano, e é essa relação que um SLA formaliza em contrato, desde que seja o SLA realmente assinado, e não a promessa de um site institucional. Vimos também os três grandes modelos de operação, on-premises, colocation e cloud pública, que representam pontos diferentes na troca entre controlo e custo, entre CapEx e OpEx, uma escolha que depende sobretudo de quão previsível é a procura de cada organização. Regiões e zonas de disponibilidade protegem contra falhas de escala crescente, mas como a última pergunta mostrou, a garantia do fornecedor nunca substitui uma boa arquitetura de distribuição por parte de quem constrói por cima. Os datacenters modulares e de edge respondem a exigências cada vez maiores de rapidez de implantação e de proximidade aos utilizadores. E o nosso próprio servidor de laboratório, visto à luz destes conceitos, funciona como um pequeno caso de estudo de tudo isto: um Tier I real, partilhado por toda a turma.
+}
+
+\pagina{slides/slide-48.png}{
+Aqui termina a aula. As sete perguntas ao longo desta sebenta não têm como objetivo avaliar, têm como objetivo dar tempo para pensar antes de ver a resposta, exatamente como acontece em aula. Os pontos revistos não esgotam tudo o que foi dito e discutido oralmente, mas devem servir de apoio sólido ao estudo autónomo antes da aula seguinte, que deixa a arquitetura física do datacenter para trás e passa para a camada de virtualização, o mecanismo que torna esse mesmo hardware partilhável ao nível do sistema operativo.
+}
+
+\end{document}
