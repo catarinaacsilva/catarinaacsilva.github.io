@@ -4,6 +4,8 @@
 \usepackage{lmodern}
 \usepackage{xcolor}
 \usepackage[portuguese]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
 
@@ -90,9 +92,10 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/3)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O que é, fisicamente, um datacenter.
-    \item Porque se classificam datacenters por níveis de redundância.
-    \item Classificação Uptime Institute: os quatro Tiers.
+    \item Definição e subsistemas constituintes de um datacenter.
+    \item Domínios de falha e pontos únicos de falha.
+    \item Níveis de redundância: $N$, $N+1$, $2N$.
+    \item Classificação do Uptime Institute e normas alternativas.
 \end{itemize}
 \end{frame}
 
@@ -100,9 +103,9 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/3)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Topologias de rede em datacenter e tráfego este-oeste vs norte-sul.
-    \item Cálculo de disponibilidade: os "noves", série e paralelo.
-    \item SLAs na prática e outras normas de classificação.
+    \item Topologias de rede: hierárquica de três camadas e leaf-spine.
+    \item Padrões de tráfego este-oeste e norte-sul.
+    \item Razão de sobre-subscrição e dimensionamento de uplinks.
 \end{itemize}
 \end{frame}
 
@@ -110,26 +113,26 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(3/3)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Modelos de operação: on-premises, colocation, cloud pública.
-    \item CapEx vs OpEx.
-    \item Regiões, zonas de disponibilidade, tendências e sustentabilidade.
-    \item Caso de estudo: o servidor desta UC.
+    \item Quantificação da disponibilidade: MTBF, MTTR e classes de serviço.
+    \item Modelos de fiabilidade em série e em paralelo.
+    \item Estrutura formal de um acordo de nível de serviço.
+    \item Modelos de operação, distribuição geográfica e eficiência energética.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{O Que é um Datacenter, Afinal}
+\frametitle{Definição de Datacenter}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Um datacenter é um edifício, ou parte de um edifício, construído para uma única função: manter servidores ligados, alimentados e frios, de forma ininterrupta.
-    \item Não é apenas "uma sala cheia de computadores". É a combinação de vários sistemas que têm todos de funcionar em simultâneo, sem exceção.
-    \item Quatro sistemas críticos: \textbf{alimentação elétrica}, \textbf{arrefecimento}, \textbf{rede} e \textbf{espaço físico} (racks, pavimento, segurança).
-    \item Esta aula estuda como estes quatro sistemas se organizam, se classificam por nível de redundância, e se pagam.
+    \item Um \textbf{datacenter} é uma instalação destinada a alojar sistemas de computação e respetiva infraestrutura de suporte, dimensionada para operação contínua.
+    \item A instalação compreende quatro subsistemas interdependentes: \textbf{distribuição de energia}, \textbf{controlo térmico}, \textbf{conectividade de rede} e \textbf{espaço físico} com os respetivos controlos de acesso.
+    \item Os subsistemas encontram-se em dependência mútua: a indisponibilidade de qualquer um deles compromete a operação do conjunto.
+    \item A presente aula analisa a organização destes subsistemas, os critérios normativos que os classificam e os modelos sob os quais são operados.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Dentro de um Datacenter: as Peças Básicas}
+\frametitle{Subsistemas de uma Instalação}
 \vfill
 \begin{center}
 \includegraphics[width=0.95\textwidth,height=0.72\textheight,keepaspectratio]{../Diagramas/a02-anatomia-datacenter.png}
@@ -138,43 +141,45 @@
 \end{frame}
 
 \begin{frame}
-\frametitle{O Que Pode Correr Mal}
+\frametitle{Domínios de Falha}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Cada um dos quatro sistemas tem os seus próprios pontos de falha: um transformador que dispara, um chiller que avaria, uma fibra que é cortada por obras, um piso técnico que inunda.
-    \item A pergunta que atravessa toda esta aula não é ``isto pode falhar?''. É sempre ``quando isto falhar, o que acontece a seguir?''.
-    \item É esta segunda pergunta que dá origem aos Tiers, às topologias redundantes e aos SLAs que vamos ver já a seguir.
+    \item Designa-se por \textbf{domínio de falha} o conjunto de componentes afetados pela falha de um elemento comum de que todos dependem.
+    \item Exemplos por subsistema: um quadro de distribuição elétrica, uma unidade de arrefecimento, um comutador de topo de bastidor, um troço de fibra óptica.
+    \item Um componente cuja falha determina a indisponibilidade do sistema completo constitui um \textbf{ponto único de falha} (\emph{single point of failure}).
+    \item A análise de arquitetura não se ocupa da possibilidade de falha, que se assume certa, mas da sua \emph{propagação}: que fração do sistema é afetada e por que via.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Pergunta 1}
-\begin{pergunta}{Um cenário simples}
-Um datacenter tem uma única linha de alimentação elétrica, sem UPS nem gerador. Um técnico desliga essa linha por engano, a meio de uma reparação de rotina. O que acontece?
+\begin{pergunta}{Propagação de uma falha elétrica}
+Considere-se uma instalação com via única de alimentação, sem UPS nem grupo gerador. Durante uma manutenção, essa via é inadvertidamente interrompida. Qual o efeito sobre o serviço?
 \begin{itemize}
-    \item[A)] Nada. Os servidores continuam a correr com a bateria interna da fonte de alimentação.
-    \item[B)] Os servidores desligam-se de imediato e todos os serviços ficam indisponíveis até a energia voltar.
-    \item[C)] Os servidores passam automaticamente a usar a rede elétrica do edifício vizinho.
-    \item[D)] Apenas os discos param; os processadores continuam a correr normalmente.
+    \item[A)] Nulo. As fontes dos servidores asseguram autonomia até ao restabelecimento.
+    \item[B)] Indisponibilidade total e imediata de todos os sistemas alojados, até ao restabelecimento da alimentação.
+    \item[C)] Comutação automática para a alimentação de uma instalação adjacente.
+    \item[D)] Paragem apenas do armazenamento, mantendo-se o processamento.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 1}
-\begin{resposta}{A resposta correta é B}
-Sem UPS nem gerador, não existe qualquer fonte de energia alternativa. A falha é total e imediata, para todo o datacenter. Uma fonte de alimentação interna de um servidor amortece, no máximo, milissegundos de interrupção, nunca minutos ou horas. Este é, na prática, um datacenter Tier I: zero redundância no sistema mais crítico de todos.
+\begin{resposta}{Opção correta: B}
+Na ausência de UPS e de grupo gerador não existe via alternativa de alimentação: a via única constitui um ponto único de falha cujo domínio abrange a totalidade da instalação. As fontes de alimentação dos servidores asseguram estabilização na ordem dos milissegundos, insuficiente para cobrir uma interrupção prolongada. A configuração descrita corresponde ao nível mais baixo da classificação que se apresenta em seguida.
 \end{resposta}
 \end{frame}
 
 \begin{frame}
-\frametitle{Porque Classificar Datacenters}
+\frametitle{Níveis de Redundância}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Se toda a falha é inevitável mais cedo ou mais tarde, a pergunta que interessa é: quantos caminhos alternativos existem antes de o serviço parar?
-    \item A esse número de caminhos alternativos chama-se \textbf{redundância}, e mede-se em três níveis padrão: \textbf{N}, \textbf{N+1} e \textbf{2N}.
-    \item \textbf{N} é a capacidade mínima necessária para operar, sem qualquer margem. \textbf{N+1} acrescenta uma unidade extra de reserva. \textbf{2N} duplica por completo o sistema.
-    \item É este vocabulário, N, N+1 e 2N, que o Uptime Institute usa para definir os seus quatro Tiers, o assunto dos dois próximos slides.
+    \item Sendo a falha inevitável, o critério de projeto relevante é o número de vias alternativas disponíveis antes da interrupção do serviço.
+    \item \textbf{$N$}: capacidade estritamente necessária para sustentar a carga nominal, sem margem.
+    \item \textbf{$N+1$}: acresce uma unidade de reserva ao conjunto necessário. Tolera a indisponibilidade de um componente, mantendo-se a via de distribuição única.
+    \item \textbf{$2N$}: duplicação integral do subsistema, incluindo as vias de distribuição. Tolera a perda de metade da instalação sem degradação do serviço.
+    \item Variante intermédia frequente: \textbf{$2(N+1)$}, aplicada quando se exige manutenção concorrente sobre uma via já redundante.
 \end{itemize}
 \end{frame}
 
@@ -182,9 +187,10 @@ Sem UPS nem gerador, não existe qualquer fonte de energia alternativa. A falha 
 \frametitle{Classificação Uptime Institute \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O Uptime Institute classifica a \emph{topologia} da infraestrutura em quatro níveis (Tiers), de I a IV, segundo a redundância e a tolerância a falhas.
-    \item Tier I: infraestrutura básica, sem redundância; suscetível a interrupções por manutenção ou falha.
-    \item Tier II: introduz componentes redundantes (N+1), mas mantém uma única via de distribuição.
+    \item O Uptime Institute classifica a \emph{topologia} da infraestrutura em quatro níveis (Tiers), de I a IV, em função da redundância e da tolerância a falhas.
+    \item A classificação incide sobre a organização dos subsistemas, e não sobre o desempenho, a dimensão ou a qualidade do equipamento instalado.
+    \item \textbf{Tier I}: infraestrutura de capacidade básica, sem redundância. Qualquer intervenção de manutenção ou avaria implica interrupção do serviço.
+    \item \textbf{Tier II}: componentes de capacidade redundantes ($N+1$), mantendo-se uma via única de distribuição, que permanece como ponto único de falha.
 \end{itemize}
 \end{frame}
 
@@ -192,54 +198,67 @@ Sem UPS nem gerador, não existe qualquer fonte de energia alternativa. A falha 
 \frametitle{Classificação Uptime Institute \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Tier III: múltiplas vias de distribuição independentes, permitindo manutenção sem interrupção do serviço.
-    \item Tier IV: tolerância a falhas, com redundância 2N em todos os componentes críticos.
-    \item Níveis de redundância: \textbf{N} (capacidade mínima necessária), \textbf{N+1} (uma unidade extra), \textbf{2N} (duplicação completa do sistema).
+    \item \textbf{Tier III}: múltiplas vias de distribuição independentes, das quais uma se encontra ativa. Admite \emph{manutenção concorrente}, isto é, a intervenção sobre qualquer componente sem interrupção do serviço.
+    \item \textbf{Tier IV}: tolerância a falhas com redundância $2N$ em todos os componentes críticos e compartimentação física entre vias. Uma falha única não produz efeito observável no serviço.
+    \item Critério determinante: o nível atribuído corresponde ao do \emph{subsistema menos redundante}, e não à média dos subsistemas.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Pergunta 2}
-\begin{pergunta}{Um caso com truque}
-Um datacenter tem duas linhas de alimentação elétrica completamente independentes, cada uma com o seu próprio gerador, e também duas vias de rede separadas. O sistema de arrefecimento, contudo, é único, sem qualquer redundância. Que Tier lhe atribuiria, aproximadamente?
+\begin{pergunta}{Atribuição de nível}
+Uma instalação dispõe de duas vias de alimentação elétrica independentes, cada uma com grupo gerador próprio, e de duas vias de rede distintas. O subsistema de arrefecimento é constituído por uma única unidade, sem reserva. Que nível lhe é atribuível?
 \begin{itemize}
-    \item[A)] Tier IV, porque tem duas vias completas de energia e de rede.
-    \item[B)] Tier III, porque tem múltiplas vias independentes nalguns sistemas.
-    \item[C)] O nível global é limitado pelo sistema menos redundante, o arrefecimento, por isso não pode ser considerado Tier III nem Tier IV.
-    \item[D)] Tier II, por ter pelo menos uma unidade extra nalgum lado.
+    \item[A)] Tier IV, por dispor de dupla via de energia e de rede.
+    \item[B)] Tier III, por dispor de vias independentes em parte dos subsistemas.
+    \item[C)] Nível limitado pelo subsistema de arrefecimento, não sendo classificável como Tier III nem como Tier IV.
+    \item[D)] Tier II, por dispor de pelo menos uma unidade de reserva.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 2}
-\begin{resposta}{A resposta correta é C}
-A classificação em Tiers avalia \textbf{todos} os sistemas críticos em conjunto, não apenas o mais impressionante. Um datacenter só é tão redundante quanto o seu sistema menos redundante. Aqui, o arrefecimento sem qualquer via alternativa é um ponto único de falha: se o chiller avaria, a sala sobreaquece e os servidores desligam-se automaticamente por proteção, mesmo com energia e rede perfeitamente duplicadas. Esta é, sem dúvida, a armadilha mais comum ao classificar um datacenter na prática.
+\begin{resposta}{Opção correta: C}
+A classificação incide sobre o conjunto dos subsistemas críticos. A unidade de arrefecimento sem reserva constitui um ponto único de falha cujo domínio abrange a sala completa: em caso de avaria, a temperatura excede os limites de operação e os sistemas desligam-se por proteção térmica, independentemente do estado da alimentação e da rede. O nível atribuível é, por conseguinte, determinado pelo subsistema menos redundante.
 \end{resposta}
 \end{frame}
 
 \begin{frame}
-\frametitle{Topologias de Rede em Datacenter \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Normas de Classificação}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Three-tier:} organização clássica em três camadas --- core, aggregation e access.
-    \item A camada core interliga o datacenter ao exterior; a aggregation concentra tráfego; a access liga diretamente os servidores.
-    \item Limitação: o tráfego entre servidores em racks diferentes percorre várias camadas, introduzindo latência.
+    \setlength\itemsep{0.35cm}
+    \item A classificação do Uptime Institute é a de utilização mais generalizada, coexistindo com normas de âmbito distinto.
+    \item \textbf{ANSI/TIA-942}: norma norte-americana de infraestrutura de telecomunicações, que define os níveis \emph{Rated-1} a \emph{Rated-4} e abrange adicionalmente cablagem estruturada, disposição do espaço e proteção contra incêndio.
+    \item \textbf{EN 50600}: série normativa europeia, com classes de disponibilidade de 1 a 4, integrando requisitos de eficiência energética e de segurança física.
+    \item As escalas são análogas em princípio mas não estabelecem equivalência formal entre si; a norma aplicada deve ser explicitada em qualquer caracterização.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Topologias de Rede em Datacenter \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Topologia Hierárquica de Três Camadas}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Leaf-spine} (topologia Clos): cada switch leaf liga-se a todos os switches spine, sem ligações diretas entre leafs.
-    \item Garante um número previsível e constante de saltos entre quaisquer dois servidores.
-    \item Mais adequada a tráfego este-oeste intenso, típico de aplicações distribuídas e cloud.
+    \item Organização clássica em três camadas: \textbf{core}, \textbf{aggregation} e \textbf{access}.
+    \item A camada \emph{core} assegura a ligação ao exterior e o encaminhamento entre blocos; a camada \emph{aggregation} concentra o tráfego e delimita domínios de difusão; a camada \emph{access} liga os servidores.
+    \item O encaminhamento entre servidores alojados em bastidores distintos exige a travessia ascendente e descendente da hierarquia, com acréscimo de latência proporcional ao número de saltos.
+    \item A latência entre dois servidores depende, assim, da respetiva localização física, o que compromete a previsibilidade do desempenho.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Three-Tier vs Leaf-Spine}
+\frametitle{Topologia Leaf-Spine}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Topologia derivada das redes de Clos: cada comutador \emph{leaf} estabelece ligação a todos os comutadores \emph{spine}, não existindo adjacências diretas entre leafs nem entre spines.
+    \item O percurso entre quaisquer dois servidores ligados a leafs distintos compreende exatamente dois saltos, independentemente da localização física.
+    \item A multiplicidade de percursos equivalentes permite distribuição de carga por ECMP (\emph{Equal-Cost Multi-Path}), com agregação da largura de banda disponível.
+    \item A capacidade agregada escala pela adição de spines; a densidade de portas de cada spine determina o número máximo de leafs suportados.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Comparação das Topologias}
 \vfill
 \begin{center}
 \includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a02-topologias.png}
@@ -247,84 +266,143 @@ A classificação em Tiers avalia \textbf{todos} os sistemas críticos em conjun
 \vfill
 \end{frame}
 
-
 \begin{frame}
-\frametitle{Tráfego Este-Oeste vs Norte-Sul}
+\frametitle{Padrões de Tráfego}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Tráfego norte-sul}: entra ou sai do datacenter, entre clientes externos e os servidores internos.
-    \item \textbf{Tráfego este-oeste}: circula entre servidores dentro do próprio datacenter (ex.\ um serviço a chamar outro).
-    \item Aplicações distribuídas e arquiteturas de microsserviços multiplicaram o volume de tráfego este-oeste.
-    \item A topologia leaf-spine foi desenhada precisamente para este cenário: qualquer par de servidores fica a igual distância (dois saltos).
+    \item \textbf{Tráfego norte-sul}: atravessa a fronteira da instalação, entre clientes externos e os sistemas alojados.
+    \item \textbf{Tráfego este-oeste}: circula entre sistemas internos, resultante de invocações entre componentes de uma mesma aplicação.
+    \item A decomposição de aplicações monolíticas em serviços distribuídos inverteu a proporção histórica entre os dois padrões: um único pedido externo pode originar dezenas de invocações internas.
+    \item A topologia leaf-spine responde a este padrão ao uniformizar a distância entre quaisquer dois pontos internos da rede.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Caso Prático: Escolher a Topologia}
+\frametitle{Razão de Sobre-subscrição}
 \begin{itemize}
     \setlength\itemsep{0.35cm}
-    \item Uma aplicação de streaming de vídeo está decomposta em 200 microsserviços: autenticação, recomendação, catálogo, faturação, e muitos outros.
-    \item Estes microsserviços trocam mensagens entre si constantemente, muito mais tráfego interno do que tráfego proveniente dos clientes externos.
-    \item A equipa está a desenhar a rede do novo datacenter que vai alojar esta aplicação.
+    \item Define-se \textbf{razão de sobre-subscrição} como o quociente entre a largura de banda agregada dos portos descendentes e a largura de banda agregada dos portos ascendentes de um comutador.
+    \item Exemplo: um leaf com 48 portos de 10\,Gbit/s para servidores e 4 portos de 40\,Gbit/s para spines apresenta
+    \[
+      \text{razão} \;=\; \frac{48 \times 10}{4 \times 40} \;=\; \frac{480}{160} \;=\; 3{:}1 .
+    \]
+    \item Uma razão de $1{:}1$ designa-se por \emph{non-blocking}: qualquer padrão de tráfego é suportado sem contenção, ao custo de capacidade de uplink adicional.
+    \item O valor admissível decorre do padrão de tráfego previsto; cargas com tráfego este-oeste intenso exigem razões mais próximas da unidade.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Caso de Análise: Seleção de Topologia}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item Considere-se uma plataforma de distribuição de vídeo decomposta em cerca de 200 serviços, entre os quais autenticação, catálogo, recomendação e faturação.
+    \item O volume de invocações entre serviços excede substancialmente o volume de tráfego proveniente de clientes externos, sem que se identifique um padrão estável de comunicação entre pares.
+    \item Encontra-se em fase de projeto a rede da instalação destinada a alojar a plataforma.
 \end{itemize}
 \vspace{0.2cm}
-{\small\color{NudeTaupe}\textbf{Pensem 2 minutos:} que topologia escolheriam, e porquê? O que corre mal se escolherem a errada?}
+{\small\color{NudeTaupe}\textbf{Discussão (2 minutos):} que topologia se justifica, e que consequências decorreriam da alternativa?}
 \end{frame}
 
 \begin{frame}
 \frametitle{Pergunta 3}
-\begin{pergunta}{A mesma aplicação de streaming}
-Retomando o caso anterior: 200 microsserviços, tráfego este-oeste muito superior ao tráfego externo. Que topologia deve a equipa escolher?
+\begin{pergunta}{Decisão de projeto}
+Para a plataforma descrita, com predominância de tráfego este-oeste e padrão de comunicação entre pares não determinístico, que topologia se justifica?
 \begin{itemize}
-    \item[A)] Three-tier, porque é a mais testada e madura no mercado.
-    \item[B)] Leaf-spine, porque garante uma distância constante de dois saltos entre quaisquer dois servidores, e este cenário tem tráfego este-oeste muito intenso.
-    \item[C)] Qualquer uma serve; a topologia de rede não influencia o desempenho de aplicações distribuídas.
-    \item[D)] Three-tier, porque a camada core já resolve as ligações entre racks diferentes.
+    \item[A)] Hierárquica de três camadas, por maturidade e generalização de uso.
+    \item[B)] Leaf-spine, por assegurar distância constante de dois saltos entre quaisquer servidores e admitir agregação de percursos por ECMP.
+    \item[C)] Indiferente, dado que a topologia não condiciona o desempenho de aplicações distribuídas.
+    \item[D)] Hierárquica de três camadas, dado que a camada \emph{core} assegura o encaminhamento entre bastidores.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 3}
-\begin{resposta}{A resposta correta é B}
-Com 200 microsserviços a comunicarem constantemente entre si, qualquer par pode precisar de falar a qualquer momento. Na three-tier, comunicações entre racks diferentes sobem até à aggregation, por vezes até ao core, antes de voltarem a descer: latência que se soma a cada salto. Na leaf-spine, a distância é sempre dois saltos, independentemente de quais servidores comunicam. É exatamente para este padrão de tráfego que a leaf-spine foi desenhada.
+\begin{resposta}{Opção correta: B}
+Não sendo determinístico o padrão de comunicação, qualquer par de serviços pode requerer comunicação em qualquer instante. Na topologia hierárquica, a latência depende da localização relativa dos servidores, introduzindo variabilidade não controlável no tempo de resposta agregado de um pedido que encadeia dezenas de invocações. A topologia leaf-spine uniformiza essa distância e, por ECMP, distribui o tráfego pelos percursos equivalentes disponíveis.
 \end{resposta}
 \end{frame}
 
 \begin{frame}
-\frametitle{Antes das Fórmulas: o que é Disponibilidade}
+\frametitle{Quantificação da Disponibilidade}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Disponibilidade é, em termos simples, a fração de tempo em que um sistema está a funcionar corretamente, expressa em percentagem.
-    \item Pode pensar-se também como uma probabilidade: um componente com 99\% de disponibilidade está operacional, em média, 99\% do tempo. Há 1\% de hipótese de o encontrar em falha num instante qualquer.
-    \item Pensar em disponibilidade como probabilidade é o que permite combinar vários componentes numa única fórmula para o sistema inteiro, exatamente o que vem a seguir.
+    \setlength\itemsep{0.35cm}
+    \item Define-se \textbf{disponibilidade} $A$ como a fração do tempo em que o sistema presta serviço conforme a especificação:
+    \[
+      A \;=\; \frac{T_{\text{operacional}}}{T_{\text{operacional}} + T_{\text{indisponível}}} .
+    \]
+    \item Em regime estacionário, exprime-se em função dos tempos médios característicos:
+    \[
+      A \;=\; \frac{\mathrm{MTBF}}{\mathrm{MTBF} + \mathrm{MTTR}} .
+    \]
+    \item \textbf{MTBF} (\emph{Mean Time Between Failures}): tempo médio entre falhas consecutivas. \textbf{MTTR} (\emph{Mean Time To Repair}): tempo médio de restabelecimento do serviço.
+    \item A disponibilidade admite ainda interpretação probabilística: $A$ é a probabilidade de o sistema se encontrar operacional num instante arbitrário, o que fundamenta a composição de componentes apresentada adiante.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Cálculo de Disponibilidade \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Implicações de MTBF e MTTR}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Disponibilidade (SLA) expressa habitualmente em percentagem de tempo operacional: os chamados "noves".
-    \item 99,9\% (três noves) corresponde a cerca de 8,76h de downtime por ano.
-    \item 99,99\% (quatro noves) corresponde a cerca de 52,6 minutos de downtime por ano.
-    \item 99,999\% (cinco noves) corresponde a cerca de 5,26 minutos de downtime por ano.
+    \setlength\itemsep{0.35cm}
+    \item A expressão $A = \mathrm{MTBF}/(\mathrm{MTBF}+\mathrm{MTTR})$ admite duas estratégias distintas de melhoria da disponibilidade.
+    \item \textbf{Aumentar o MTBF}: atuar sobre a frequência das falhas, por seleção de componentes, redundância e controlo de condições de operação.
+    \item \textbf{Reduzir o MTTR}: atuar sobre a duração da interrupção, por deteção automática, diagnóstico assistido, peças de substituição em reserva e procedimentos de recuperação ensaiados.
+    \item Em sistemas distribuídos, a redução do MTTR apresenta frequentemente melhor relação custo-benefício do que o aumento do MTBF, por não exigir substituição de hardware.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Cálculo de Disponibilidade \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Classes de Disponibilidade e Indisponibilidade Admissível}
+\vspace{0.2cm}
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Disponibilidade} & \textbf{Por ano} & \textbf{Por mês (30 d)} \\
+\midrule
+99{,}0\,\%    & 87\,h 36\,min   & 7\,h 12\,min  \\
+99{,}5\,\%    & 43\,h 48\,min   & 3\,h 36\,min  \\
+99{,}9\,\%    & 8\,h 46\,min    & 43\,min 12\,s \\
+99{,}99\,\%   & 52\,min 34\,s   & 4\,min 19\,s  \\
+99{,}999\,\%  & 5\,min 15\,s    & 26\,s         \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{0.3cm}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Componentes em \textbf{série}: a disponibilidade combinada é o produto das disponibilidades individuais, $A = A_1 \times A_2 \times \dots \times A_n$.
-    \item Componentes em série reduzem sempre a disponibilidade total do sistema.
-    \item Componentes em \textbf{paralelo} (redundantes): $A = 1 - (1-A_1)(1-A_2)\cdots(1-A_n)$.
-    \item A redundância em paralelo é a estratégia central para atingir Tiers mais elevados.
+    \setlength\itemsep{0.25cm}
+    \item Cada ordem de grandeza adicional reduz por um fator de dez a indisponibilidade admissível, exigindo alteração qualitativa da arquitetura.
+    \item A partir de 99{,}99\,\%, o orçamento anual não comporta intervenção manual: a deteção e a recuperação têm de ser automáticas.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Série vs Paralelo, Lado a Lado}
+\frametitle{Composição em Série}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item Componentes dizem-se em \textbf{série} quando a totalidade é necessária ao funcionamento do sistema. Admitindo independência estatística das falhas:
+    \[
+      A_{\text{série}} \;=\; \prod_{i=1}^{n} A_i .
+    \]
+    \item Sendo $A_i \le 1$ para todo o $i$, verifica-se $A_{\text{série}} \le \min_i A_i$: a composição em série não excede a disponibilidade do componente menos disponível.
+    \item Daqui decorre que o acréscimo de dependências em série degrada necessariamente a disponibilidade do conjunto, ainda que cada dependência seja individualmente fiável.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Composição em Paralelo}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item Componentes dizem-se em \textbf{paralelo} quando é suficiente que um se mantenha operacional. A indisponibilidade do conjunto exige a falha simultânea de todos:
+    \[
+      A_{\text{paralelo}} \;=\; 1 - \prod_{i=1}^{n} (1 - A_i) .
+    \]
+    \item Verifica-se $A_{\text{paralelo}} \ge \max_i A_i$: a redundância eleva a disponibilidade acima da de qualquer componente individual.
+    \item A validade da expressão depende da hipótese de \textbf{independência das falhas}. Componentes que partilham alimentação, via de rede ou versão de software apresentam correlação, e a disponibilidade efetiva é inferior à calculada.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Representação dos Dois Modelos}
 \vfill
 \begin{center}
 \includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a02-serie-paralelo.png}
@@ -333,237 +411,219 @@ Com 200 microsserviços a comunicarem constantemente entre si, qualquer par pode
 \end{frame}
 
 \begin{frame}
-\frametitle{Exemplo Resolvido: Série}
+\frametitle{Exemplo: Composição em Série}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Um serviço depende de um router com 99,95\% de disponibilidade e de uma base de dados sem réplica com 99,5\%, ligados em série.
-    \item $A = 0{,}9995 \times 0{,}995 = 0{,}9945$, ou seja, aproximadamente \textbf{99,45\%}.
-    \item Repare: o resultado fica sempre abaixo do pior dos dois componentes. A base de dados sem réplica, o elo mais fraco, arrasta a disponibilidade combinada para baixo consigo.
+    \setlength\itemsep{0.35cm}
+    \item Um serviço depende de um encaminhador com $A_1 = 0{,}9995$ e de uma instância de base de dados sem réplica com $A_2 = 0{,}995$, ambos necessários ao funcionamento.
+    \item Aplicando a expressão da composição em série:
+    \[
+      A \;=\; 0{,}9995 \times 0{,}995 \;=\; 0{,}99450 \;\approx\; 99{,}45\,\% .
+    \]
+    \item A indisponibilidade anual correspondente é de aproximadamente 48 horas.
+    \item O resultado situa-se abaixo de $\min(A_1, A_2) = 0{,}995$, confirmando a propriedade enunciada: a base de dados não replicada determina o limite superior da disponibilidade do conjunto.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Exemplo Resolvido: Paralelo}
+\frametitle{Exemplo: Composição em Paralelo}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Dois servidores web idênticos, cada um com 97\% de disponibilidade, atrás de um balanceador de carga assumido perfeito, configurados em paralelo redundante.
-    \item $A = 1 - (1-0{,}97)(1-0{,}97) = 1 - 0{,}03 \times 0{,}03 = 1 - 0{,}0009 = 0{,}9991$, ou seja, aproximadamente \textbf{99,91\%}.
-    \item Repare: o resultado supera qualquer um dos dois componentes individuais. Duas máquinas medianas, em paralelo, produzem um sistema mais disponível do que qualquer uma delas sozinha.
+    \setlength\itemsep{0.35cm}
+    \item Dois servidores aplicacionais equivalentes, cada um com $A_i = 0{,}97$, operam em configuração redundante sob um distribuidor de carga admitido ideal.
+    \item Aplicando a expressão da composição em paralelo:
+    \[
+      A \;=\; 1 - (1-0{,}97)^2 \;=\; 1 - 0{,}03^2 \;=\; 1 - 0{,}0009 \;=\; 0{,}9991 .
+    \]
+    \item O resultado, $99{,}91\,\%$, excede $\max_i A_i = 0{,}97$: a redundância produz um conjunto mais disponível do que qualquer dos seus constituintes.
+    \item O acréscimo de uma terceira réplica elevaria o valor a $1 - 0{,}03^3 = 0{,}999973$, evidenciando o retorno decrescente de cada réplica adicional.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Pergunta 4}
-\begin{pergunta}{Combinar série e paralelo}
-Um serviço depende de um balanceador de carga com 99,9\% de disponibilidade, ligado em série a dois servidores de aplicação idênticos, cada um com 98\% de disponibilidade, configurados em paralelo entre si. Qual é, aproximadamente, a disponibilidade combinada do sistema completo?
+\begin{pergunta}{Composição mista}
+Um serviço é constituído por um distribuidor de carga com $A = 0{,}999$, em série com dois servidores aplicacionais equivalentes de $A = 0{,}98$ cada, dispostos em paralelo entre si. Determine a disponibilidade do conjunto.
 \begin{itemize}
-    \item[A)] Aproximadamente 99,86\%.
-    \item[B)] Aproximadamente 96,04\%.
-    \item[C)] Aproximadamente 99,99\%.
-    \item[D)] Aproximadamente 98,00\%.
+    \item[A)] Aproximadamente $99{,}86\,\%$.
+    \item[B)] Aproximadamente $96{,}04\,\%$.
+    \item[C)] Aproximadamente $99{,}99\,\%$.
+    \item[D)] Aproximadamente $98{,}00\,\%$.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 4}
-\begin{resposta}{A resposta correta é A}
-Primeiro o paralelo dos dois servidores: $1-(1-0{,}98)(1-0{,}98) = 1-0{,}0004 = 0{,}9996$, ou 99,96\%. Depois a série com o balanceador: $0{,}999 \times 0{,}9996 \approx 0{,}9986$, ou 99,86\%. A opção B (96,04\%) é o erro mais comum: multiplicar $0{,}98 \times 0{,}98$ diretamente, como se os dois servidores estivessem em série em vez de em paralelo. Vale a pena identificar sempre, primeiro, qual é a configuração de cada par de componentes antes de calcular.
+\begin{resposta}{Opção correta: A}
+Resolve-se primeiro o subsistema redundante: $A_{\text{par}} = 1-(1-0{,}98)^2 = 1-0{,}0004 = 0{,}9996$. Compõe-se em seguida em série com o distribuidor: $A = 0{,}999 \times 0{,}9996 \approx 0{,}99860$, ou seja, $99{,}86\,\%$. A opção B resulta de aplicar a composição em série ao par redundante, $0{,}98^2 = 0{,}9604$, erro decorrente da não identificação prévia da configuração de cada subsistema. A resolução de topologias mistas procede sempre dos subsistemas redundantes para o exterior.
 \end{resposta}
 \end{frame}
 
 \begin{frame}
-\frametitle{SLAs na Prática}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Um \textbf{SLA} (Service Level Agreement) é um contrato formal entre fornecedor e cliente sobre o nível de serviço prestado.
-    \item Tipicamente inclui: percentagem de disponibilidade garantida, janelas de manutenção previstas, e tempo máximo de resposta a incidentes.
-    \item Pode incluir também \textbf{MTTR} (Mean Time To Repair) alvo e penalizações -- normalmente créditos de serviço -- se o compromisso não for cumprido.
-    \item O Tier do datacenter é um dos fatores que determina que nível de SLA é realisticamente possível oferecer.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Outras Normas de Classificação}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item A classificação do Uptime Institute é a mais citada, mas não é a única.
-    \item \textbf{TIA-942}: norma norte-americana de infraestrutura de telecomunicações para datacenters, que define níveis \emph{Rated-1} a \emph{Rated-4}.
-    \item Cobre também aspetos que os Tiers não abordam em detalhe, como cablagem estruturada e disposição do espaço.
-    \item \textbf{EN 50600}: série de normas europeias sobre instalações e infraestruturas de datacenters, com classes de disponibilidade de 1 a 4.
-    \item Abrange igualmente eficiência energética e segurança física, numa abordagem mais ampla.
-    \item Os níveis das diferentes normas são comparáveis em espírito, mas não diretamente equivalentes -- convém indicar sempre a norma usada.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
 \frametitle{Pergunta 5}
-\begin{pergunta}{O que vale um SLA}
-Um fornecedor promete, no seu site institucional, ``99,99\% de disponibilidade''. O contrato assinado pela sua empresa, contudo, fala apenas em ``melhor esforço'' e não define nenhum número. O datacenter sofre uma falha de dez horas num único mês. A sua empresa pode exigir uma compensação contratual?
+\begin{pergunta}{Determinação a partir de MTBF e MTTR}
+Um subsistema apresenta MTBF de 2000 horas e MTTR de 4 horas. Após a instalação de deteção automática de falhas, o MTTR reduz-se para 30 minutos, mantendo-se o MTBF. Qual a disponibilidade antes e depois da intervenção?
 \begin{itemize}
-    \item[A)] Sim, porque o site do fornecedor promete 99,99\%.
-    \item[B)] Não. Só o que está escrito no SLA assinado é exigível, e este não define nenhum compromisso verificável.
-    \item[C)] Sim, porque toda a indisponibilidade dá sempre direito a créditos de serviço.
-    \item[D)] Depende apenas do Tier do datacenter, não do que o SLA diz.
+    \item[A)] $99{,}80\,\%$ antes e $99{,}98\,\%$ depois.
+    \item[B)] $99{,}80\,\%$ antes e permanece $99{,}80\,\%$, por não se alterar o MTBF.
+    \item[C)] $80{,}00\,\%$ antes e $99{,}50\,\%$ depois.
+    \item[D)] $99{,}98\,\%$ antes e $99{,}80\,\%$ depois.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 5}
-\begin{resposta}{A resposta correta é B}
-Uma promessa de marketing não é um compromisso contratual. Só o SLA efetivamente assinado, com um indicador definido e um objetivo numérico claro, cria uma obrigação exigível. ``Melhor esforço'' não é verificável, logo não gera direito a créditos de serviço, por pior que a falha tenha sido. É por isto que se deve ler sempre o SLA real antes de assinar um contrato, e não confiar apenas no número anunciado no site.
+\begin{resposta}{Opção correta: A}
+Antes: $A = 2000/(2000+4) = 0{,}998004 \approx 99{,}80\,\%$. Depois: $A = 2000/(2000+0{,}5) = 0{,}99975 \approx 99{,}98\,\%$. A redução do MTTR por um fator de oito eleva a disponibilidade em cerca de uma ordem de grandeza na indisponibilidade admissível, sem qualquer alteração de hardware nem da frequência das falhas. Este resultado fundamenta o investimento prioritário em deteção e recuperação automáticas, e invalida a opção B, que pressupõe erradamente que apenas o MTBF determina a disponibilidade.
 \end{resposta}
 \end{frame}
 
 \begin{frame}
-\frametitle{Modelos de Operação}
+\frametitle{Acordos de Nível de Serviço \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{On-premises:} datacenter próprio, com controlo total sobre a infraestrutura, mas maior investimento inicial e operacional.
-    \item \textbf{Colocation:} a organização aluga espaço, energia e refrigeração num datacenter de terceiros, mantendo o controlo sobre o equipamento.
-    \item \textbf{Cloud pública:} recursos fornecidos por um terceiro, com faturação por utilização e sem gestão física da infraestrutura.
+    \item Um \textbf{SLA} (\emph{Service Level Agreement}) é o instrumento contratual que fixa o nível de serviço exigível ao fornecedor e as consequências do respetivo incumprimento.
+    \item Elementos constitutivos: o indicador medido e o seu método de medição, o valor de referência, o período de apuramento, as exclusões admitidas e o regime de compensação.
+    \item O nível contratualizável é condicionado pela topologia da instalação: uma configuração sem redundância não sustenta compromissos de disponibilidade elevada.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{CapEx vs OpEx}
+\frametitle{Acordos de Nível de Serviço \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{CapEx} (despesa de capital): investimento inicial em equipamento e instalações, amortizado ao longo de vários anos.
-    \item Modelo típico do on-premises: é preciso comprar capacidade para o pico previsto, que fica subutilizada a maior parte do tempo.
-    \item \textbf{OpEx} (despesa operacional): custo recorrente, proporcional ao consumo -- o modelo da cloud pública.
-    \item Vantagem do OpEx: alinha o custo com a procura real e evita imobilizar capital.
-    \item Contrapartida: em cargas estáveis e previsíveis a longo prazo, o custo total da cloud pode superar o de infraestrutura própria.
-    \item A decisão é económica além de técnica, e depende sobretudo da variabilidade da procura.
+    \item As \textbf{exclusões} determinam frequentemente o valor efetivo do acordo: janelas de manutenção programada, causas imputáveis ao cliente e casos de força maior não relevam para o apuramento.
+    \item A compensação assume tipicamente a forma de \textbf{crédito de serviço} proporcional ao desvio, e não de indemnização pelo prejuízo incorrido.
+    \item Daqui decorre uma limitação relevante: o SLA transfere uma fração reduzida do risco, pelo que não dispensa a arquitetura de redundância do lado do cliente.
 \end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{CapEx vs OpEx, Lado a Lado}
-\vfill
-\begin{center}
-\includegraphics[width=0.95\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a02-capex-opex.png}
-\end{center}
-\vfill
-\end{frame}
-
-\begin{frame}
-\frametitle{Caso Prático: Startup vs Empresa Madura}
-\begin{itemize}
-    \setlength\itemsep{0.35cm}
-    \item Empresa A: startup acabada de lançar, sem capital disponível para investir à partida, sem forma fiável de prever se vai ter 100 ou 100 mil utilizadores dentro de seis meses.
-    \item Empresa B: fábrica com quarenta anos, cuja procura de processamento é praticamente a mesma, mês após mês, há uma década.
-\end{itemize}
-\vspace{0.2cm}
-{\small\color{NudeTaupe}\textbf{Pensem 2 minutos:} qual destas duas escolheria CapEx e qual escolheria OpEx? O raciocínio de uma serve para a outra?}
 \end{frame}
 
 \begin{frame}
 \frametitle{Pergunta 6}
-\begin{pergunta}{De volta à startup}
-Retomando a Empresa A: procura altamente incerta, pouco capital disponível para investir à partida. Que modelo de operação faz mais sentido?
+\begin{pergunta}{Exigibilidade contratual}
+Um fornecedor anuncia publicamente disponibilidade de $99{,}99\,\%$. O contrato celebrado estabelece apenas uma obrigação de \enquote{melhor esforço}, sem indicador nem valor de referência. Verifica-se uma interrupção de dez horas num mês. É exigível compensação contratual?
 \begin{itemize}
-    \item[A)] On-premises com CapEx, para já ter controlo total desde o primeiro dia.
-    \item[B)] Cloud pública com OpEx, porque a procura é incerta e o capital inicial é escasso.
-    \item[C)] Colocation, porque elimina por completo os custos de operação.
-    \item[D)] Não importa: o custo final é sempre o mesmo, seja qual for o modelo escolhido.
+    \item[A)] Sim, por vinculação do fornecedor à comunicação pública de $99{,}99\,\%$.
+    \item[B)] Não. Apenas o clausulado do acordo é exigível, e este não fixa indicador nem valor de referência verificáveis.
+    \item[C)] Sim, por a indisponibilidade gerar sempre direito a crédito de serviço.
+    \item[D)] Depende exclusivamente do nível Tier da instalação.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 6}
-\begin{resposta}{A resposta correta é B}
-Com procura incerta, dimensionar capacidade própria à partida é adivinhar, e adivinhar mal custa caro nos dois sentidos: pouco a mais desperdiça capital escasso, pouco a menos trava o crescimento. O OpEx da cloud pública resolve exatamente este problema: a capacidade cresce e encolhe com a procura real, sem investimento inicial. Já para a Empresa B, com procura estável há uma década, o CapEx on-premises tende a compensar a prazo, porque não há incerteza nenhuma a proteger.
+\begin{resposta}{Opção correta: B}
+Uma obrigação de \enquote{melhor esforço} não constitui obrigação de resultado: na ausência de indicador definido, de método de medição e de valor de referência, não existe critério objetivo de incumprimento e, consequentemente, não há facto gerador de compensação. A comunicação institucional não integra o clausulado contratual. Daqui decorre um requisito prático: a verificação dos elementos constitutivos do SLA precede a celebração do contrato, não lhe sucede.
 \end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modelos de Operação}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item Os modelos de operação distinguem-se pela localização da fronteira de responsabilidade entre a organização e terceiros.
+    \item \textbf{On-premises}: a organização detém e opera a totalidade da infraestrutura, assumindo o controlo integral da arquitetura e dos subsistemas de suporte.
+    \item \textbf{Colocation}: a organização detém o equipamento; espaço, alimentação, arrefecimento e conectividade são contratados a um operador de instalação.
+    \item \textbf{Cloud pública}: a infraestrutura é integralmente operada por terceiros, sendo o acesso mediado por interfaces de aprovisionamento programático.
+    \item A fronteira adotada delimita a responsabilidade operacional, a de segurança e o grau de dependência do fornecedor.
+\end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Regiões e Zonas de Disponibilidade}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Os fornecedores de cloud organizam a infraestrutura em \textbf{regiões}: áreas geográficas distintas, com datacenters próprios.
-    \item Cada região divide-se em \textbf{zonas de disponibilidade}: datacenters fisicamente separados, com energia e rede independentes, mas ligados por rede de baixa latência.
-    \item Distribuir réplicas por várias zonas protege contra a falha de um datacenter inteiro -- e não apenas de um servidor.
-    \item Distribuir por várias regiões protege contra falhas de maior escala e aproxima o serviço dos utilizadores.
-    \item A escolha da região é também condicionada por requisitos legais de localização dos dados (ex.\ RGPD).
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Tendências}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Datacenters modulares/contentorizados: unidades pré-fabricadas, de implantação rápida e capacidade escalável.
-    \item Datacenters de edge: infraestrutura de menor dimensão, próxima dos utilizadores finais, reduzindo latência.
-    \item Ambas as tendências respondem à procura crescente por proximidade geográfica e rapidez de implantação.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Sustentabilidade e Métricas Ambientais}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O consumo energético dos datacenters tornou-se uma preocupação central, económica e ambiental.
-    \item Além do \textbf{PUE} (Aula 01), o mesmo consórcio (The Green Grid) definiu métricas complementares.
-    \item \textbf{WUE} (Water Usage Effectiveness): água consumida por unidade de energia do equipamento de TI -- relevante em arrefecimento evaporativo.
-    \item \textbf{CUE} (Carbon Usage Effectiveness): emissões de carbono por unidade de energia consumida pelo equipamento de TI.
-    \item Estratégias comuns: localizar datacenters em climas frios, reaproveitar calor residual e contratar energia de fontes renováveis.
-    \item A consolidação e a virtualização (Aula 03) são, elas próprias, medidas de eficiência energética.
+    \setlength\itemsep{0.35cm}
+    \item Os operadores de cloud estruturam a infraestrutura em \textbf{regiões}, áreas geográficas distintas e mutuamente independentes quanto a alimentação e conectividade.
+    \item Cada região subdivide-se em \textbf{zonas de disponibilidade}: instalações fisicamente separadas, com subsistemas de suporte independentes, interligadas por ligações de latência reduzida que admitem replicação síncrona.
+    \item A distribuição de réplicas por múltiplas zonas eleva o domínio de falha tolerado da instalação individual para a região; a distribuição por múltiplas regiões estende-o a eventos de escala geográfica.
+    \item A latência inter-regional inviabiliza, em geral, a replicação síncrona, impondo modelos de consistência mais fracos (bloco C5). A seleção da região encontra-se ainda condicionada por requisitos jurídicos de localização de dados.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Pergunta 7}
-\begin{pergunta}{Uma zona chega?}
-Uma aplicação crítica está instalada apenas numa única zona de disponibilidade de uma única região de cloud. O fornecedor garante 99,99\% de disponibilidade por zona. Isto significa que a aplicação, tal como está instalada, também tem 99,99\% de disponibilidade garantida?
+\begin{pergunta}{Alcance de uma garantia}
+Uma aplicação crítica está instalada numa única zona de disponibilidade. O operador estabelece $99{,}99\,\%$ por zona. Decorre daqui que a aplicação apresenta $99{,}99\,\%$?
 \begin{itemize}
-    \item[A)] Sim, a garantia da zona aplica-se diretamente à aplicação.
-    \item[B)] Não necessariamente. A garantia da zona não cobre falhas na própria aplicação nem na sua configuração, e não protege contra a falha de toda a zona ao mesmo tempo.
-    \item[C)] Sim, desde que a aplicação esteja empacotada em contentores.
-    \item[D)] Não, porque zonas de disponibilidade nunca têm qualquer SLA associado.
+    \item[A)] Sim, por transferência direta da garantia da zona para a aplicação nela instalada.
+    \item[B)] Não. A garantia abrange apenas a infraestrutura do fornecedor, e a aplicação permanece exposta a defeitos próprios e à falha integral da zona.
+    \item[C)] Sim, desde que a aplicação seja executada em contentores.
+    \item[D)] Não, por as zonas de disponibilidade não admitirem compromissos contratuais.
 \end{itemize}
 \end{pergunta}
 \end{frame}
 
 \begin{frame}
 \frametitle{Resposta 7}
-\begin{resposta}{A resposta correta é B}
-O SLA da zona cobre a infraestrutura que o fornecedor gere, energia, rede, hardware físico. Não cobre bugs na aplicação, erros de configuração, nem protege contra o cenário em que a zona inteira falha de uma vez, o que embora raro acontece. Uma aplicação instalada numa única zona tem, na prática, disponibilidade igual ou inferior à da zona, nunca superior. É exatamente por isto que se distribuem réplicas por várias zonas: a garantia do fornecedor é um teto, não uma garantia automática para quem constrói por cima.
+\begin{resposta}{Opção correta: B}
+A aplicação encontra-se em série com a zona: $A_{\text{aplicação}} = A_{\text{zona}} \times A_{\text{software}} \le A_{\text{zona}}$. A garantia do operador constitui, por conseguinte, um limite superior, e não um valor assegurado. Acrescem os defeitos aplicacionais e de configuração, excluídos do âmbito do acordo, bem como a falha integral da zona, cujo domínio abrange a instalação completa. A elevação da disponibilidade acima deste limite exige composição em paralelo, mediante distribuição de réplicas por zonas independentes.
 \end{resposta}
 \end{frame}
 
 \begin{frame}
-\frametitle{Caso de Estudo: o Servidor Central desta UC}
+\frametitle{Tendências de Implantação}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O servidor Proxmox VE usado nos laboratórios desta UC é, do ponto de vista do datacenter, um único servidor físico.
-    \item Questão de reflexão: que Tier lhe atribuiria, tendo apenas um servidor sem fonte de alimentação ou via de rede redundante?
-    \item Todas as VMs de todos os alunos correm sobre o mesmo hardware -- um exemplo direto de \textit{resource pooling} (Aula 01) e também de single point of failure (Aula 09).
-    \item Vale a pena, no momento, tentar estimar a disponibilidade combinada deste cenário com as fórmulas de série/paralelo vistas nesta aula.
+    \item \textbf{Instalações modulares}: unidades pré-fabricadas, integradas em fábrica e validadas antes da expedição, que reduzem o prazo de implantação de anos para semanas e permitem expansão incremental da capacidade.
+    \item \textbf{Instalações de periferia} (\emph{edge}): infraestrutura de dimensão reduzida, implantada em proximidade geográfica dos consumidores, com o objetivo de reduzir a latência de propagação.
+    \item O critério de projeto difere entre as duas: as primeiras otimizam prazo e custo de expansão da capacidade; as segundas otimizam a latência, aceitando menor eficiência de escala.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Eficiência Energética: PUE}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O consórcio The Green Grid normalizou um conjunto de indicadores de eficiência, dos quais o mais difundido é o \textbf{PUE} (\emph{Power Usage Effectiveness}):
+    \[
+      \mathrm{PUE} \;=\; \frac{E_{\text{total da instalação}}}{E_{\text{equipamento de TI}}} \;\ge\; 1 .
+    \]
+    \item Um valor de $1{,}5$ indica que, por cada unidade de energia consumida pelo equipamento de TI, meia unidade adicional é despendida em arrefecimento, conversão e iluminação.
+    \item Instalações otimizadas operam abaixo de $1{,}2$; o limite teórico $\mathrm{PUE}=1$ corresponderia a consumo nulo fora do equipamento de TI.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Eficiência Energética: WUE e CUE}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{WUE} (\emph{Water Usage Effectiveness}): volume de água por unidade de energia do equipamento de TI. Relevante em arrefecimento evaporativo, técnica que reduz o PUE à custa de consumo hídrico.
+    \item \textbf{CUE} (\emph{Carbon Usage Effectiveness}): emissões de carbono por unidade de energia do equipamento de TI, determinado pela matriz energética contratada.
+    \item As três métricas partilham o mesmo denominador. A consolidação por virtualização, objeto da Aula 03, atua sobre ele, reduzindo a energia de TI necessária a uma dada carga.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Caso de Estudo: o Servidor da Unidade Curricular}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O servidor Proxmox VE utilizado nos trabalhos desta unidade curricular constitui, na terminologia da aula, um sistema de via única em todos os subsistemas.
+    \item Aplicando os critérios do Uptime Institute, a ausência de redundância de alimentação e de conectividade situa-o no nível Tier I.
+    \item A totalidade das máquinas virtuais da turma é executada sobre o mesmo equipamento físico, o que ilustra simultaneamente a partilha de recursos (\emph{resource pooling}, Aula 01) e a existência de um ponto único de falha, matéria a retomar na Aula 09.
+    \item Exercício proposto: estimar a disponibilidade do conjunto admitindo valores plausíveis de MTBF e MTTR para o equipamento e para a alimentação, e identificar qual das duas grandezas condiciona o resultado.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Um datacenter só é fiável se todos os seus sistemas críticos, energia, arrefecimento, rede e espaço, o forem em conjunto; o mais fraco decide o Tier de todos.
-    \item Os Tiers do Uptime Institute classificam datacenters segundo o nível de redundância (N, N+1, 2N).
-    \item A topologia leaf-spine substitui progressivamente a three-tier em ambientes cloud, pela previsibilidade de latência que oferece a tráfego este-oeste intenso.
-    \item A disponibilidade combinada depende de componentes estarem em série (reduz) ou paralelo (aumenta); os exercícios resolvidos mostram como calculá-la na prática.
+    \setlength\itemsep{0.35cm}
+    \item Um datacenter integra quatro subsistemas interdependentes; o nível de redundância do conjunto é determinado pelo subsistema menos redundante, e não pela média dos subsistemas.
+    \item Os níveis $N$, $N+1$ e $2N$ constituem o vocabulário normalizado de redundância, do qual decorre a classificação em Tiers do Uptime Institute.
+    \item A topologia leaf-spine substitui a organização hierárquica em instalações com tráfego este-oeste predominante, por uniformizar a latência entre pontos internos e admitir agregação de percursos por ECMP.
+    \item A razão de sobre-subscrição quantifica a contenção admitida no dimensionamento dos uplinks.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Cada "nove" adicional de disponibilidade reduz drasticamente o downtime anual tolerável; um SLA formaliza esse compromisso, com MTTR e penalizações associadas, e só o que está escrito vale.
-    \item Existem três grandes modelos de operação: on-premises, colocation e cloud pública, com diferentes compromissos entre controlo e custo, entre CapEx e OpEx.
-    \item Regiões e zonas de disponibilidade protegem contra falhas de escala crescente, mas a garantia do fornecedor nunca substitui uma boa arquitetura de distribuição.
-    \item Datacenters modulares e de edge respondem a necessidades de escala e latência cada vez mais exigentes; o nosso próprio servidor de laboratório é um pequeno caso de estudo destes conceitos.
+    \setlength\itemsep{0.35cm}
+    \item A disponibilidade exprime-se por $A = \mathrm{MTBF}/(\mathrm{MTBF}+\mathrm{MTTR})$; a redução do MTTR constitui, em geral, a via de melhoria com melhor relação custo-benefício.
+    \item A composição em série não excede a disponibilidade do componente menos disponível; a composição em paralelo excede a do mais disponível, sob a hipótese de independência das falhas.
+    \item Um SLA é exigível na medida do seu clausulado; as exclusões e o regime de compensação determinam o valor efetivo do compromisso.
+    \item A garantia de um operador de cloud constitui um limite superior da disponibilidade observável, cuja superação exige redundância por zonas independentes.
 \end{itemize}
 \end{frame}
 
