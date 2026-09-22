@@ -1,0 +1,486 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable,listings}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\definecolor{SageMuted}{HTML}{7E8F7C}
+\definecolor{ClayWarn}{HTML}{B5795C}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.6em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4\baselineskip}{0.7\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.1\baselineskip}{0.5\baselineskip}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false,
+  frame=none,
+  aboveskip=0pt, belowskip=0pt
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+
+\newtcblisting{terminal}{
+  listing only, breakable,
+  colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt, top=5pt, bottom=5pt,
+  listing options={basicstyle=\ttfamily\small, breaklines=true, columns=fullflexible}
+}
+
+\newtcblisting{saida}{
+  listing only, breakable,
+  colback=white, colframe=SoftBlush,
+  boxrule=0.5pt, arc=2pt, left=6pt, right=6pt, top=5pt, bottom=5pt,
+  title={\small\bfseries\color{TextEspresso}Saída esperada},
+  coltitle=TextEspresso, colbacktitle=SoftBlush!45,
+  fonttitle=\small\bfseries,
+  listing options={basicstyle=\ttfamily\footnotesize, breaklines=true, columns=fullflexible}
+}
+
+\newtcolorbox{verificar}{
+  breakable, colback=SageMuted!8, colframe=SageMuted,
+  boxrule=0.6pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt,
+  title={\small\bfseries Confirme antes de avançar},
+  coltitle=white, colbacktitle=SageMuted, fonttitle=\small\bfseries
+}
+
+\newtcolorbox{atencao}{
+  breakable, colback=ClayWarn!8, colframe=ClayWarn,
+  boxrule=0.6pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt,
+  title={\small\bfseries Atenção},
+  coltitle=white, colbacktitle=ClayWarn, fonttitle=\small\bfseries
+}
+
+\newtcolorbox{nota}{
+  breakable, colback=NudeTaupe!10, colframe=NudeTaupe,
+  boxrule=0.5pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt
+}
+
+\newtcolorbox{registo}{
+  breakable, colback=SoftBlush!25, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt,
+  title={\small\bfseries Registe a observação}, coltitle=TextEspresso,
+  colbacktitle=SoftBlush!55, fonttitle=\small\bfseries
+}
+
+\newcommand{\labtitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Laboratório #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\problema}[1]{\vspace{0.35cm}\noindent{\bfseries\color{TextEspresso}#1}\par\nopagebreak\vspace{0.1cm}}
+
+\setlist[itemize]{itemsep=0.22cm, topsep=0.2cm}
+\setlist[enumerate]{itemsep=0.22cm, topsep=0.2cm}
+
+\begin{document}
+\labtitle{03}{Primeiro Contacto com Contentores}{Aula 03}
+
+\section*{Objetivo e enquadramento}
+
+A Aula 03 estabelece, no plano teórico, a distinção entre virtualização completa, na qual o hypervisor apresenta hardware virtual e cada instância executa um núcleo próprio, e virtualização ao nível do sistema operativo, na qual as instâncias partilham o núcleo do anfitrião. Este laboratório destina-se a tornar essa distinção observável em equipamento próprio.
+
+O trabalho decorre no computador pessoal de cada aluno e não requer acesso ao servidor da unidade curricular. A duração estimada é de sessenta a noventa minutos. Não se pressupõe experiência prévia com contentores.
+
+\begin{nota}
+O laboratório utiliza Docker por ser a implementação de contentores de instalação mais simples em qualquer sistema operativo. Os mecanismos de núcleo que a sustentam, designadamente \emph{namespaces} e \emph{cgroups}, constituem matéria da Aula 04. O objetivo neste momento não é dominar a ferramenta, mas observar o comportamento que a teoria descreve.
+\end{nota}
+
+\section*{Resultados de aprendizagem}
+
+No final deste laboratório, o aluno deve ser capaz de:
+
+\begin{itemize}
+  \item Executar e inspecionar um contentor, distinguindo imagem de instância em execução.
+  \item Demonstrar experimentalmente a partilha do núcleo entre contentor e anfitrião.
+  \item Identificar, na sua própria máquina, onde se situa o hypervisor da Aula 03.
+  \item Publicar um serviço em rede a partir de um contentor e justificar o mapeamento de portos.
+  \item Construir uma imagem a partir de um \texttt{Dockerfile} e explicar a sua estrutura em camadas.
+  \item Aplicar limites de recursos a um contentor e observar o seu efeito.
+\end{itemize}
+
+\section*{Entrega}
+
+Ao longo do guião surgem caixas \emph{Registe a observação}. Reúna as respostas num documento único, em PDF, com identificação do aluno, incluindo as capturas de ecrã solicitadas. A entrega é individual.
+
+\clearpage
+
+\section{Instalação}
+
+\subsection{Windows e macOS}
+
+Instale o \textbf{Docker Desktop} a partir de \url{https://docs.docker.com/get-started/get-docker/}. Aceite as opções apresentadas por omissão. Em Windows, a instalação requer que o WSL~2 se encontre ativo; o instalador deteta a sua ausência e indica o procedimento.
+
+Concluída a instalação, inicie a aplicação Docker Desktop e aguarde que o indicador de estado apresente \texttt{Engine running}. Os comandos deste guião são executados em seguida no terminal do sistema, PowerShell em Windows ou Terminal em macOS, e não dentro da aplicação.
+
+\subsection{Linux}
+
+Instale o \textbf{Docker Engine} através do repositório oficial da distribuição, seguindo \url{https://docs.docker.com/engine/install/}. Após a instalação, acrescente o utilizador ao grupo \texttt{docker} para dispensar \texttt{sudo}:
+
+\begin{terminal}
+sudo usermod -aG docker $USER
+\end{terminal}
+
+Termine a sessão e volte a iniciá-la para que a alteração produza efeito.
+
+\subsection{Verificação}
+
+\begin{terminal}
+docker --version
+docker info
+\end{terminal}
+
+O primeiro comando indica a versão instalada. O segundo apresenta o estado do motor e confirma a ligação ao serviço.
+
+\begin{verificar}
+\texttt{docker --version} devolve uma linha com a versão, e \texttt{docker info} termina sem mensagem de erro. Caso surja \texttt{Cannot connect to the Docker daemon}, o serviço não se encontra em execução: consulte a secção de resolução de problemas.
+\end{verificar}
+
+\section{O primeiro contentor}
+
+Execute:
+
+\begin{terminal}
+docker run hello-world
+\end{terminal}
+
+\begin{saida}
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+...
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+\end{saida}
+
+A primeira linha merece atenção. A imagem não existia localmente, pelo que foi transferida de um repositório remoto antes da execução. Esta separação entre \textbf{imagem}, o conjunto de ficheiros imutável que serve de modelo, e \textbf{contentor}, a instância em execução criada a partir dela, é análoga à distinção entre um ficheiro de disco virtual e uma máquina virtual em execução, discutida na Aula 03.
+
+Confirme que o contentor terminou mas continua registado:
+
+\begin{terminal}
+docker ps
+docker ps -a
+\end{terminal}
+
+O primeiro comando lista apenas contentores em execução e não apresentará resultados. O segundo inclui os já terminados, entre os quais o \texttt{hello-world} com estado \texttt{Exited}.
+
+\begin{nota}
+Um contentor termina quando o processo que lhe deu origem termina. Não existe, ao contrário de uma máquina virtual, um sistema de arranque a manter a instância ativa na ausência de trabalho.
+\end{nota}
+
+\section{Observar o isolamento}
+
+Inicie um contentor interativo baseado em Alpine Linux, uma distribuição de dimensão reduzida:
+
+\begin{terminal}
+docker run -it --rm alpine sh
+\end{terminal}
+
+A opção \texttt{-it} liga o terminal ao contentor e \texttt{--rm} remove-o automaticamente ao terminar. A linha de comandos passa a ser a do interior do contentor.
+
+Execute, já dentro do contentor:
+
+\begin{terminal}
+hostname
+ps aux
+ls /
+cat /etc/os-release
+\end{terminal}
+
+Observe cada resultado. O \texttt{hostname} não corresponde ao da máquina. A lista de processos contém dois ou três elementos, e o processo \texttt{sh} apresenta o identificador~1, posição reservada ao primeiro processo de um sistema. A raiz do sistema de ficheiros não contém os ficheiros pessoais. O ficheiro \texttt{/etc/os-release} identifica Alpine Linux, independentemente do sistema operativo instalado no computador.
+
+\begin{registo}
+\textbf{Observação 1.} Registe o resultado de \texttt{ps aux} dentro do contentor. Quantos processos são visíveis? Compare com o número de processos em execução no seu computador. Justifique a diferença em termos do isolamento descrito na Aula 03.
+\end{registo}
+
+\textbf{Não termine ainda este contentor.} A secção seguinte utiliza-o.
+
+\section{A prova da partilha do núcleo}
+
+Esta é a observação central do laboratório e liga-se diretamente à distinção estabelecida na aula.
+
+Ainda dentro do contentor, execute:
+
+\begin{terminal}
+uname -r
+\end{terminal}
+
+Registe a versão apresentada. Termine o contentor com \texttt{exit} e execute, agora no seu computador:
+
+\begin{terminal}
+uname -r
+\end{terminal}
+
+\begin{atencao}
+Em Windows, \texttt{uname} não existe. Utilize antes, em PowerShell, o comando \texttt{wsl uname -r}, que consulta o núcleo Linux do subsistema WSL~2.
+\end{atencao}
+
+\subsection{Interpretação do resultado}
+
+O resultado depende do sistema operativo do computador, e a diferença é ela própria matéria da Aula 03.
+
+\textbf{Em Linux.} As duas versões coincidem exatamente. O contentor não possui núcleo próprio: executa sobre o núcleo do anfitrião, que apenas lhe apresenta uma vista isolada dos recursos. Alpine e a distribuição instalada partilham o mesmo núcleo e diferem somente no espaço de utilizador.
+
+\textbf{Em Windows ou macOS.} As duas versões diferem, e o núcleo comunicado dentro do contentor é um núcleo Linux, embora o sistema operativo instalado não o seja. A explicação encontra-se na aula: o Docker Desktop executa uma máquina virtual Linux sobre um hypervisor do sistema, o Hyper-V ou WSL~2 em Windows, o Virtualization.framework em macOS. O contentor partilha o núcleo dessa máquina virtual, e não o do computador.
+
+\begin{nota}
+Daqui decorre uma observação de alcance mais geral. Em Windows e macOS coexistem, na mesma máquina, os dois modelos de virtualização estudados na aula: virtualização completa, que sustenta a máquina virtual Linux, e virtualização ao nível do sistema operativo, que produz o contentor no seu interior. A afirmação corrente de que contentores dispensam máquinas virtuais é, nestes sistemas, incorreta.
+\end{nota}
+
+\begin{registo}
+\textbf{Observação 2.} Apresente as duas versões de núcleo obtidas e identifique o seu sistema operativo. Diga se coincidem e justifique. Caso não coincidam, indique onde se situa o hypervisor e que papel desempenha.
+\end{registo}
+
+\section{Imagens e camadas}
+
+Transfira a imagem do servidor web Nginx sem a executar:
+
+\begin{terminal}
+docker pull nginx:alpine
+docker images
+\end{terminal}
+
+A coluna \texttt{SIZE} indica a dimensão da imagem. Compare-a com a de uma máquina virtual equivalente, tipicamente alguns gigabytes, e note a diferença de ordem de grandeza: a imagem não contém núcleo nem controladores de dispositivo, apenas o espaço de utilizador necessário à aplicação.
+
+Inspecione a estrutura interna:
+
+\begin{terminal}
+docker history nginx:alpine
+\end{terminal}
+
+Cada linha corresponde a uma \textbf{camada}, produzida por uma instrução de construção. As camadas são imutáveis e partilhadas entre imagens que delas derivem, o que evita a duplicação de conteúdo comum. O mecanismo é análogo ao dos discos virtuais diferenciais discutidos na Aula 03, nos quais um disco base é partilhado por várias instâncias.
+
+\begin{registo}
+\textbf{Observação 3.} Indique a dimensão de \texttt{nginx:alpine} e o número de camadas apresentado por \texttt{docker history}. Explique por que motivo duas imagens derivadas da mesma base ocupam, em conjunto, menos espaço do que a soma das suas dimensões individuais.
+\end{registo}
+
+\section{Publicar um serviço}
+
+Inicie o servidor web em segundo plano, mapeando o porto 8080 do computador para o porto 80 do contentor:
+
+\begin{terminal}
+docker run -d --name web -p 8080:80 nginx:alpine
+docker ps
+\end{terminal}
+
+Abra \url{http://localhost:8080} num navegador. Deverá surgir a página de boas-vindas do Nginx.
+
+O mapeamento é necessário porque o contentor possui uma pilha de rede própria, com endereço distinto do da máquina. Sem \texttt{-p}, o serviço permanece acessível apenas no interior da rede de contentores. A opção estabelece uma regra de reencaminhamento entre o porto do anfitrião e o porto do contentor.
+
+Consulte os registos e o interior do contentor em execução:
+
+\begin{terminal}
+docker logs web
+docker exec -it web sh
+\end{terminal}
+
+Dentro do contentor, confirme que o servidor está ativo e observe os ficheiros servidos:
+
+\begin{terminal}
+ls /usr/share/nginx/html
+exit
+\end{terminal}
+
+\begin{verificar}
+A página responde em \texttt{localhost:8080} e \texttt{docker logs web} apresenta ao menos um pedido HTTP registado, correspondente ao acesso efetuado pelo navegador.
+\end{verificar}
+
+Termine e remova o contentor:
+
+\begin{terminal}
+docker stop web
+docker rm web
+\end{terminal}
+
+\section{Construir uma imagem}
+
+Crie um diretório de trabalho e, no seu interior, dois ficheiros.
+
+\texttt{index.html}:
+
+\begin{terminal}
+<!DOCTYPE html>
+<html lang="pt">
+<head><meta charset="utf-8"><title>ICN</title></head>
+<body>
+  <h1>Infraestruturas de Computacao na Nuvem</h1>
+  <p>Pagina servida a partir de um contentor construido localmente.</p>
+</body>
+</html>
+\end{terminal}
+
+\texttt{Dockerfile}, sem extensão:
+
+\begin{terminal}
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+EXPOSE 80
+\end{terminal}
+
+O ficheiro declara três elementos: a imagem base sobre a qual se constrói, o ficheiro a copiar para o seu interior, e o porto que a aplicação utiliza. A instrução \texttt{EXPOSE} tem valor documental e não substitui o mapeamento \texttt{-p} na execução.
+
+Construa e execute:
+
+\begin{terminal}
+docker build -t icn-site:v1 .
+docker run -d --name meusite -p 8080:80 icn-site:v1
+\end{terminal}
+
+Aceda novamente a \url{http://localhost:8080}. A página apresentada é agora a construída localmente.
+
+\begin{registo}
+\textbf{Observação 4.} Anexe uma captura de ecrã da página servida pela sua imagem. Execute \texttt{docker images} e compare a dimensão de \texttt{icn-site:v1} com a de \texttt{nginx:alpine}. Explique a diferença observada com base no modelo de camadas.
+\end{registo}
+
+\subsection{Reconstrução e reutilização de camadas}
+
+Altere o texto de \texttt{index.html} e reconstrua:
+
+\begin{terminal}
+docker build -t icn-site:v2 .
+\end{terminal}
+
+Observe as mensagens de construção. As camadas anteriores à alteração são reaproveitadas, assinaladas por \texttt{CACHED}, e apenas a camada correspondente ao ficheiro alterado é reconstruída. Este comportamento explica a recomendação corrente de colocar num \texttt{Dockerfile} as instruções menos voláteis antes das mais voláteis.
+
+\section{Persistência}
+
+A camada de escrita de um contentor é descartada com ele. Confirme experimentalmente:
+
+\begin{terminal}
+docker exec meusite sh -c "echo teste > /tmp/ficheiro.txt"
+docker exec meusite cat /tmp/ficheiro.txt
+docker stop meusite && docker rm meusite
+docker run -d --name meusite -p 8080:80 icn-site:v1
+docker exec meusite cat /tmp/ficheiro.txt
+\end{terminal}
+
+O último comando falha: o ficheiro não existe na nova instância, criada a partir da imagem original e sem qualquer memória do contentor anterior.
+
+Repita com um volume, que persiste independentemente do ciclo de vida do contentor:
+
+\begin{terminal}
+docker volume create dados-icn
+docker stop meusite && docker rm meusite
+docker run -d --name meusite -p 8080:80 -v dados-icn:/dados icn-site:v1
+docker exec meusite sh -c "echo persistente > /dados/ficheiro.txt"
+docker stop meusite && docker rm meusite
+docker run -d --name meusite -p 8080:80 -v dados-icn:/dados icn-site:v1
+docker exec meusite cat /dados/ficheiro.txt
+\end{terminal}
+
+O conteúdo sobrevive agora à destruição e recriação do contentor.
+
+\begin{registo}
+\textbf{Observação 5.} Descreva o que sucedeu em cada um dos dois casos. Relacione o resultado com a distinção, estabelecida na Aula 03, entre o disco de uma máquina virtual e o estado volátil de uma instância.
+\end{registo}
+
+\section{Limitar recursos}
+
+Execute um contentor com memória e processador limitados:
+
+\begin{terminal}
+docker run -d --name limitado --memory=256m --cpus=0.5 nginx:alpine
+docker stats --no-stream
+\end{terminal}
+
+A coluna \texttt{MEM USAGE / LIMIT} apresenta o limite imposto e não a memória total do computador. O contentor não consegue exceder o valor declarado: caso o tente, o seu processo é terminado pelo sistema.
+
+Este mecanismo constitui a contrapartida, no modelo de contentores, da atribuição de memória a uma máquina virtual. A diferença é relevante: uma máquina virtual reserva a memória declarada, ao passo que um contentor apenas fica impedido de a exceder, consumindo em cada instante o que efetivamente necessita.
+
+\begin{registo}
+\textbf{Observação 6.} Apresente a saída de \texttt{docker stats --no-stream}. Compare o modelo de limite aqui observado com o modelo de reserva de uma máquina virtual, e indique qual dos dois permite maior densidade de instâncias no mesmo anfitrião.
+\end{registo}
+
+\section{Limpeza}
+
+Remova os recursos criados:
+
+\begin{terminal}
+docker stop meusite limitado
+docker rm meusite limitado
+docker volume rm dados-icn
+docker rmi icn-site:v1 icn-site:v2
+\end{terminal}
+
+Para remover todos os recursos não utilizados de uma só vez:
+
+\begin{terminal}
+docker system prune -a
+\end{terminal}
+
+\begin{atencao}
+O comando \texttt{docker system prune -a} remove todas as imagens não associadas a contentores em execução, incluindo imagens transferidas noutros contextos. Utilize-o apenas se não tiver trabalho por concluir noutros projetos.
+\end{atencao}
+
+\section{Resolução de problemas}
+
+\problema{\texttt{Cannot connect to the Docker daemon}}
+O serviço não está em execução. Em Windows e macOS, inicie a aplicação Docker Desktop e aguarde o estado \texttt{Engine running}. Em Linux, execute \texttt{sudo systemctl start docker}.
+
+\problema{\texttt{permission denied while trying to connect to the Docker daemon socket} (Linux)}
+O utilizador não pertence ao grupo \texttt{docker}. Execute \texttt{sudo usermod -aG docker \$USER}, termine a sessão e volte a iniciá-la. A alteração não produz efeito na sessão em curso.
+
+\problema{\texttt{port is already allocated}}
+O porto 8080 está ocupado por outro processo. Utilize outro porto no lado do anfitrião, por exemplo \texttt{-p 8081:80}, e ajuste o endereço no navegador em conformidade.
+
+\problema{O navegador não apresenta a página}
+Confirme com \texttt{docker ps} que o contentor se encontra em execução. Caso não apareça na lista, consulte \texttt{docker ps -a} e, em seguida, \texttt{docker logs <nome>} para identificar a causa da terminação.
+
+\problema{\texttt{docker build} falha com \texttt{failed to read dockerfile}}
+O comando foi executado fora do diretório que contém o \texttt{Dockerfile}, ou o ficheiro foi guardado com extensão. Confirme com \texttt{ls} que existe um ficheiro de nome exatamente \texttt{Dockerfile}.
+
+\problema{Em Windows, \texttt{uname} não é reconhecido}
+O comando pertence a sistemas Unix. Utilize \texttt{wsl uname -r} em PowerShell.
+
+\section{Lista de verificação}
+
+\begin{itemize}
+  \item[$\square$] Docker instalado e \texttt{docker info} executa sem erro.
+  \item[$\square$] \texttt{hello-world} executado, distinção entre imagem e contentor compreendida.
+  \item[$\square$] Isolamento observado: hostname, processos e sistema de ficheiros próprios (Observação~1).
+  \item[$\square$] Versões de núcleo comparadas dentro e fora do contentor, resultado interpretado (Observação~2).
+  \item[$\square$] Estrutura em camadas de uma imagem inspecionada (Observação~3).
+  \item[$\square$] Serviço publicado e acessível em \texttt{localhost:8080}.
+  \item[$\square$] Imagem própria construída a partir de \texttt{Dockerfile} (Observação~4).
+  \item[$\square$] Comportamento de persistência com e sem volume verificado (Observação~5).
+  \item[$\square$] Limites de recursos aplicados e observados (Observação~6).
+  \item[$\square$] Recursos removidos.
+  \item[$\square$] Documento de entrega reunido em PDF com as seis observações.
+\end{itemize}
+
+\section*{Continuação}
+
+A Aula 04 estabelece os mecanismos de núcleo que sustentam o comportamento aqui observado: os \emph{namespaces}, responsáveis pelo isolamento constatado na Observação~1, e os \emph{cgroups}, responsáveis pelos limites da Observação~6. As observações registadas neste laboratório servirão de referência concreta para essa exposição.
+
+\end{document}

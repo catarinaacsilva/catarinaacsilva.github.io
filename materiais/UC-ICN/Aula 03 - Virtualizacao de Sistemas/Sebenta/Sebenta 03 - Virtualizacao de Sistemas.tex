@@ -1,0 +1,275 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{03}{Virtualização de Sistemas}{Aula 03}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 03. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada. A aula integra sete questões de escolha múltipla, cuja resolução é apresentada no slide imediatamente seguinte, e conclui com o enquadramento do laboratório de contentores, que decorre em equipamento próprio de cada aluno.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+A Aula 03 introduz o mecanismo que torna operacional a partilha de recursos estabelecida conceptualmente na Aula 01 e a infraestrutura física analisada na Aula 02. A exposição percorre a fundamentação teórica da virtualização, as três estratégias históricas de a realizar em arquitetura x86, e a sua concretização nos domínios da memória, do I/O e do armazenamento. Conclui com a distinção entre virtualização completa e virtualização ao nível do sistema operativo, que o laboratório associado torna observável em equipamento próprio.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira parte estabelece o enquadramento teórico. Define virtualização, distingue os níveis a que se aplica, e apresenta o resultado formal que determina quando uma arquitetura de processador admite a construção de um monitor de máquina virtual. Conclui com as estratégias adotadas quando essa condição não se verifica.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda parte trata da virtualização dos recursos que não o processador. A memória, cujo tratamento constituiu historicamente a maior fonte de sobrecarga; o I/O, onde persiste a maior distância face ao desempenho nativo; e o armazenamento, com os seus formatos e mecanismos de instantâneo.
+}
+
+\pagina{slides/slide-04.png}{
+A terceira parte aborda a operação corrente de infraestrutura virtualizada, designadamente a migração de instâncias entre anfitriões e a sobrecarga a esperar. Apresenta as tecnologias concretas utilizadas na unidade curricular e enquadra o laboratório.
+}
+
+\pagina{slides/slide-05.png}{
+A definição adotada é deliberadamente geral: virtualização designa a construção de uma representação abstrata de um recurso computacional, funcionalmente equivalente ao recurso físico mas dissociada da sua implementação. A generalidade é intencional, dado que o conceito não se restringe a máquinas virtuais. A memória virtual de um sistema operativo, um sistema de ficheiros e o endereçamento de rede constituem instâncias do mesmo princípio. A camada que realiza a abstração assume sempre três funções: traduzir referências virtuais em físicas, arbitrar o acesso concorrente e isolar as instâncias entre si. A falha de qualquer uma compromete a abstração e produz comportamento inexplicável a partir da interface apresentada.
+}
+
+\pagina{slides/slide-06.png}{
+A virtualização aplica-se a três níveis, cuja distinção assenta na fronteira de duplicação, isto é, no que é replicado por instância e no que permanece partilhado. Ao nível do hardware, o hypervisor apresenta instruções e dispositivos virtuais, executando cada instância núcleo próprio e sistema operativo completo. Ao nível do sistema operativo, o núcleo é único e partilhado, sendo apresentada a cada instância uma vista isolada dos recursos. Ao nível da aplicação, a abstração situa-se sobre o sistema operativo e executa código destinado a uma máquina abstrata, como sucede na JVM. A fronteira de duplicação determina simultaneamente a sobrecarga incorrida e o grau de isolamento obtido, sendo as duas grandezas inversamente relacionadas.
+}
+
+\pagina{slides/slide-07.png}{
+Os requisitos formulados por Popek e Goldberg em 1974 permanecem o critério de referência para avaliar qualquer solução de virtualização. A equivalência exige que um programa executado sob o monitor apresente comportamento indistinguível do que apresentaria em execução direta. O controlo de recursos exige que o monitor mantenha domínio completo sobre o hardware, não podendo uma instância aceder a recursos não atribuídos. A eficiência exige que uma fração estatisticamente dominante das instruções execute diretamente no processador. Este terceiro requisito é o que distingue virtualização de emulação: um emulador satisfaz os dois primeiros, mas interpreta a totalidade das instruções, incorrendo em penalização de desempenho de ordem de grandeza.
+}
+
+\pagina{slides/slide-08.png}{
+A classificação das instruções fundamenta o resultado central desta parte da aula. Dizem-se privilegiadas as instruções que geram exceção quando executadas em modo utilizador. Dizem-se sensíveis as que alteram a configuração de recursos do sistema, caso das sensíveis ao controlo, ou cujo resultado depende dessa configuração, caso das sensíveis ao comportamento. As restantes, sem efeito sobre o estado global, dizem-se inócuas. O teorema estabelece que um monitor pode ser construído se o conjunto das instruções sensíveis estiver contido no das privilegiadas, condição que garante a interceção de toda a operação com efeito global. Trata-se de uma propriedade da especificação da arquitetura, verificável independentemente de qualquer implementação concreta.
+}
+
+\pagina{slides/slide-09.png}{
+A arquitetura x86 define quatro anéis de privilégio, sendo o anel zero reservado ao núcleo e o anel três destinado a aplicações. Sob virtualização, o anel zero passa a ser ocupado pelo monitor e o núcleo convidado é deslocado para um anel de menor privilégio, técnica designada por ring deprivileging. A dificuldade histórica reside noutro ponto: a arquitetura x86 anterior a 2005 não satisfazia a condição do teorema, existindo dezassete instruções sensíveis que não eram privilegiadas. O exemplo característico é a instrução POPF que, ao restaurar o registo de estado em anel três, ignora silenciosamente a alteração do bit de interrupções em vez de gerar exceção. A natureza da falha é particularmente adversa: a instrução não falha, produz resultado incorreto sem qualquer sinalização.
+}
+
+\pagina{slides/slide-10.png}{
+O trap-and-emulate constitui o mecanismo base da virtualização em arquiteturas que satisfazem a condição do teorema. O código convidado executa diretamente no processador e, ao emitir uma instrução privilegiada em modo não privilegiado, provoca uma exceção que transfere o controlo para o monitor. Este determina a operação pretendida, emula o seu efeito sobre o estado virtual da instância e devolve o controlo ao ponto de interrupção, sem que o convidado detete a intervenção. O mecanismo aplica-se de modo uniforme a registos de controlo do processador, unidade de gestão de memória, controlador de interrupções, temporizadores e dispositivos periféricos.
+}
+
+\pagina{slides/slide-11.png}{
+A primeira questão examina a consequência de uma arquitetura não satisfazer a condição do teorema. Recomenda-se a formulação de resposta antes da consulta do slide seguinte.
+}
+
+\pagina{slides/slide-12.png}{
+A fundamentação consta do slide. Importa assinalar que a conclusão não é a impossibilidade de virtualizar a arquitetura, mas apenas a insuficiência do mecanismo de trap-and-emulate isolado. Os três slides seguintes apresentam precisamente as estratégias desenvolvidas para contornar esta limitação, todas historicamente motivadas pelo caso concreto do x86.
+}
+
+\pagina{slides/slide-13.png}{
+Três estratégias respondem à mesma limitação arquitetural, com compromissos distintos. A virtualização completa por tradução binária analisa e reescreve o fluxo de instruções do convidado antes da execução, sem exigir alteração do sistema operativo. A paravirtualização modifica o núcleo convidado para que invoque explicitamente o monitor nas operações sensíveis, dispensando a interceção. A virtualização assistida por hardware introduz um modo de execução dedicado no processador, restaurando a validade do trap-and-emulate. As três diferem essencialmente em dois eixos: a necessidade de modificar o convidado e a necessidade de suporte específico do processador.
+}
+
+\pagina{slides/slide-14.png}{
+A tradução binária dinâmica opera sobre blocos de código do convidado antes da sua execução, substituindo as instruções problemáticas por sequências equivalentes que transferem o controlo ao monitor. Dois aspetos explicam a sua viabilidade prática. Primeiro, a tradução incide apenas sobre código executado em anel zero, permanecendo o código de aplicação, largamente dominante em volume, executado sem modificação. Segundo, os blocos traduzidos são retidos em cache, pelo que código executado repetidamente é traduzido uma única vez e o custo amortiza-se. A vantagem determinante consiste em admitir sistemas operativos convidados não modificados, incluindo sistemas de código fechado, o que explica ter sido esta a abordagem que viabilizou comercialmente a virtualização de x86.
+}
+
+\pagina{slides/slide-15.png}{
+A paravirtualização parte de premissa distinta: admite-se que o núcleo convidado pode ser modificado. Elimina-se assim a emissão de instruções sensíveis, substituídas por invocações explícitas ao monitor designadas hypercalls. A interface entre convidado e monitor torna-se declarada, à semelhança da interface entre aplicação e núcleo. As vantagens são apreciáveis: elimina-se o custo de interceção e de emulação, e o monitor deixa de necessitar de emular hardware inexistente. A limitação é igualmente clara: exige acesso ao código do sistema operativo convidado e adaptação a cada monitor, o que restringe a aplicação a sistemas de código aberto. A abordagem persiste hoje sobretudo sob forma parcial, nos controladores paravirtualizados de I/O tratados adiante.
+}
+
+\pagina{slides/slide-16.png}{
+As extensões Intel VT-x e AMD-V resolvem a questão na origem, introduzindo dois modos de operação ortogonais aos anéis de privilégio. O monitor executa em modo VMX root e o convidado em modo VMX non-root, dispondo este último igualmente de quatro anéis. Em consequência, o núcleo convidado executa em anel zero do seu próprio modo, dispensando tanto o deslocamento de anel como a reescrita de código. A transição entre modos é mediada por uma estrutura em memória, a VMCS, que retém o estado de ambos os contextos e determina que eventos provocam saída para o monitor. Designa-se VM exit a transição para o monitor e VM entry o regresso. Cada transição tem custo mensurável, pelo que a otimização de desempenho em virtualização moderna consiste, em larga medida, em reduzir a sua frequência.
+}
+
+\pagina{slides/slide-17.png}{
+A segunda questão solicita a seleção da estratégia aplicável a um cenário com duas restrições simultâneas. A resolução requer o confronto das três estratégias com ambas as restrições enunciadas.
+}
+
+\pagina{slides/slide-18.png}{
+A fundamentação consta do slide anterior. O exercício ilustra o valor histórico da tradução binária: foi a única das três estratégias aplicável ao parque instalado antes de 2005, sem cooperação dos fabricantes de sistemas operativos. A generalização das extensões de hardware reduziu-lhe a importância, mas o raciocínio permanece pertinente sempre que se avalia uma solução de virtualização face às restrições concretas do ambiente.
+}
+
+\pagina{slides/slide-19.png}{
+A distinção entre hypervisors de tipo um e de tipo dois reduz-se ao número de camadas interpostas entre a instância e o hardware. O tipo um executa diretamente sobre o hardware e assume as funções de escalonamento e gestão de recursos. O tipo dois executa como processo sobre um sistema operativo anfitrião, que mantém a mediação do acesso ao hardware. A consequência é dupla: maior sobrecarga e menor determinismo do escalonamento no tipo dois, dado que o hypervisor concorre com os restantes processos do anfitrião. O KVM constitui caso particular que merece nota, por ser módulo do núcleo Linux: converte o próprio núcleo em hypervisor de tipo um, mantendo embora todas as funcionalidades de sistema operativo convencional.
+}
+
+\pagina{slides/slide-20.png}{
+O diagrama representa as duas arquiteturas em confronto. No tipo um, o percurso entre a instância e o hardware atravessa uma única camada. No tipo dois, atravessa duas, o hypervisor e o sistema operativo anfitrião. Esta diferença de profundidade explica a predominância do tipo um em ambientes de produção, onde cada camada representa desempenho perdido, e a persistência do tipo dois em postos de trabalho, onde a conveniência de executar sobre um sistema já instalado prevalece sobre o desempenho máximo.
+}
+
+\pagina{slides/slide-21.png}{
+A virtualização de memória coloca uma dificuldade específica que merece exposição cuidada. Um sistema operativo convidado assume dispor de memória física contígua com início no endereço zero, e mantém tabelas de páginas que traduzem endereços virtuais nesse espaço. Sob virtualização, porém, esse espaço é ele próprio virtual, pelo que passam a existir três espaços de endereçamento em vez de dois: o virtual do convidado, o físico do convidado e o físico do anfitrião. A dificuldade decorre de a unidade de gestão de memória do processador realizar uma única tradução, tendo a composição das restantes de ser assegurada por outra via. Constituiu historicamente a fonte de sobrecarga mais significativa da virtualização.
+}
+
+\pagina{slides/slide-22.png}{
+Duas soluções sucederam-se. As tabelas sombra consistem em tabelas mantidas pelo monitor que traduzem diretamente o endereço virtual do convidado no endereço físico do anfitrião, compondo antecipadamente as duas traduções. O custo reside na manutenção: qualquer alteração às tabelas do convidado tem de ser intercetada e propagada, o que obriga a marcar essas páginas como apenas de leitura e a tratar as exceções resultantes, operação frequente e dispendiosa. As extensões EPT na Intel e NPT na AMD transferem a composição para o hardware, que percorre duas hierarquias de tabelas sucessivamente. A travessia torna-se bidimensional e, em caso de falha de TLB, mais dispendiosa, mas elimina-se a interceção de escritas, largamente dominante na prática. O balanço é francamente favorável à segunda solução.
+}
+
+\pagina{slides/slide-23.png}{
+A soma da memória atribuída às instâncias excede frequentemente a memória física instalada, prática admissível por raramente ser utilizada na totalidade em simultâneo. Dois mecanismos a suportam. O KSM identifica periodicamente páginas de conteúdo idêntico entre instâncias e substitui-as por uma única página física partilhada, com cópia na escrita caso alguma instância a modifique. O ballooning recorre a um controlador instalado no convidado que solicita memória ao próprio sistema operativo deste, o qual a liberta de cache, devolvendo-a ao anfitrião sem que o convidado a considere perdida. Ambos exigem cooperação e apresentam custo: o KSM consome processador na comparação de páginas, e o ballooning depende da presença do controlador no convidado.
+}
+
+\pagina{slides/slide-24.png}{
+A terceira questão examina a viabilidade de uma configuração com sobrecompromisso de memória, solicitando a identificação do mecanismo que a sustenta. Os dados do enunciado, designadamente a execução de imagem comum, são determinantes para a resposta.
+}
+
+\pagina{slides/slide-25.png}{
+A fundamentação consta do slide anterior. Importa reter a distinção entre atribuição e reserva: a memória atribuída constitui limite superior e não reserva efetiva. Importa igualmente reter que a transferência para disco, descrita na opção D, constitui mecanismo de recurso aplicado em situação de esgotamento, com degradação acentuada do desempenho, e não regime normal de operação.
+}
+
+\pagina{slides/slide-26.png}{
+O I/O constitui o domínio de maior sobrecarga da virtualização, por envolver acesso a dispositivos e, em consequência, transições frequentes para o monitor. A emulação reproduz o comportamento de um dispositivo real conhecido, o que permite ao convidado utilizar controladores próprios sem qualquer adaptação, mas implica uma transição por cada acesso a registo do dispositivo. O virtio adota abordagem distinta: constitui uma interface de dispositivo paravirtualizada na qual o convidado sabe estar virtualizado e comunica por filas partilhadas em memória. O agrupamento de operações que daqui resulta reduz as transições em uma a duas ordens de grandeza, o que explica ser esta a configuração recomendada em qualquer instância que não exija compatibilidade com controladores legados.
+}
+
+\pagina{slides/slide-27.png}{
+Duas abordagens adicionais dispensam a mediação do monitor. O passthrough atribui um dispositivo físico em exclusivo a uma instância, que o opera com o controlador nativo e desempenho equivalente ao nativo. Exige unidade de gestão de memória de I/O para confinar os acessos diretos à memória da instância, e apresenta duas restrições relevantes: o anfitrião perde o dispositivo e a instância deixa de ser migrável. O SR-IOV supera a primeira restrição ao apresentar o dispositivo como uma função física, gerida pelo anfitrião, e múltiplas funções virtuais atribuíveis individualmente a instâncias distintas. Combina assim o desempenho do passthrough com a partilha do dispositivo, ao custo de suporte específico no equipamento, disponível sobretudo em placas de rede de alto débito e aceleradores.
+}
+
+\pagina{slides/slide-28.png}{
+Cada instância dispõe de uma ou mais interfaces virtuais ligadas a um comutador virtual implementado em software no anfitrião. Este reproduz as funções de um comutador físico, designadamente aprendizagem de endereços, segmentação por VLAN e aplicação de políticas de tráfego. Uma consequência operacional merece registo: o tráfego entre instâncias do mesmo anfitrião não alcança a rede física, o que reduz a latência mas subtrai esse tráfego à observação dos instrumentos de monitorização de rede convencionais, com implicações para deteção de intrusão e auditoria. A programação centralizada destes comutadores constitui o objeto da Aula 06.
+}
+
+\pagina{slides/slide-29.png}{
+O formato raw constitui representação direta do conteúdo do disco, sem metadados, oferecendo desempenho máximo e ausência de funcionalidades acessórias. O qcow2, formato nativo do QEMU, acrescenta aprovisionamento fino, instantâneos internos, compressão e cifra, ao custo de uma indireção com efeito mensurável no desempenho. Os formatos VMDK e VHDX desempenham papel equivalente nos ecossistemas VMware e Microsoft. O aprovisionamento fino merece destaque autónomo: o ficheiro ocupa em armazenamento apenas os blocos efetivamente escritos, e não a capacidade declarada ao convidado, o que admite a prática analisada no slide seguinte.
+}
+
+\pagina{slides/slide-30.png}{
+O aprovisionamento fino admite declarar capacidade agregada superior à fisicamente instalada, prática aparentemente análoga ao sobrecompromisso de memória. A analogia é, contudo, enganadora, e a diferença é determinante: a memória é recurso reclamável, ao passo que o armazenamento escrito não o é. Uma instância que preencha o seu disco não liberta espaço ao terminar. A consequência do esgotamento do volume subjacente é igualmente severa: as escritas falham em todas as instâncias que dele dependem, e não apenas na responsável pelo consumo, o que converte um problema local em incidente de domínio alargado. Daqui decorre um requisito operacional explícito: a monitorização deve incidir sobre o espaço real disponível, com limiar de alerta, e não sobre o espaço declarado às instâncias.
+}
+
+\pagina{slides/slide-31.png}{
+Um instantâneo captura o estado da instância num momento determinado, incluindo o disco e, opcionalmente, a memória e o estado do processador. A implementação recorre a cópia na escrita: o ficheiro original torna-se apenas de leitura e as escritas subsequentes são registadas num ficheiro diferencial. Daqui decorre uma propriedade frequentemente ignorada na prática, e objeto da questão seguinte: instantâneos retidos por períodos longos acumulam cadeias de ficheiros diferenciais que degradam o desempenho de leitura e complicam a recuperação. Distinguem-se ainda o clone ligado, que partilha as camadas de base com a origem, o clone completo, cópia independente, e o modelo, instância convertida em imagem apenas de leitura destinada a instanciação repetida.
+}
+
+\pagina{slides/slide-32.png}{
+A quarta questão examina uma prática corrente e incorreta, a utilização de instantâneos como cópia de segurança. A resposta decorre diretamente do mecanismo de implementação descrito no slide anterior.
+}
+
+\pagina{slides/slide-33.png}{
+A fundamentação consta do slide anterior. O critério que distingue instantâneo de cópia de segurança admite formulação simples: uma cópia de segurança é autónoma relativamente ao original, um instantâneo não. Acresce a exigência, frequentemente negligenciada, de verificar periodicamente o procedimento de reposição, dado que uma cópia cuja reposição nunca foi ensaiada constitui garantia meramente presumida.
+}
+
+\pagina{slides/slide-34.png}{
+A migração em execução consiste na transferência de uma instância ativa entre anfitriões físicos sem interrupção percetível do serviço. O estado a transferir decompõe-se em três elementos: os ficheiros de disco, com frequência já acessíveis a ambos os anfitriões por armazenamento partilhado, o que dispensa a sua transferência; a configuração da instância; e o contexto de execução, constituído pela memória e pelo estado do processador. O procedimento desenvolve-se em quatro fases: reserva de recursos no destino, transferência iterativa da memória com a instância ainda ativa, suspensão breve para transferir o estado residual, e retoma no destino com reconfiguração do encaminhamento de rede. Constitui o mecanismo que viabiliza a manutenção de hardware sem interrupção de serviço, requisito do Tier III analisado na Aula 02.
+}
+
+\pagina{slides/slide-35.png}{
+Duas abordagens distinguem-se pelo momento em que a instância é retomada no destino. Na pré-cópia, a memória é transferida iterativamente enquanto a instância executa, transferindo cada iteração as páginas modificadas durante a anterior, e a suspensão ocorre quando o residual é suficientemente reduzido. A convergência depende da relação entre a taxa de modificação de páginas e a largura de banda disponível, questão desenvolvida na questão seguinte. Na pós-cópia, a instância é retomada no destino com estado mínimo, sendo as páginas em falta obtidas por exceção à medida que são acedidas. Reduz-se o tempo de suspensão, mas uma falha de rede durante a transferência torna a instância irrecuperável, dado que o estado se encontra repartido por dois anfitriões. A pré-cópia constitui o regime adotado por omissão, precisamente por manter a origem íntegra até à conclusão.
+}
+
+\pagina{slides/slide-36.png}{
+A quinta questão examina a condição de convergência da migração por pré-cópia, a partir de um cenário de falha concreto. A resolução requer a identificação da relação entre as duas grandezas em causa.
+}
+
+\pagina{slides/slide-37.png}{
+A fundamentação consta do slide anterior. Vale registar as três respostas operacionais possíveis, enunciadas na resolução: aumentar a largura de banda dedicada à migração, impor um limite de iterações após o qual se força a suspensão aceitando indisponibilidade mais prolongada, ou recorrer à pós-cópia. A escolha entre elas depende da tolerância do serviço a uma interrupção breve mas determinística.
+}
+
+\pagina{slides/slide-38.png}{
+A camada de abstração introduz custo mensurável, hoje reduzido mas não nulo, concentrado nas transições para o monitor e na tradução de endereços. A distribuição desse custo não é uniforme entre cargas. Cargas dominadas por cálculo aproximam-se do desempenho nativo, por executarem maioritariamente instruções inócuas sem mediação. Cargas dominadas por I/O ou sensíveis à latência apresentam degradação superior, decorrente da frequência das transições. Permanecem por isso cenários em que a execução direta sobre o hardware se justifica, designadamente bases de dados de elevado débito, computação de alto desempenho e sistemas com requisitos de latência determinística.
+}
+
+\pagina{slides/slide-39.png}{
+O KVM é um módulo do núcleo Linux que expõe as extensões de virtualização do processador, convertendo o núcleo em hypervisor de tipo um. A arquitetura reparte responsabilidades entre dois componentes: o KVM trata da execução do convidado e da gestão de memória, e o QEMU, em espaço de utilizador, trata da emulação de dispositivos. Uma consequência desta arquitetura merece registo: cada instância corresponde, no anfitrião, a um processo convencional, escalonado pelo escalonador do Linux e observável pelos instrumentos habituais do sistema, o que simplifica consideravelmente a monitorização e o diagnóstico. Constitui a base tecnológica do Proxmox VE e de grande parte das infraestruturas de cloud assentes em Linux.
+}
+
+\pagina{slides/slide-40.png}{
+O LXC constitui instâncias que partilham o núcleo do anfitrião, dispondo de sistema de ficheiros, espaço de processos e pilha de rede próprios. Não existindo hardware virtual nem núcleo convidado, o tempo de arranque situa-se na ordem dos segundos e o consumo de memória limita-se ao espaço de utilizador. O isolamento assenta em mecanismos do núcleo Linux, designadamente namespaces e cgroups, que constituem o objeto da Aula 04. As restrições correspondentes decorrem da mesma propriedade: apenas sistemas Linux são executáveis, e o isolamento é inferior ao de uma máquina virtual, por partilha da superfície de ataque do núcleo, questão retomada na questão 6.
+}
+
+\pagina{slides/slide-41.png}{
+O diagrama torna explícita a fronteira de duplicação introduzida no slide 6. Na máquina virtual, cada instância replica o núcleo e o conjunto de controladores de dispositivo. No contentor, essas camadas são partilhadas com o anfitrião e apenas o espaço de utilizador é replicado. É esta diferença que explica simultaneamente a disparidade de tempo de arranque, de consumo de memória e de densidade de instâncias por anfitrião.
+}
+
+\pagina{slides/slide-42.png}{
+A tabela sistematiza a comparação em seis dimensões. A leitura conjunta das linhas revela que as diferenças não são independentes entre si: decorrem todas da mesma decisão quanto à fronteira de duplicação. A última observação do slide merece ênfase, por corrigir um equívoco frequente: os modelos não são alternativos mas complementares, sendo prática corrente executar contentores dentro de máquinas virtuais, combinação que associa o isolamento das primeiras à densidade dos segundos. O laboratório desta aula torna essa combinação observável em equipamento próprio.
+}
+
+\pagina{slides/slide-43.png}{
+A sexta questão examina a seleção do modelo adequado a um cenário multi-cliente sem relação de confiança. A resposta decorre da natureza da fronteira de isolamento de cada modelo, e não das suas características de desempenho.
+}
+
+\pagina{slides/slide-44.png}{
+A fundamentação consta do slide anterior. Importa reter que a opção D, a execução de contentores com utilizador não privilegiado, constitui medida de mitigação pertinente e recomendável, mas que não altera a natureza da fronteira: o núcleo permanece partilhado. A prática corrente na indústria, referida na resolução, consiste em combinar ambos os modelos, atribuindo uma máquina virtual por cliente e executando contentores no seu interior.
+}
+
+\pagina{slides/slide-45.png}{
+O Proxmox VE integra numa interface única os dois modelos analisados, o KVM para máquinas virtuais e o LXC para contentores de sistema, o que o torna adequado a fins pedagógicos por permitir a comparação direta entre ambos. A gestão faz-se por interface web ou por linha de comandos, através de qm para instâncias KVM e pct para contentores LXC. A plataforma suporta instantâneos, clones, modelos e migração entre nós, concretizando os mecanismos analisados ao longo desta aula, e constitui o ambiente que sustenta o trabalho de projeto da segunda metade do semestre.
+}
+
+\pagina{slides/slide-46.png}{
+O laboratório associado a esta aula decorre em equipamento próprio de cada aluno e não requer acesso ao servidor da unidade curricular. O seu objetivo não é o domínio da ferramenta, mas a observação direta do comportamento que a exposição descreveu. Recorre a Docker por ser a implementação de contentores de instalação mais simples em qualquer sistema operativo, ficando os mecanismos de núcleo subjacentes, namespaces e cgroups, para a Aula 04. A duração estimada situa-se entre sessenta e noventa minutos e a entrega, individual, é constituída por seis observações registadas ao longo do guião.
+}
+
+\pagina{slides/slide-47.png}{
+O percurso do laboratório acompanha a progressão da exposição. Começa pela distinção entre imagem e instância em execução, análoga à distinção entre ficheiro de disco virtual e máquina virtual ativa. Prossegue com a observação do isolamento de processos, sistema de ficheiros e identificação de máquina. O terceiro ponto constitui a observação central do trabalho, a comparação da versão do núcleo dentro e fora do contentor, cujo resultado difere consoante o sistema operativo do computador e é objeto da questão 7. Seguem-se a estrutura em camadas de uma imagem, a publicação de um serviço em rede, a construção de imagem própria, a persistência de dados e a imposição de limites de recursos, estes últimos antecipando os cgroups da Aula 04.
+}
+
+\pagina{slides/slide-48.png}{
+A sétima questão antecipa um resultado que o laboratório produzirá em computadores com macOS ou Windows, e cuja interpretação constitui o ponto pedagógico central do trabalho.
+}
+
+\pagina{slides/slide-49.png}{
+A fundamentação consta do slide anterior. O resultado merece ser retido pelo que revela: em Windows e macOS coexistem, no mesmo equipamento, os dois modelos de virtualização estudados nesta aula, a virtualização completa que sustenta a máquina virtual Linux e a virtualização ao nível do sistema operativo que produz o contentor no seu interior. A afirmação corrente de que contentores dispensam máquinas virtuais é, nestes sistemas, incorreta. Em Linux, a mesma verificação devolveria o núcleo do próprio anfitrião, confirmando a partilha direta.
+}
+
+\pagina{slides/slide-50.png}{
+A primeira metade da síntese retoma os resultados relativos à fundamentação e à virtualização de processador e memória. A virtualização aplica-se a três níveis diferenciados pela fronteira de duplicação. O teorema de Popek e Goldberg estabelece a condição de virtualizabilidade de uma arquitetura, que o x86 não satisfazia, do que decorreram três respostas historicamente distintas. Tradução binária, paravirtualização e assistência de hardware resolvem a mesma limitação, diferindo na necessidade de modificar o convidado e no suporte exigido ao processador. A virtualização de memória evoluiu das tabelas sombra, de manutenção dispendiosa, para a paginação em dois níveis assistida por hardware.
+}
+
+\pagina{slides/slide-51.png}{
+A segunda metade retoma os resultados relativos ao I/O, ao armazenamento e à operação. O I/O admite quatro tratamentos, com compromissos entre desempenho e flexibilidade. O sobrecompromisso é admissível em memória, recurso reclamável, e exige vigilância acrescida em armazenamento, onde o espaço escrito não é recuperável. A migração por pré-cópia converge apenas quando a largura de banda excede a taxa de modificação de páginas. Por último, máquinas virtuais e contentores diferem na natureza da fronteira de isolamento, do hardware ou do núcleo, o que determina a sua aplicação em cenários multi-cliente e justifica a sua combinação frequente.
+}
+
+\pagina{slides/slide-52.png}{
+Conclui-se a exposição da Aula 03. O laboratório associado deve ser realizado antes da Aula 04, que estabelece os mecanismos de núcleo responsáveis pelo comportamento nele observado: os namespaces, que produzem o isolamento constatado, e os cgroups, que impõem os limites de recursos aplicados. As observações registadas servirão de referência concreta para essa exposição.
+}
+
+\end{document}

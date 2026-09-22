@@ -4,11 +4,17 @@
 \usepackage{lmodern}
 \usepackage{xcolor}
 \usepackage[portuguese]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
 
 \definecolor{BgCream}{HTML}{FAF8F5}
 \definecolor{TextEspresso}{HTML}{4A4238}
 \definecolor{NudeTaupe}{HTML}{BFAFA6}
 \definecolor{SoftBlush}{HTML}{D9C5B2}
+\definecolor{SageMuted}{HTML}{7E8F7C}
+\definecolor{ClayWarn}{HTML}{B5795C}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamercolor{background canvas}{bg=BgCream}
@@ -54,6 +60,27 @@
   \vspace{0.5cm}
 }
 
+\newtcolorbox{pergunta}[1]{
+  colback=SoftBlush!30, colframe=NudeTaupe, boxrule=0.6pt, arc=3pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\bfseries #1}, coltitle=TextEspresso, colbacktitle=SoftBlush!60,
+  fonttitle=\bfseries, fontupper=\normalsize\color{TextEspresso}
+}
+
+\newtcolorbox{resposta}[1]{
+  colback=SageMuted!12, colframe=SageMuted, boxrule=0.6pt, arc=3pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\bfseries #1}, coltitle=white, colbacktitle=SageMuted,
+  fonttitle=\bfseries, fontupper=\normalsize\color{TextEspresso}
+}
+
+\newtcolorbox{labbox}[1]{
+  colback=ClayWarn!8, colframe=ClayWarn, boxrule=0.6pt, arc=3pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\bfseries #1}, coltitle=white, colbacktitle=ClayWarn,
+  fonttitle=\bfseries, fontupper=\normalsize\color{TextEspresso}
+}
+
 \usepackage{csquotes}
 
 \title{Virtualização de Sistemas}
@@ -69,40 +96,57 @@
 \end{frame}
 
 \begin{frame}
-\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(1/3)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Conceito de virtualização e motivação.
-    \item Os requisitos de Popek e Goldberg.
-    \item Hypervisors tipo 1 vs tipo 2.
-    \item Estratégias de virtualização de CPU.
-    \item Os anéis de privilégio e o problema do x86.
-    \item Trap-and-emulate: como o hypervisor intervém.
+    \item Conceito de virtualização e níveis de aplicação.
+    \item Requisitos de Popek e Goldberg e classificação de instruções.
+    \item Anéis de privilégio e a limitação da arquitetura x86.
+    \item Estratégias de virtualização de CPU e arquiteturas de hypervisor.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(2/3)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Virtualização de memória, rede e armazenamento.
-    \item Memory overcommit: KSM e ballooning.
-    \item Virtualização de I/O: emulação, passthrough e SR-IOV.
-    \item Formatos de disco virtual e thin provisioning.
-    \item Snapshots e clones.
-    \item Migração ao vivo e overhead de virtualização.
+    \item Virtualização de memória: tabelas sombra e paginação em dois níveis.
+    \item Sobrecompromisso de memória: KSM e ballooning.
+    \item Virtualização de I/O: emulação, virtio, passthrough e SR-IOV.
+    \item Armazenamento virtual: formatos, aprovisionamento fino e instantâneos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda \textcolor{NudeTaupe}{\small(3/3)}}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Migração em execução e sobrecarga de virtualização.
     \item KVM, LXC e a plataforma Proxmox VE.
+    \item Virtualização completa e virtualização ao nível do sistema operativo.
+    \item Enquadramento do laboratório de contentores.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Conceito de Virtualização e Motivação}
+\frametitle{Conceito de Virtualização}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Virtualização: criação de uma versão abstrata (virtual) de um recurso físico, permitindo executar múltiplos sistemas isolados sobre o mesmo hardware.
-    \item \textbf{Consolidação:} redução do número de máquinas físicas necessárias, melhorando o aproveitamento de recursos.
-    \item \textbf{Isolamento:} falhas ou comprometimentos numa VM não afetam diretamente as restantes.
-    \item \textbf{Portabilidade:} uma VM pode ser movida, copiada ou replicada independentemente do hardware subjacente.
+    \item Designa-se por \textbf{virtualização} a construção de uma representação abstrata de um recurso computacional, funcionalmente equivalente ao recurso físico mas dissociada da sua implementação.
+    \item A camada que realiza esta abstração assume três funções: \emph{traduzir} referências virtuais em físicas, \emph{arbitrar} o acesso concorrente e \emph{isolar} as instâncias entre si.
+    \item Propriedades decorrentes: consolidação de cargas sobre menos equipamento, isolamento de falhas entre instâncias e portabilidade face ao hardware subjacente.
+    \item A virtualização constitui o mecanismo que torna operacional o modelo de partilha de recursos estabelecido na Aula 01.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Níveis de Virtualização}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Nível de hardware}: o hypervisor apresenta um conjunto de instruções e dispositivos virtuais. Cada instância executa núcleo próprio e sistema operativo completo. Exemplos: KVM, Xen, ESXi.
+    \item \textbf{Nível de sistema operativo}: o núcleo é único e partilhado, apresentando a cada instância uma vista isolada dos seus recursos. Exemplos: LXC, Docker, Solaris Zones.
+    \item \textbf{Nível de aplicação}: a abstração situa-se sobre o sistema operativo, executando código destinado a uma máquina abstrata. Exemplos: JVM, CLR.
+    \item O critério distintivo é a \emph{fronteira de duplicação}: o que é replicado por instância e o que permanece partilhado. Determina a sobrecarga e o grau de isolamento.
 \end{itemize}
 \end{frame}
 
@@ -110,22 +154,140 @@
 \frametitle{Os Requisitos de Popek e Goldberg}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Em 1974, Popek e Goldberg formalizaram três propriedades que um hypervisor deve garantir.
-    \item \textbf{Equivalência}: um programa a correr na VM comporta-se como correria diretamente no hardware.
-    \item \textbf{Controlo de recursos}: o hypervisor mantém controlo total sobre os recursos físicos atribuídos.
-    \item \textbf{Eficiência}: a maioria das instruções executa diretamente no processador, sem intervenção do hypervisor.
-    \item Estes critérios continuam a ser a referência para avaliar qualquer solução de virtualização.
+    \item Formulados em 1974, estabelecem três propriedades exigíveis a um monitor de máquina virtual.
+    \item \textbf{Equivalência}: um programa executado sob o monitor apresenta comportamento indistinguível do que apresentaria em execução direta sobre o hardware.
+    \item \textbf{Controlo de recursos}: o monitor mantém domínio completo sobre os recursos físicos, não podendo uma instância aceder a recursos não atribuídos.
+    \item \textbf{Eficiência}: uma fração estatisticamente dominante das instruções executa diretamente no processador, sem intervenção do monitor.
+    \item O terceiro requisito distingue virtualização de emulação: um emulador satisfaz os dois primeiros, mas interpreta a totalidade das instruções.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Hypervisors Tipo 1 vs Tipo 2}
+\frametitle{Classificação de Instruções}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Privilegiadas}: geram exceção quando executadas em modo utilizador, sendo admitidas apenas em modo supervisor.
+    \item \textbf{Sensíveis}: subdividem-se em sensíveis ao \emph{controlo}, que alteram a configuração de recursos do sistema, e sensíveis ao \emph{comportamento}, cujo resultado depende dessa configuração.
+    \item \textbf{Inócuas}: as restantes, sem efeito sobre o estado global, executáveis sem mediação.
+    \item \textbf{Teorema de Popek e Goldberg}: um monitor de máquina virtual pode ser construído se o conjunto das instruções sensíveis estiver contido no das privilegiadas. A condição é verificável sobre a especificação da arquitetura, independentemente de qualquer implementação.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Anéis de Privilégio e a Limitação do x86}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item A arquitetura x86 define quatro anéis de privilégio, do anel~0, reservado ao núcleo, ao anel~3, destinado a aplicações.
+    \item Sob virtualização, o anel~0 é ocupado pelo monitor, sendo o núcleo convidado deslocado para um anel de menor privilégio, técnica designada por \emph{ring deprivileging}.
+    \item A arquitetura x86 anterior a 2005 não satisfazia a condição do teorema: dezassete instruções eram sensíveis sem serem privilegiadas.
+    \item Exemplo característico: \texttt{POPF}, que ao restaurar o registo de estado em anel~3 ignora silenciosamente a alteração do bit de interrupções. A falha é adversa por não ser detetável: a instrução não falha, produz resultado incorreto.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Trap-and-Emulate}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Tipo 1 (bare-metal):} executa diretamente sobre o hardware, sem sistema operativo intermédio. Exemplos: VMware ESXi, KVM, Xen, Hyper-V.
-    \item \textbf{Tipo 2 (hosted):} executa como uma aplicação sobre um sistema operativo anfitrião. Exemplos: VirtualBox, VMware Workstation.
-    \item Hypervisors tipo 1 têm menor overhead e são a escolha habitual em datacenters de produção.
-    \item Hypervisors tipo 2 são mais simples de instalar e adequados a ambientes de desenvolvimento e teste.
+    \item Mecanismo base da virtualização em arquiteturas que satisfazem a condição do teorema.
+    \item O código convidado executa diretamente no processador. Ao emitir uma instrução privilegiada em modo não privilegiado, o processador gera exceção e transfere o controlo para o monitor.
+    \item O monitor determina a operação pretendida, emula o seu efeito sobre o estado virtual da instância e devolve o controlo ao ponto de interrupção.
+    \item Aplica-se a múltiplos subsistemas: registos de controlo do processador, unidade de gestão de memória, controlador de interrupções, temporizadores e dispositivos periféricos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Pergunta 1}
+\begin{pergunta}{Aplicabilidade do teorema}
+Numa arquitetura hipotética existem instruções que consultam a configuração de recursos do sistema e devolvem resultado distinto consoante o modo de execução, sem gerar exceção em modo utilizador. Que consequência decorre para a construção de um monitor por trap-and-emulate?
+\begin{itemize}
+    \item[A)] Nenhuma. O monitor interceta igualmente essas instruções.
+    \item[B)] O mecanismo é insuficiente: tais instruções são sensíveis sem serem privilegiadas, pelo que não geram exceção e produzem resultado incorreto sem sinalização.
+    \item[C)] O monitor deve ser executado em anel~3 para as intercetar.
+    \item[D)] A arquitetura não admite qualquer forma de virtualização.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 1}
+\begin{resposta}{Opção correta: B}
+A situação descrita corresponde à violação da condição do teorema: existem instruções sensíveis fora do conjunto das privilegiadas. Não gerando exceção, não são intercetáveis por trap-and-emulate, e a instância obtém informação relativa ao estado real da máquina em vez do seu estado virtual, comprometendo o requisito de equivalência. A opção D é incorreta: a virtualização permanece possível por outras vias, designadamente tradução binária ou paravirtualização, apresentadas em seguida.
+\end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Estratégias de Virtualização de CPU}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Virtualização completa por tradução binária}: o monitor analisa e reescreve o fluxo de instruções do convidado antes da execução, sem exigir alteração do sistema operativo.
+    \item \textbf{Paravirtualização}: o núcleo convidado é modificado para invocar explicitamente o monitor nas operações sensíveis, dispensando a interceção.
+    \item \textbf{Virtualização assistida por hardware}: extensões do processador introduzem um modo de execução dedicado, restaurando a validade do trap-and-emulate.
+    \item As três respondem à mesma limitação arquitetural, com compromissos distintos entre desempenho, compatibilidade e necessidade de alterar o convidado.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tradução Binária Dinâmica}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O monitor examina blocos de código do convidado antes da execução e substitui as instruções problemáticas por sequências equivalentes que transferem o controlo.
+    \item A tradução incide apenas sobre código executado em anel~0. O código de aplicação, em anel~3, executa sem modificação.
+    \item Os blocos traduzidos são retidos em memória cache, pelo que o custo é amortizado: código executado repetidamente é traduzido uma única vez.
+    \item Vantagem determinante: admite sistemas operativos convidados não modificados, incluindo sistemas de código fechado. Foi a abordagem que viabilizou comercialmente a virtualização de x86.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Paravirtualização}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O núcleo convidado é modificado de modo a não emitir instruções sensíveis, substituindo-as por invocações explícitas ao monitor, designadas \textbf{hypercalls}.
+    \item A interface entre convidado e monitor passa a ser declarada, à semelhança de uma chamada de sistema entre aplicação e núcleo.
+    \item Elimina-se o custo de interceção e de emulação, e o monitor deixa de necessitar de emular hardware que não existe.
+    \item Limitação: exige acesso ao código do sistema operativo convidado e adaptação a cada monitor, o que restringe a sua aplicação a sistemas de código aberto.
+    \item Persiste hoje sobretudo nos controladores paravirtualizados de I/O, matéria retomada adiante.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Virtualização Assistida por Hardware}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item As extensões Intel VT-x e AMD-V introduzem dois modos de operação ortogonais aos anéis: \textbf{VMX root}, onde executa o monitor, e \textbf{VMX non-root}, onde executa o convidado.
+    \item O núcleo convidado executa em anel~0 do modo non-root, pelo que não é necessário deslocá-lo de anel nem reescrever o seu código.
+    \item A transição entre modos é mediada por uma estrutura de controlo em memória, a \textbf{VMCS}, que retém o estado de ambos os contextos e determina que eventos provocam saída para o monitor.
+    \item Designa-se por \textbf{VM exit} a transição para o monitor e por \textbf{VM entry} o regresso. Cada transição tem custo mensurável, pelo que a otimização consiste em reduzir a sua frequência.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Pergunta 2}
+\begin{pergunta}{Seleção de estratégia}
+Pretende-se virtualizar um sistema operativo de código fechado, sem possibilidade de modificação, sobre processadores anteriores à introdução das extensões de virtualização. Que estratégia é aplicável?
+\begin{itemize}
+    \item[A)] Paravirtualização, por apresentar melhor desempenho.
+    \item[B)] Trap-and-emulate puro, por ser o mecanismo de referência.
+    \item[C)] Tradução binária dinâmica, única das três que dispensa simultaneamente a modificação do convidado e o suporte do processador.
+    \item[D)] Nenhuma. O cenário descrito não admite virtualização.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 2}
+\begin{resposta}{Opção correta: C}
+A paravirtualização exige modificação do núcleo convidado, inviável em código fechado. O trap-and-emulate puro pressupõe a validade da condição do teorema, que a arquitetura em causa não satisfaz. As extensões de hardware não se encontram disponíveis. Resta a tradução binária dinâmica, que opera sobre o fluxo de instruções em tempo de execução sem requerer cooperação do convidado nem suporte do processador. Foi precisamente esta a razão da sua adoção comercial na década de 2000.
+\end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Arquiteturas de Hypervisor}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item \textbf{Tipo 1}, nativo: executa diretamente sobre o hardware, assumindo as funções de escalonamento e gestão de recursos. Exemplos: VMware ESXi, Xen, KVM.
+    \item \textbf{Tipo 2}, alojado: executa como processo sobre um sistema operativo anfitrião, que mantém a mediação do acesso ao hardware. Exemplos: VirtualBox, VMware Workstation.
+    \item A distinção reduz-se ao número de camadas interpostas entre a instância e o hardware, com efeito direto sobre a sobrecarga e sobre o determinismo do escalonamento.
+    \item O KVM constitui caso particular: sendo módulo do núcleo Linux, converte o próprio núcleo em hypervisor de tipo~1, mantendo embora as funcionalidades de sistema operativo convencional.
 \end{itemize}
 \end{frame}
 
@@ -138,170 +300,217 @@
 \vfill
 \end{frame}
 
-
 \begin{frame}
-\frametitle{Estratégias de Virtualização de CPU}
+\frametitle{Virtualização de Memória: o Problema}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Virtualização completa:} o hypervisor emula totalmente o hardware; o sistema convidado corre sem modificações.
-    \item \textbf{Paravirtualização:} o sistema convidado é adaptado para comunicar diretamente com o hypervisor, reduzindo overhead.
-    \item \textbf{Virtualização assistida por hardware:} extensões de processador (Intel VT-x, AMD-V) que aceleram a execução de instruções privilegiadas.
-    \item A maioria dos hypervisors modernos combina virtualização completa com suporte de hardware.
+    \setlength\itemsep{0.35cm}
+    \item Um sistema operativo convidado assume dispor de memória física contígua com início no endereço zero, e mantém tabelas de páginas que traduzem endereços virtuais nesse espaço.
+    \item Sob virtualização, esse espaço é ele próprio virtual. Passam a existir três espaços de endereçamento: virtual do convidado, físico do convidado e físico do anfitrião.
+    \item A unidade de gestão de memória do processador realiza uma única tradução, pelo que a composição das duas restantes tem de ser assegurada pelo monitor ou pelo hardware.
+    \item Constitui a fonte de sobrecarga mais significativa da virtualização anterior ao suporte dedicado.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Anéis de Privilégio e o Problema do x86}
+\frametitle{Tabelas Sombra e Paginação em Dois Níveis}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item A arquitetura x86 define \textbf{anéis de privilégio}, do anel 0 (máximo privilégio, kernel) ao anel 3 (aplicações).
-    \item Um sistema operativo convidado espera correr no anel 0, mas numa VM esse lugar pertence ao hypervisor.
-    \item Problema histórico: no x86 clássico, certas instruções privilegiadas falhavam silenciosamente em vez de gerarem uma exceção capturável pelo hypervisor.
-    \item Soluções: tradução binária dinâmica (reescrever instruções problemáticas em tempo de execução) ou paravirtualização.
-    \item \textbf{Intel VT-x} e \textbf{AMD-V} resolveram o problema na raiz, criando um modo de execução dedicado ao hypervisor.
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Tabelas sombra}: o monitor mantém tabelas próprias que traduzem diretamente o endereço virtual do convidado no endereço físico do anfitrião, compondo antecipadamente as duas traduções.
+    \item O custo reside na manutenção: qualquer alteração às tabelas do convidado tem de ser intercetada e propagada, o que exige marcar essas páginas como apenas de leitura e tratar as exceções resultantes.
+    \item \textbf{EPT} (Intel) e \textbf{NPT} (AMD) transferem a composição para o hardware, que percorre duas hierarquias de tabelas sucessivamente, sem intervenção do monitor.
+    \item A travessia passa a ser bidimensional e, em caso de falha de TLB, mais dispendiosa. Em contrapartida, elimina-se a interceção de escritas, largamente dominante na prática.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Trap-and-Emulate: Como o Hypervisor Intervém}
+\frametitle{Sobrecompromisso de Memória: KSM e Ballooning}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Popek e Goldberg classificam as instruções em três tipos: \textbf{seguras} (sem impacto global, executam livremente), \textbf{sensíveis} (acedem a hardware ou tabelas de páginas) e \textbf{privilegiadas} (geram uma exceção -- \textit{trap} -- se executadas em modo utilizador).
-    \item O código convidado corre como uma aplicação normal; quando emite uma instrução sensível, o processador gera um \textit{trap} e devolve o controlo ao hypervisor.
-    \item O hypervisor apanha o \textit{trap}, emula o efeito da instrução (por exemplo, uma escrita em disco vira uma escrita num ficheiro) e devolve o controlo ao convidado, que não nota a interrupção.
-    \item Este mecanismo aplica-se a múltiplos subsistemas: CPU e registos, unidade de gestão de memória (tabelas de páginas), controlador de interrupções e temporizadores, e dispositivos periféricos.
+    \setlength\itemsep{0.35cm}
+    \item A soma da memória atribuída às instâncias excede frequentemente a memória física instalada, prática admissível por raramente ser utilizada na totalidade em simultâneo.
+    \item \textbf{KSM} (\emph{Kernel Samepage Merging}): o anfitrião identifica periodicamente páginas de conteúdo idêntico entre instâncias e substitui-as por uma única página física partilhada, com cópia na escrita.
+    \item \textbf{Ballooning}: um controlador instalado no convidado solicita memória ao seu próprio sistema operativo, que a liberta de cache, devolvendo-a ao anfitrião sem que o convidado a considere perdida.
+    \item Ambos exigem cooperação e apresentam custo: o KSM consome processador na comparação de páginas; o ballooning depende da presença do controlador no convidado.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Virtualização de Memória e Rede \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Pergunta 3}
+\begin{pergunta}{Efeito do sobrecompromisso}
+Um anfitrião dispõe de 64\,GB de memória física e aloja vinte instâncias com 4\,GB atribuídos cada, totalizando 80\,GB. As instâncias executam a mesma imagem de sistema operativo. Que mecanismo explica a viabilidade desta configuração?
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Virtualização de memória: cada VM tem o seu próprio espaço de endereçamento, gerido pelo hypervisor.
-    \item \textbf{Shadow page tables:} o hypervisor mantém uma tabela de páginas própria, traduzindo endereços da VM para endereços físicos.
-    \item \textbf{EPT} (Extended Page Tables): suporte de hardware que acelera esta tradução, eliminando parte do overhead das shadow page tables.
+    \item[A)] O hypervisor comprime a memória de todas as instâncias.
+    \item[B)] As instâncias utilizam habitualmente menos do que o atribuído, e o KSM consolida as páginas idênticas resultantes da imagem comum.
+    \item[C)] A configuração é inviável e o anfitrião recusará iniciar a vigésima instância.
+    \item[D)] O excesso é integralmente transferido para disco, sem consequências.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 3}
+\begin{resposta}{Opção correta: B}
+A atribuição constitui um limite superior e não uma reserva efetiva, pelo que o consumo real é tipicamente inferior. Executando as instâncias a mesma imagem, uma fração substancial das suas páginas, designadamente código de núcleo e bibliotecas partilhadas, apresenta conteúdo idêntico, e o KSM consolida-a numa única página física. A opção D descreve a alternativa de recurso, a transferência para disco, que o anfitrião aplica em situação de esgotamento com degradação acentuada do desempenho, e não como regime normal de operação.
+\end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Virtualização de I/O: Emulação e virtio}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O I/O constitui o domínio de maior sobrecarga: ao contrário do cálculo, envolve acesso a dispositivos e, por conseguinte, transições frequentes para o monitor.
+    \item \textbf{Emulação}: o monitor reproduz o comportamento de um dispositivo real conhecido, por exemplo uma placa de rede Intel e1000. Cada acesso a registo do dispositivo provoca uma transição.
+    \item Vantagem: o convidado utiliza controladores próprios, sem qualquer adaptação. Desvantagem: o número de transições torna o desempenho substancialmente inferior ao nativo.
+    \item \textbf{virtio}: interface de dispositivo paravirtualizada, na qual o convidado sabe estar virtualizado e comunica por filas partilhadas em memória, agrupando operações e reduzindo as transições em uma a duas ordens de grandeza.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Virtualização de Memória e Rede \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Virtualização de I/O: Passthrough e SR-IOV}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Virtualização de rede: um \textbf{vSwitch} (switch virtual) interliga as interfaces de rede virtuais das VMs entre si e com a rede física.
-    \item Permite criar redes isoladas, VLANs virtuais e políticas de tráfego sem alterar o cablagem física.
-    \item Virtualização de armazenamento: discos virtuais (ficheiros) que abstraem o armazenamento físico subjacente, permitindo snapshots e migração.
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Passthrough}: um dispositivo físico é atribuído em exclusivo a uma instância, que o opera com o controlador nativo e desempenho equivalente ao nativo.
+    \item Requer unidade de gestão de memória de I/O (IOMMU) para confinar os acessos diretos à memória da instância. Implica a perda do dispositivo pelo anfitrião e impede a migração em execução.
+    \item \textbf{SR-IOV}: extensão do PCI Express pela qual um dispositivo se apresenta como uma função física, gerida pelo anfitrião, e múltiplas funções virtuais, atribuíveis individualmente a instâncias distintas.
+    \item Combina o desempenho do passthrough com a partilha do dispositivo, ao custo de suporte específico no equipamento. Aplicação típica em placas de rede de alto débito e aceleradores.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Memory Overcommit: KSM e Ballooning}
+\frametitle{Virtualização de Rede}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Num servidor partilhado por várias VMs, atribuir a cada uma a memória máxima "no papel" desperdiça RAM real -- a maior parte de um SO fica em cache e buffers raramente usados.
-    \item \textbf{KSM} (Kernel Samepage Merging): o hypervisor deteta páginas de memória idênticas entre VMs semelhantes (o mesmo binário, as mesmas bibliotecas) e funde-as numa só página física, com \textit{copy-on-write} caso uma VM a modifique.
-    \item \textbf{Ballooning}: um driver dentro do convidado "infla" um balão, reclamando memória que o SO convidado liberta (via \textit{page cache}); o hypervisor reatribui essa memória a outras VMs sem que o convidado perceba que foi retirada.
-    \item Ambos os mecanismos permitem \textit{overcommit} de memória com segurança, mas dependem de suporte explícito na plataforma -- no Proxmox, são opções configuráveis por VM.
+    \item Cada instância dispõe de uma ou mais interfaces virtuais, ligadas a um \textbf{comutador virtual} implementado em software no anfitrião.
+    \item O comutador virtual reproduz as funções de um comutador físico, designadamente aprendizagem de endereços, segmentação por VLAN e aplicação de políticas de tráfego.
+    \item O tráfego entre instâncias do mesmo anfitrião não alcança a rede física, o que reduz a latência mas subtrai esse tráfego à observação dos instrumentos de monitorização de rede convencionais.
+    \item A programação centralizada destes comutadores constitui o objeto da Aula 06.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Formatos de Disco Virtual}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{raw}: imagem sem estrutura adicional; desempenho máximo, mas sem funcionalidades próprias.
-    \item \textbf{qcow2} (QEMU Copy On Write 2): formato nativo do QEMU/KVM, com suporte a snapshots internos, compressão e alocação dinâmica.
-    \item \textbf{VMDK} (VMware) e \textbf{VHD/VHDX} (Microsoft): formatos equivalentes noutros ecossistemas.
-    \item \textbf{Thin provisioning}: o disco ocupa em armazenamento apenas o espaço efetivamente escrito, não o tamanho nominal declarado.
-    \item Permite sobrecomprometer armazenamento (\textit{overcommit}), à custa de exigir monitorização atenta do espaço real disponível.
+    \setlength\itemsep{0.35cm}
+    \item \textbf{raw}: representação direta do conteúdo do disco, sem metadados. Desempenho máximo e ausência de funcionalidades acessórias.
+    \item \textbf{qcow2}: formato nativo do QEMU, com aprovisionamento fino, instantâneos internos, compressão e cifra. A indireção introduzida tem custo de desempenho mensurável.
+    \item \textbf{VMDK} e \textbf{VHDX}: formatos equivalentes nos ecossistemas VMware e Microsoft.
+    \item \textbf{Aprovisionamento fino}: o ficheiro ocupa em armazenamento apenas os blocos efetivamente escritos, e não a capacidade declarada ao convidado.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Snapshots e Clones}
+\frametitle{Aprovisionamento Fino: Risco Operacional}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Snapshot}: captura o estado de uma VM num instante (disco e, opcionalmente, memória), permitindo reverter mais tarde.
-    \item Funciona tipicamente por \textit{copy-on-write}: apenas os blocos alterados após o snapshot são efetivamente copiados.
-    \item \textbf{Linked clone}: nova VM que partilha as camadas base do disco com a original, ocupando pouco espaço adicional.
-    \item \textbf{Full clone}: cópia completa e independente, sem qualquer dependência da VM de origem.
-    \item \textbf{Template}: VM convertida em modelo só de leitura, usada como base para criar novas máquinas de forma reprodutível.
+    \item O aprovisionamento fino admite declarar capacidade agregada superior à fisicamente instalada, prática análoga ao sobrecompromisso de memória.
+    \item A diferença é determinante: a memória é reclamável, o armazenamento escrito não. Uma instância que preencha o seu disco não liberta espaço ao terminar.
+    \item Consequência do esgotamento do volume subjacente: as escritas falham em todas as instâncias que dele dependem, e não apenas na responsável pelo consumo.
+    \item Requisito operacional: monitorização do espaço real disponível com limiar de alerta, e não do espaço declarado às instâncias.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Migração ao Vivo \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Instantâneos, Clones e Modelos}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Permite mover uma VM em execução de um host físico para outro, sem interrupção percetível do serviço.
-    \item Uma VM em execução é, no fundo, três coisas: \textbf{ficheiros} (discos, muitas vezes já acessíveis nos dois hosts via armazenamento partilhado), \textbf{configuração} (endereços de rede, descrição de hardware) e \textbf{contexto} (memória RAM e estado do CPU).
-    \item Fases típicas: \textit{setup} (o destino reserva recursos), \textit{push} (o estado de memória é copiado enquanto a VM continua ativa na origem), \textit{stop-and-copy} (pequena pausa para migrar o último estado e reconfigurar a rede) e \textit{pull} (a VM arranca no destino, procurando dados que ainda faltem).
-    \item Fundamental para balanceamento de carga entre hosts e para manutenção de hardware sem downtime.
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Instantâneo}: captura do estado da instância num momento determinado, incluindo disco e, opcionalmente, memória e estado do processador.
+    \item Implementado por cópia na escrita: o ficheiro original torna-se apenas de leitura e as escritas subsequentes são registadas num ficheiro diferencial.
+    \item Daqui decorre uma propriedade frequentemente ignorada: instantâneos retidos por períodos longos acumulam cadeias de ficheiros diferenciais que degradam o desempenho de leitura e complicam a recuperação.
+    \item \textbf{Clone ligado} partilha as camadas de base com a origem; \textbf{clone completo} constitui cópia independente. Um \textbf{modelo} é uma instância convertida em imagem apenas de leitura para instanciação repetida.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Migração ao Vivo \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Pergunta 4}
+\begin{pergunta}{Instantâneos como cópia de segurança}
+Uma equipa mantém instantâneos diários das suas instâncias, retidos durante três meses, e considera-os cópia de segurança. Que objeção se impõe?
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Stop-and-copy}: a VM pára, todo o estado é copiado, a VM arranca no destino. Simples, mas com downtime elevado.
-    \item \textbf{Pre-copy} (a abordagem mais comum): as páginas de memória são copiadas iterativamente enquanto a VM corre na origem; só as páginas "sujas" na última ronda exigem uma pausa curta antes de transferir o controlo.
-    \item \textbf{Post-copy}: a VM arranca quase de imediato no destino, e as páginas em falta são pedidas à origem à medida que são acedidas -- menor tempo até ao arranque, mas com risco de faltas de página se a rede for lenta.
-    \item \textbf{Migração híbrida}: combina as duas anteriores, copiando a maior parte antecipadamente e recorrendo a \textit{post-copy} apenas para o resto.
+    \item[A)] Nenhuma. Um instantâneo constitui cópia de segurança completa.
+    \item[B)] Os instantâneos dependem do ficheiro de base original: a sua perda ou corrupção invalida toda a cadeia, que além disso degrada o desempenho ao acumular.
+    \item[C)] Os instantâneos só podem ser criados com a instância desligada.
+    \item[D)] A objeção é apenas de custo de armazenamento.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 4}
+\begin{resposta}{Opção correta: B}
+Um instantâneo não constitui cópia autónoma: regista diferenças relativamente a um ficheiro de base que permanece indispensável. A perda desse ficheiro, ou do volume que o aloja, invalida a totalidade da cadeia, pelo que não protege contra o cenário que uma cópia de segurança deve cobrir. Acresce a degradação progressiva do desempenho de leitura com o comprimento da cadeia. Uma cópia de segurança exige transferência do conteúdo para suporte independente, com verificação periódica do procedimento de reposição.
+\end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Migração em Execução \textcolor{NudeTaupe}{\small(1/2)}}
+\begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item Consiste na transferência de uma instância em execução entre anfitriões físicos sem interrupção percetível do serviço.
+    \item O estado a transferir decompõe-se em três elementos: os \emph{ficheiros} de disco, com frequência já acessíveis a ambos os anfitriões por armazenamento partilhado; a \emph{configuração} da instância; e o \emph{contexto} de execução, constituído por memória e estado do processador.
+    \item Fases: reserva de recursos no destino, transferência iterativa da memória com a instância ainda ativa, suspensão breve para transferir o estado residual, e retoma no destino com reconfiguração do encaminhamento de rede.
+    \item Constitui o mecanismo que viabiliza manutenção de hardware sem interrupção de serviço, requisito do Tier~III analisado na Aula 02.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Overhead de Virtualização}
+\frametitle{Migração em Execução \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Toda a camada de abstração introduzida pelo hypervisor tem um custo de desempenho, ainda que reduzido com suporte de hardware.
-    \item Cenários onde o bare-metal ainda é preferível: cargas de trabalho com requisitos extremos de latência ou I/O, como bases de dados de alto desempenho ou computação de alta performance (HPC).
-    \item A decisão entre virtualizar ou não depende do compromisso entre flexibilidade operacional e desempenho máximo.
+    \setlength\itemsep{0.35cm}
+    \item \textbf{Pré-cópia}: a memória é transferida iterativamente enquanto a instância executa; cada iteração transfere as páginas modificadas durante a anterior. A suspensão ocorre quando o residual é suficientemente reduzido.
+    \item A convergência depende da relação entre a taxa de modificação de páginas e a largura de banda disponível. Cargas com escrita intensiva podem não convergir, forçando suspensão com residual elevado.
+    \item \textbf{Pós-cópia}: a instância é retomada no destino com estado mínimo, sendo as páginas em falta obtidas por exceção. Reduz o tempo de suspensão, mas uma falha de rede durante a transferência torna a instância irrecuperável.
+    \item A pré-cópia constitui o regime adotado por omissão, precisamente por manter a origem íntegra até à conclusão.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Virtualização de I/O: Emulação, Passthrough e SR-IOV}
+\frametitle{Pergunta 5}
+\begin{pergunta}{Convergência da migração}
+Uma instância que executa uma base de dados com escrita intensiva não conclui a migração por pré-cópia, permanecendo em iterações sucessivas sem redução do residual. Qual a causa?
+\begin{itemize}
+    \item[A)] Insuficiência de memória no anfitrião de destino.
+    \item[B)] A taxa de modificação de páginas aproxima-se ou excede a largura de banda de transferência, pelo que cada iteração encontra tantas páginas modificadas quantas transferiu.
+    \item[C)] O formato de disco é incompatível com migração.
+    \item[D)] A pré-cópia não admite instâncias com base de dados.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 5}
+\begin{resposta}{Opção correta: B}
+A pré-cópia converge apenas quando a largura de banda excede a taxa de modificação de páginas. Não se verificando essa condição, cada iteração encontra um conjunto de páginas modificadas de dimensão comparável ao que acabou de transferir, e o residual não diminui. As respostas práticas consistem em aumentar a largura de banda dedicada, impor um limite de iterações após o qual se força a suspensão, aceitando indisponibilidade mais prolongada, ou recorrer à pós-cópia.
+\end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Sobrecarga de Virtualização}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item I/O é tipicamente o maior gargalo da virtualização: ao contrário de cálculo puro (maioritariamente instruções seguras), acesso a dispositivos envolve com frequência instruções sensíveis, logo mais intervenção do hypervisor.
-    \item \textbf{Emulação}: o acesso ao dispositivo gera um \textit{trap}, o hypervisor emula o comportamento do periférico. Máxima compatibilidade, menor desempenho.
-    \item \textbf{Passthrough} (I/O direto): um dispositivo físico (ou parte dele) é atribuído diretamente à VM; o convidado usa o driver nativo, com desempenho quase nativo -- à custa de o host perder acesso a esse dispositivo.
-    \item \textbf{SR-IOV} (Single Root IO Virtualization): extensão do PCI Express em que uma placa (rede, GPU, RAID) se apresenta como uma função física (gerida pelo host) e múltiplas funções virtuais, cada uma atribuível diretamente a uma VM diferente -- o melhor dos dois mundos para hardware que o suporte.
+    \item A camada de abstração introduz custo mensurável, hoje reduzido mas não nulo, concentrado nas transições para o monitor e na tradução de endereços.
+    \item Cargas dominadas por cálculo aproximam-se do desempenho nativo, por executarem maioritariamente instruções inócuas sem mediação.
+    \item Cargas dominadas por I/O ou sensíveis à latência apresentam degradação superior, decorrente da frequência das transições.
+    \item Cenários em que a execução direta sobre o hardware permanece justificada: bases de dados de elevado débito, computação de alto desempenho e sistemas com requisitos de latência determinística.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{KVM: Virtualização no Kernel Linux}
+\frametitle{KVM}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{KVM} (Kernel-based Virtual Machine) é um módulo do kernel Linux que transforma o próprio kernel num hypervisor de tipo 1.
-    \item Depende do suporte de hardware (Intel VT-x ou AMD-V) e integra-se com o \textbf{QEMU}, que trata da emulação de dispositivos.
-    \item \textbf{virtio}: interface paravirtualizada para disco e rede, que evita emular hardware real e reduz significativamente o overhead de I/O.
-    \item É a base tecnológica do Proxmox VE e de grande parte das clouds públicas assentes em Linux.
+    \item O \textbf{KVM} é um módulo do núcleo Linux que expõe as extensões de virtualização do processador, convertendo o núcleo em hypervisor de tipo~1.
+    \item A arquitetura reparte responsabilidades: o KVM trata da execução do convidado e da gestão de memória; o \textbf{QEMU}, em espaço de utilizador, trata da emulação de dispositivos.
+    \item Cada instância corresponde, no anfitrião, a um processo convencional, escalonado pelo escalonador do Linux e observável pelos instrumentos habituais do sistema.
+    \item Constitui a base tecnológica do Proxmox VE e de grande parte das infraestruturas de cloud assentes em Linux.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{LXC: Virtualização ao Nível do SO}
+\frametitle{LXC e a Virtualização ao Nível do Sistema Operativo}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{LXC} (Linux Containers) cria \textit{contentores de sistema}: ambientes isolados que partilham o kernel do host.
-    \item Não há hypervisor nem kernel convidado -- daí o arranque quase instantâneo e o menor consumo de recursos.
-    \item Assenta nas primitivas de isolamento do kernel Linux (namespaces e cgroups), que serão detalhadas na Aula 04.
-    \item Limitação: só permite correr sistemas Linux, e o isolamento é mais fraco do que o de uma VM completa.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Proxmox VE: as Duas Tecnologias Lado a Lado}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O \textbf{Proxmox VE} é a plataforma de virtualização usada nos laboratórios desta UC.
-    \item Integra numa única interface os dois modelos: \textbf{KVM} para VMs completas e \textbf{LXC} para contentores de sistema.
-    \item Gestão por interface web ou por linha de comandos: \texttt{qm} para VMs KVM, \texttt{pct} para contentores LXC.
-    \item Suporta snapshots, clones, templates e migração entre nós -- todos os conceitos vistos nesta aula.
-    \item É a plataforma que vai suportar o projeto prático da segunda metade do semestre.
+    \setlength\itemsep{0.35cm}
+    \item O \textbf{LXC} constitui instâncias que partilham o núcleo do anfitrião, dispondo de sistema de ficheiros, espaço de processos e pilha de rede próprios.
+    \item Não existe hardware virtual nem núcleo convidado, do que decorrem tempo de arranque na ordem dos segundos e consumo de memória limitado ao espaço de utilizador.
+    \item O isolamento assenta em mecanismos do núcleo Linux, designadamente \emph{namespaces} e \emph{cgroups}, objeto da Aula 04.
+    \item Restrições correspondentes: apenas sistemas Linux são executáveis, e o isolamento é inferior ao de uma máquina virtual por partilha da superfície de ataque do núcleo.
 \end{itemize}
 \end{frame}
 
@@ -314,26 +523,127 @@
 \vfill
 \end{frame}
 
+\begin{frame}
+\frametitle{Comparação dos Dois Modelos}
+\vspace{0.1cm}
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & \textbf{Máquina virtual} & \textbf{Contentor} \\
+\midrule
+Núcleo            & Próprio por instância   & Partilhado com o anfitrião \\
+Arranque          & Dezenas de segundos     & Segundos ou menos \\
+Sobrecarga        & Núcleo e dispositivos   & Praticamente nula \\
+Sistema convidado & Qualquer                & Apenas Linux \\
+Isolamento        & Fronteira de hardware   & Fronteira de núcleo \\
+Densidade típica  & Dezenas por anfitrião   & Centenas por anfitrião \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{0.25cm}
+\begin{itemize}
+    \setlength\itemsep{0.2cm}
+    \item Os modelos não são alternativos mas complementares: é prática corrente executar contentores dentro de máquinas virtuais, combinando o isolamento das primeiras com a densidade dos segundos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Pergunta 6}
+\begin{pergunta}{Isolamento entre clientes distintos}
+Um fornecedor pretende alojar cargas de clientes distintos, sem relação de confiança entre si, no mesmo equipamento físico. Que modelo se justifica como fronteira primária de isolamento?
+\begin{itemize}
+    \item[A)] Contentores, por apresentarem menor sobrecarga e maior densidade.
+    \item[B)] Máquinas virtuais, por a fronteira de isolamento ser assegurada pelo hardware e não pelo núcleo partilhado, cuja superfície de ataque é comum a todos os contentores.
+    \item[C)] Indiferente: ambos oferecem isolamento equivalente.
+    \item[D)] Contentores, desde que executados com utilizador não privilegiado.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 6}
+\begin{resposta}{Opção correta: B}
+Contentores no mesmo anfitrião partilham o núcleo, pelo que uma vulnerabilidade que permita escapar ao isolamento compromete todas as instâncias. A máquina virtual estabelece a fronteira ao nível do hardware, com superfície de ataque substancialmente reduzida. A opção D descreve uma medida de mitigação pertinente, mas que não altera a natureza da fronteira. A prática corrente na indústria consiste em combinar ambos: uma máquina virtual por cliente, com contentores no seu interior.
+\end{resposta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Proxmox VE}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Plataforma de virtualização que integra numa interface única os dois modelos: KVM para máquinas virtuais e LXC para contentores de sistema.
+    \item Gestão por interface web ou por linha de comandos, através de \texttt{qm} para instâncias KVM e \texttt{pct} para contentores LXC.
+    \item Suporta instantâneos, clones, modelos e migração entre nós, concretizando os mecanismos analisados nesta aula.
+    \item Constitui a plataforma que sustenta o trabalho de projeto da segunda metade do semestre.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Laboratório: Primeiro Contacto com Contentores}
+\begin{labbox}{Trabalho em equipamento próprio}
+O laboratório associado a esta aula destina-se a tornar observável, no computador de cada aluno, a distinção entre virtualização completa e virtualização ao nível do sistema operativo. Utiliza Docker por simplicidade de instalação, sendo os mecanismos de núcleo subjacentes matéria da Aula 04.
+\end{labbox}
+\vspace{0.2cm}
+\begin{itemize}
+    \setlength\itemsep{0.25cm}
+    \item Duração estimada de sessenta a noventa minutos, sem necessidade de acesso ao servidor da unidade curricular.
+    \item Entrega individual, constituída por seis observações registadas ao longo do guião.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Laboratório: Percurso}
+\begin{itemize}
+    \setlength\itemsep{0.3cm}
+    \item Distinção entre imagem e instância em execução, observável na primeira execução.
+    \item Isolamento de processos, sistema de ficheiros e identificação de máquina.
+    \item \textbf{Comparação do núcleo dentro e fora do contentor}, observação central do trabalho.
+    \item Estrutura em camadas de uma imagem e reutilização entre imagens derivadas.
+    \item Publicação de um serviço em rede e construção de imagem própria.
+    \item Persistência de dados e imposição de limites de recursos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Pergunta 7}
+\begin{pergunta}{Antecipação de um resultado do laboratório}
+Um aluno executa \texttt{uname -r} dentro de um contentor no seu computador com macOS e obtém a identificação de um núcleo Linux. Qual a interpretação correta?
+\begin{itemize}
+    \item[A)] O contentor possui núcleo Linux próprio, independente do anfitrião.
+    \item[B)] O Docker Desktop executa uma máquina virtual Linux sobre um hypervisor do sistema, e o contentor partilha o núcleo dessa máquina virtual.
+    \item[C)] O resultado indica erro de instalação.
+    \item[D)] O macOS possui um núcleo Linux interno utilizado pelos contentores.
+\end{itemize}
+\end{pergunta}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resposta 7}
+\begin{resposta}{Opção correta: B}
+Os contentores constituem mecanismo do núcleo Linux e não são executáveis sobre o núcleo do macOS. O Docker Desktop resolve a questão instanciando uma máquina virtual Linux sobre o hypervisor do sistema, e é o núcleo dessa máquina virtual que o contentor partilha. Verifica-se assim, no mesmo equipamento, a coexistência dos dois modelos estudados: virtualização completa a sustentar a máquina virtual, e virtualização ao nível do sistema operativo no seu interior. Em Linux, a mesma verificação devolveria o núcleo do próprio anfitrião.
+\end{resposta}
+\end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item A virtualização permite consolidação, isolamento e portabilidade de cargas de trabalho.
-    \item Hypervisors tipo 1 (bare-metal) dominam em produção; tipo 2 (hosted) são úteis em desenvolvimento.
-    \item Virtualização completa, paravirtualização e suporte de hardware (VT-x/AMD-V) são as três grandes estratégias de virtualização de CPU, todas a lidar com o mesmo problema: instruções sensíveis que o hypervisor tem de apanhar (trap) e emular.
+    \setlength\itemsep{0.3cm}
+    \item A virtualização aplica-se a três níveis distintos, diferenciados pela fronteira de duplicação entre instâncias: hardware, sistema operativo e aplicação.
+    \item O teorema de Popek e Goldberg estabelece a condição de virtualizabilidade de uma arquitetura; o x86 não a satisfazia, do que decorreram três respostas distintas.
+    \item Tradução binária, paravirtualização e assistência de hardware resolvem a mesma limitação, diferindo na necessidade de modificar o convidado e no suporte exigido ao processador.
+    \item A virtualização de memória evoluiu das tabelas sombra, de manutenção dispendiosa, para a paginação em dois níveis assistida por hardware.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Memória, rede e armazenamento são também virtualizados, com mecanismos próprios (EPT, KSM/ballooning, vSwitch, discos qcow2/raw com thin provisioning).
-    \item I/O pode ser emulado, passado diretamente à VM (passthrough) ou particionado com SR-IOV, consoante o compromisso entre compatibilidade e desempenho.
-    \item Snapshots, clones e templates são as ferramentas operacionais do dia-a-dia; a migração ao vivo (pre-copy, post-copy ou híbrida) permite manutenção sem downtime.
-    \item Existe sempre algum overhead; em cenários de desempenho extremo, o bare-metal continua a ser preferível.
-    \item KVM (VMs) e LXC (contentores de sistema) coexistem no Proxmox VE, a plataforma usada nesta UC.
+    \setlength\itemsep{0.3cm}
+    \item O I/O admite emulação, interface paravirtualizada virtio, atribuição exclusiva por passthrough ou partilha por SR-IOV, com compromissos entre desempenho e flexibilidade.
+    \item O sobrecompromisso é admissível em memória, recurso reclamável, e exige vigilância acrescida em armazenamento, onde o espaço escrito não é recuperável.
+    \item A migração por pré-cópia converge apenas quando a largura de banda excede a taxa de modificação de páginas.
+    \item Máquinas virtuais e contentores diferem na fronteira de isolamento, do hardware ou do núcleo, o que determina a sua aplicação em cenários multi-cliente.
 \end{itemize}
 \end{frame}
 
