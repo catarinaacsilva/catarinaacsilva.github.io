@@ -60,7 +60,7 @@
 
 \section*{Objeto e utilização deste documento}
 
-O presente documento acompanha a apresentação da Aula 03. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada. A aula integra sete questões de escolha múltipla, cuja resolução é apresentada no slide imediatamente seguinte, e conclui com o enquadramento do laboratório de contentores, que decorre em equipamento próprio de cada aluno.
+O presente documento acompanha a apresentação da Aula 03. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada. A aula integra sete questões de escolha múltipla, cuja resolução é apresentada no slide imediatamente seguinte, e conclui com o enquadramento do laboratório de containers, percorrido em equipamento próprio durante a aula.
 
 \clearpage
 
@@ -225,11 +225,11 @@ O LXC constitui instâncias que partilham o núcleo do anfitrião, dispondo de s
 }
 
 \pagina{slides/slide-41.png}{
-O diagrama torna explícita a fronteira de duplicação introduzida no slide 6. Na máquina virtual, cada instância replica o núcleo e o conjunto de controladores de dispositivo. No contentor, essas camadas são partilhadas com o anfitrião e apenas o espaço de utilizador é replicado. É esta diferença que explica simultaneamente a disparidade de tempo de arranque, de consumo de memória e de densidade de instâncias por anfitrião.
+O diagrama torna explícita a fronteira de duplicação introduzida no slide 6. Na máquina virtual, cada instância replica o núcleo e o conjunto de controladores de dispositivo. No container, essas camadas são partilhadas com o anfitrião e apenas o espaço de utilizador é replicado. É esta diferença que explica simultaneamente a disparidade de tempo de arranque, de consumo de memória e de densidade de instâncias por anfitrião.
 }
 
 \pagina{slides/slide-42.png}{
-A tabela sistematiza a comparação em seis dimensões. A leitura conjunta das linhas revela que as diferenças não são independentes entre si: decorrem todas da mesma decisão quanto à fronteira de duplicação. A última observação do slide merece ênfase, por corrigir um equívoco frequente: os modelos não são alternativos mas complementares, sendo prática corrente executar contentores dentro de máquinas virtuais, combinação que associa o isolamento das primeiras à densidade dos segundos. O laboratório desta aula torna essa combinação observável em equipamento próprio.
+A tabela sistematiza a comparação em seis dimensões. A leitura conjunta das linhas revela que as diferenças não são independentes entre si: decorrem todas da mesma decisão quanto à fronteira de duplicação. A última observação do slide merece ênfase, por corrigir um equívoco frequente: os modelos não são alternativos mas complementares, sendo prática corrente executar containers dentro de máquinas virtuais, combinação que associa o isolamento das primeiras à densidade dos segundos. O laboratório desta aula torna essa combinação observável em equipamento próprio.
 }
 
 \pagina{slides/slide-43.png}{
@@ -237,39 +237,43 @@ A sexta questão examina a seleção do modelo adequado a um cenário multi-clie
 }
 
 \pagina{slides/slide-44.png}{
-A fundamentação consta do slide anterior. Importa reter que a opção D, a execução de contentores com utilizador não privilegiado, constitui medida de mitigação pertinente e recomendável, mas que não altera a natureza da fronteira: o núcleo permanece partilhado. A prática corrente na indústria, referida na resolução, consiste em combinar ambos os modelos, atribuindo uma máquina virtual por cliente e executando contentores no seu interior.
+A fundamentação consta do slide anterior. Importa reter que a opção D, a execução de containers com utilizador não privilegiado, constitui medida de mitigação pertinente e recomendável, mas que não altera a natureza da fronteira: o núcleo permanece partilhado. A prática corrente na indústria, referida na resolução, consiste em combinar ambos os modelos, atribuindo uma máquina virtual por cliente e executando containers no seu interior.
 }
 
 \pagina{slides/slide-45.png}{
-O Proxmox VE integra numa interface única os dois modelos analisados, o KVM para máquinas virtuais e o LXC para contentores de sistema, o que o torna adequado a fins pedagógicos por permitir a comparação direta entre ambos. A gestão faz-se por interface web ou por linha de comandos, através de qm para instâncias KVM e pct para contentores LXC. A plataforma suporta instantâneos, clones, modelos e migração entre nós, concretizando os mecanismos analisados ao longo desta aula, e constitui o ambiente que sustenta o trabalho de projeto da segunda metade do semestre.
+O Proxmox VE integra numa interface única os dois modelos analisados, o KVM para máquinas virtuais e o LXC para containers de sistema, o que o torna adequado a fins pedagógicos por permitir a comparação direta entre ambos. A gestão faz-se por interface web ou por linha de comandos, através de qm para instâncias KVM e pct para containers LXC. A plataforma suporta instantâneos, clones, modelos e migração entre nós, concretizando os mecanismos analisados ao longo desta aula, e constitui o ambiente que sustenta o trabalho de projeto da segunda metade do semestre.
 }
 
 \pagina{slides/slide-46.png}{
-O laboratório associado a esta aula decorre em equipamento próprio de cada aluno e não requer acesso ao servidor da unidade curricular. O seu objetivo não é o domínio da ferramenta, mas a observação direta do comportamento que a exposição descreveu. Recorre a Docker por ser a implementação de contentores de instalação mais simples em qualquer sistema operativo, ficando os mecanismos de núcleo subjacentes, namespaces e cgroups, para a Aula 04. A duração estimada situa-se entre sessenta e noventa minutos e a entrega, individual, é constituída por seis observações registadas ao longo do guião.
+O laboratório associado a esta aula decorre em equipamento próprio de cada aluno e não requer acesso ao servidor da unidade curricular. O seu objetivo não é o domínio da ferramenta, mas a observação direta do comportamento que a exposição descreveu. Recorre a Docker por ser a implementação de containers de instalação mais simples em qualquer sistema operativo, ficando os mecanismos de núcleo subjacentes, namespaces e cgroups, para a Aula 04. Não constitui trabalho a entregar: destina-se a ser percorrido durante a aula, ao ritmo de cada aluno. As caixas \emph{Pare e observe} distribuídas pelo guião assinalam os momentos em que interessa deter a execução e interpretar o resultado, isoladamente ou em discussão, antes de prosseguir.
 }
 
 \pagina{slides/slide-47.png}{
-O percurso do laboratório acompanha a progressão da exposição. Começa pela distinção entre imagem e instância em execução, análoga à distinção entre ficheiro de disco virtual e máquina virtual ativa. Prossegue com a observação do isolamento de processos, sistema de ficheiros e identificação de máquina. O terceiro ponto constitui a observação central do trabalho, a comparação da versão do núcleo dentro e fora do contentor, cujo resultado difere consoante o sistema operativo do computador e é objeto da questão 7. Seguem-se a estrutura em camadas de uma imagem, a publicação de um serviço em rede, a construção de imagem própria, a persistência de dados e a imposição de limites de recursos, estes últimos antecipando os cgroups da Aula 04.
+O diagrama apresenta a sequência completa do guião numa única imagem, com os passos dispostos em progressão ascendente. A leitura da esquerda para a direita acompanha o aumento de complexidade e, simultaneamente, uma mudança de natureza do trabalho: os primeiros passos limitam-se a observar o que o sistema faz, ao passo que os últimos passam a controlá-lo, construindo imagens próprias e impondo limites de recursos. O passo~3 encontra-se assinalado por constituir a observação central, aquela que revela se existe, ou não, uma máquina virtual interposta entre o container e o computador. As duas caixas do canto superior esquerdo estabelecem a correspondência com a teoria: os três primeiros passos ilustram matéria desta aula, os restantes antecipam a Aula 04.
 }
 
 \pagina{slides/slide-48.png}{
-A sétima questão antecipa um resultado que o laboratório produzirá em computadores com macOS ou Windows, e cuja interpretação constitui o ponto pedagógico central do trabalho.
+A enumeração detalha os sete passos representados no diagrama anterior. Começa pela distinção entre imagem e instância em execução, análoga à distinção entre ficheiro de disco virtual e máquina virtual ativa. Prossegue com a observação do isolamento de processos, sistema de ficheiros e identificação de máquina. O terceiro ponto constitui a observação central do trabalho, a comparação da versão do núcleo dentro e fora do container, cujo resultado difere consoante o sistema operativo do computador e é objeto da questão 7. Seguem-se a estrutura em camadas de uma imagem, a publicação de um serviço em rede, a construção de imagem própria, a persistência de dados e a imposição de limites de recursos, estes últimos antecipando os cgroups da Aula 04.
 }
 
 \pagina{slides/slide-49.png}{
-A fundamentação consta do slide anterior. O resultado merece ser retido pelo que revela: em Windows e macOS coexistem, no mesmo equipamento, os dois modelos de virtualização estudados nesta aula, a virtualização completa que sustenta a máquina virtual Linux e a virtualização ao nível do sistema operativo que produz o contentor no seu interior. A afirmação corrente de que contentores dispensam máquinas virtuais é, nestes sistemas, incorreta. Em Linux, a mesma verificação devolveria o núcleo do próprio anfitrião, confirmando a partilha direta.
+A sétima questão antecipa um resultado que o laboratório produzirá em computadores com macOS ou Windows, e cuja interpretação constitui o ponto pedagógico central do trabalho.
 }
 
 \pagina{slides/slide-50.png}{
-A primeira metade da síntese retoma os resultados relativos à fundamentação e à virtualização de processador e memória. A virtualização aplica-se a três níveis diferenciados pela fronteira de duplicação. O teorema de Popek e Goldberg estabelece a condição de virtualizabilidade de uma arquitetura, que o x86 não satisfazia, do que decorreram três respostas historicamente distintas. Tradução binária, paravirtualização e assistência de hardware resolvem a mesma limitação, diferindo na necessidade de modificar o convidado e no suporte exigido ao processador. A virtualização de memória evoluiu das tabelas sombra, de manutenção dispendiosa, para a paginação em dois níveis assistida por hardware.
+A fundamentação consta do slide anterior. O resultado merece ser retido pelo que revela: em Windows e macOS coexistem, no mesmo equipamento, os dois modelos de virtualização estudados nesta aula, a virtualização completa que sustenta a máquina virtual Linux e a virtualização ao nível do sistema operativo que produz o container no seu interior. A afirmação corrente de que containers dispensam máquinas virtuais é, nestes sistemas, incorreta. Em Linux, a mesma verificação devolveria o núcleo do próprio anfitrião, confirmando a partilha direta.
 }
 
 \pagina{slides/slide-51.png}{
-A segunda metade retoma os resultados relativos ao I/O, ao armazenamento e à operação. O I/O admite quatro tratamentos, com compromissos entre desempenho e flexibilidade. O sobrecompromisso é admissível em memória, recurso reclamável, e exige vigilância acrescida em armazenamento, onde o espaço escrito não é recuperável. A migração por pré-cópia converge apenas quando a largura de banda excede a taxa de modificação de páginas. Por último, máquinas virtuais e contentores diferem na natureza da fronteira de isolamento, do hardware ou do núcleo, o que determina a sua aplicação em cenários multi-cliente e justifica a sua combinação frequente.
+A primeira metade da síntese retoma os resultados relativos à fundamentação e à virtualização de processador e memória. A virtualização aplica-se a três níveis diferenciados pela fronteira de duplicação. O teorema de Popek e Goldberg estabelece a condição de virtualizabilidade de uma arquitetura, que o x86 não satisfazia, do que decorreram três respostas historicamente distintas. Tradução binária, paravirtualização e assistência de hardware resolvem a mesma limitação, diferindo na necessidade de modificar o convidado e no suporte exigido ao processador. A virtualização de memória evoluiu das tabelas sombra, de manutenção dispendiosa, para a paginação em dois níveis assistida por hardware.
 }
 
 \pagina{slides/slide-52.png}{
-Conclui-se a exposição da Aula 03. O laboratório associado deve ser realizado antes da Aula 04, que estabelece os mecanismos de núcleo responsáveis pelo comportamento nele observado: os namespaces, que produzem o isolamento constatado, e os cgroups, que impõem os limites de recursos aplicados. As observações registadas servirão de referência concreta para essa exposição.
+A segunda metade retoma os resultados relativos ao I/O, ao armazenamento e à operação. O I/O admite quatro tratamentos, com compromissos entre desempenho e flexibilidade. O sobrecompromisso é admissível em memória, recurso reclamável, e exige vigilância acrescida em armazenamento, onde o espaço escrito não é recuperável. A migração por pré-cópia converge apenas quando a largura de banda excede a taxa de modificação de páginas. Por último, máquinas virtuais e containers diferem na natureza da fronteira de isolamento, do hardware ou do núcleo, o que determina a sua aplicação em cenários multi-cliente e justifica a sua combinação frequente.
+}
+
+\pagina{slides/slide-53.png}{
+Conclui-se a exposição da Aula 03. O laboratório associado deve ser percorrido durante a aula, antes da Aula 04, que estabelece os mecanismos de núcleo responsáveis pelo comportamento nele observado: os namespaces, que produzem o isolamento constatado, e os cgroups, que impõem os limites de recursos aplicados. As observações feitas servirão de referência concreta para essa exposição.
 }
 
 \end{document}

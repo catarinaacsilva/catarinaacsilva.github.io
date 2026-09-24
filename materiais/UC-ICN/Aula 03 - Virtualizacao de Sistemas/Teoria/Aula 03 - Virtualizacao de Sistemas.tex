@@ -124,7 +124,7 @@
     \item Migração em execução e sobrecarga de virtualização.
     \item KVM, LXC e a plataforma Proxmox VE.
     \item Virtualização completa e virtualização ao nível do sistema operativo.
-    \item Enquadramento do laboratório de contentores.
+    \item Enquadramento do laboratório de containers.
 \end{itemize}
 \end{frame}
 
@@ -518,7 +518,7 @@ A pré-cópia converge apenas quando a largura de banda excede a taxa de modific
 \frametitle{O que Cada Modelo Duplica}
 \vfill
 \begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a03-vm-vs-contentor.png}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a03-vm-vs-container.png}
 \end{center}
 \vfill
 \end{frame}
@@ -530,7 +530,7 @@ A pré-cópia converge apenas quando a largura de banda excede a taxa de modific
 \small
 \begin{tabular}{@{}lll@{}}
 \toprule
- & \textbf{Máquina virtual} & \textbf{Contentor} \\
+ & \textbf{Máquina virtual} & \textbf{Container} \\
 \midrule
 Núcleo            & Próprio por instância   & Partilhado com o anfitrião \\
 Arranque          & Dezenas de segundos     & Segundos ou menos \\
@@ -544,7 +544,7 @@ Densidade típica  & Dezenas por anfitrião   & Centenas por anfitrião \\
 \vspace{0.25cm}
 \begin{itemize}
     \setlength\itemsep{0.2cm}
-    \item Os modelos não são alternativos mas complementares: é prática corrente executar contentores dentro de máquinas virtuais, combinando o isolamento das primeiras com a densidade dos segundos.
+    \item Os modelos não são alternativos mas complementares: é prática corrente executar containers dentro de máquinas virtuais, combinando o isolamento das primeiras com a densidade dos segundos.
 \end{itemize}
 \end{frame}
 
@@ -553,10 +553,10 @@ Densidade típica  & Dezenas por anfitrião   & Centenas por anfitrião \\
 \begin{pergunta}{Isolamento entre clientes distintos}
 Um fornecedor pretende alojar cargas de clientes distintos, sem relação de confiança entre si, no mesmo equipamento físico. Que modelo se justifica como fronteira primária de isolamento?
 \begin{itemize}
-    \item[A)] Contentores, por apresentarem menor sobrecarga e maior densidade.
-    \item[B)] Máquinas virtuais, por a fronteira de isolamento ser assegurada pelo hardware e não pelo núcleo partilhado, cuja superfície de ataque é comum a todos os contentores.
+    \item[A)] Containers, por apresentarem menor sobrecarga e maior densidade.
+    \item[B)] Máquinas virtuais, por a fronteira de isolamento ser assegurada pelo hardware e não pelo núcleo partilhado, cuja superfície de ataque é comum a todos os containers.
     \item[C)] Indiferente: ambos oferecem isolamento equivalente.
-    \item[D)] Contentores, desde que executados com utilizador não privilegiado.
+    \item[D)] Containers, desde que executados com utilizador não privilegiado.
 \end{itemize}
 \end{pergunta}
 \end{frame}
@@ -564,7 +564,7 @@ Um fornecedor pretende alojar cargas de clientes distintos, sem relação de con
 \begin{frame}
 \frametitle{Resposta 6}
 \begin{resposta}{Opção correta: B}
-Contentores no mesmo anfitrião partilham o núcleo, pelo que uma vulnerabilidade que permita escapar ao isolamento compromete todas as instâncias. A máquina virtual estabelece a fronteira ao nível do hardware, com superfície de ataque substancialmente reduzida. A opção D descreve uma medida de mitigação pertinente, mas que não altera a natureza da fronteira. A prática corrente na indústria consiste em combinar ambos: uma máquina virtual por cliente, com contentores no seu interior.
+Containers no mesmo anfitrião partilham o núcleo, pelo que uma vulnerabilidade que permita escapar ao isolamento compromete todas as instâncias. A máquina virtual estabelece a fronteira ao nível do hardware, com superfície de ataque substancialmente reduzida. A opção D descreve uma medida de mitigação pertinente, mas que não altera a natureza da fronteira. A prática corrente na indústria consiste em combinar ambos: uma máquina virtual por cliente, com containers no seu interior.
 \end{resposta}
 \end{frame}
 
@@ -572,33 +572,42 @@ Contentores no mesmo anfitrião partilham o núcleo, pelo que uma vulnerabilidad
 \frametitle{Proxmox VE}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Plataforma de virtualização que integra numa interface única os dois modelos: KVM para máquinas virtuais e LXC para contentores de sistema.
-    \item Gestão por interface web ou por linha de comandos, através de \texttt{qm} para instâncias KVM e \texttt{pct} para contentores LXC.
+    \item Plataforma de virtualização que integra numa interface única os dois modelos: KVM para máquinas virtuais e LXC para containers de sistema.
+    \item Gestão por interface web ou por linha de comandos, através de \texttt{qm} para instâncias KVM e \texttt{pct} para containers LXC.
     \item Suporta instantâneos, clones, modelos e migração entre nós, concretizando os mecanismos analisados nesta aula.
     \item Constitui a plataforma que sustenta o trabalho de projeto da segunda metade do semestre.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Laboratório: Primeiro Contacto com Contentores}
+\frametitle{Laboratório: Primeiro Contacto com Containers}
 \begin{labbox}{Trabalho em equipamento próprio}
 O laboratório associado a esta aula destina-se a tornar observável, no computador de cada aluno, a distinção entre virtualização completa e virtualização ao nível do sistema operativo. Utiliza Docker por simplicidade de instalação, sendo os mecanismos de núcleo subjacentes matéria da Aula 04.
 \end{labbox}
 \vspace{0.2cm}
 \begin{itemize}
     \setlength\itemsep{0.25cm}
-    \item Duração estimada de sessenta a noventa minutos, sem necessidade de acesso ao servidor da unidade curricular.
-    \item Entrega individual, constituída por seis observações registadas ao longo do guião.
+    \item Realiza-se durante a aula, sem necessidade de acesso ao servidor da unidade curricular.
+    \item Não constitui trabalho a entregar. As caixas \emph{Pare e observe} assinalam os momentos de interpretação e discussão.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Laboratório: Percurso}
+\vfill
+\begin{center}
+\includegraphics[width=0.99\textwidth,height=0.74\textheight,keepaspectratio]{../Diagramas/a03-percurso-laboratorio.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
+\frametitle{Laboratório: os Sete Passos}
 \begin{itemize}
-    \setlength\itemsep{0.3cm}
+    \setlength\itemsep{0.28cm}
     \item Distinção entre imagem e instância em execução, observável na primeira execução.
     \item Isolamento de processos, sistema de ficheiros e identificação de máquina.
-    \item \textbf{Comparação do núcleo dentro e fora do contentor}, observação central do trabalho.
+    \item \textbf{Comparação do núcleo dentro e fora do container}, observação central do trabalho.
     \item Estrutura em camadas de uma imagem e reutilização entre imagens derivadas.
     \item Publicação de um serviço em rede e construção de imagem própria.
     \item Persistência de dados e imposição de limites de recursos.
@@ -608,12 +617,12 @@ O laboratório associado a esta aula destina-se a tornar observável, no computa
 \begin{frame}
 \frametitle{Pergunta 7}
 \begin{pergunta}{Antecipação de um resultado do laboratório}
-Um aluno executa \texttt{uname -r} dentro de um contentor no seu computador com macOS e obtém a identificação de um núcleo Linux. Qual a interpretação correta?
+Um aluno executa \texttt{uname -r} dentro de um container no seu computador com macOS e obtém a identificação de um núcleo Linux. Qual a interpretação correta?
 \begin{itemize}
-    \item[A)] O contentor possui núcleo Linux próprio, independente do anfitrião.
-    \item[B)] O Docker Desktop executa uma máquina virtual Linux sobre um hypervisor do sistema, e o contentor partilha o núcleo dessa máquina virtual.
+    \item[A)] O container possui núcleo Linux próprio, independente do anfitrião.
+    \item[B)] O Docker Desktop executa uma máquina virtual Linux sobre um hypervisor do sistema, e o container partilha o núcleo dessa máquina virtual.
     \item[C)] O resultado indica erro de instalação.
-    \item[D)] O macOS possui um núcleo Linux interno utilizado pelos contentores.
+    \item[D)] O macOS possui um núcleo Linux interno utilizado pelos containers.
 \end{itemize}
 \end{pergunta}
 \end{frame}
@@ -621,7 +630,7 @@ Um aluno executa \texttt{uname -r} dentro de um contentor no seu computador com 
 \begin{frame}
 \frametitle{Resposta 7}
 \begin{resposta}{Opção correta: B}
-Os contentores constituem mecanismo do núcleo Linux e não são executáveis sobre o núcleo do macOS. O Docker Desktop resolve a questão instanciando uma máquina virtual Linux sobre o hypervisor do sistema, e é o núcleo dessa máquina virtual que o contentor partilha. Verifica-se assim, no mesmo equipamento, a coexistência dos dois modelos estudados: virtualização completa a sustentar a máquina virtual, e virtualização ao nível do sistema operativo no seu interior. Em Linux, a mesma verificação devolveria o núcleo do próprio anfitrião.
+Os containers constituem mecanismo do núcleo Linux e não são executáveis sobre o núcleo do macOS. O Docker Desktop resolve a questão instanciando uma máquina virtual Linux sobre o hypervisor do sistema, e é o núcleo dessa máquina virtual que o container partilha. Verifica-se assim, no mesmo equipamento, a coexistência dos dois modelos estudados: virtualização completa a sustentar a máquina virtual, e virtualização ao nível do sistema operativo no seu interior. Em Linux, a mesma verificação devolveria o núcleo do próprio anfitrião.
 \end{resposta}
 \end{frame}
 
@@ -643,7 +652,7 @@ Os contentores constituem mecanismo do núcleo Linux e não são executáveis so
     \item O I/O admite emulação, interface paravirtualizada virtio, atribuição exclusiva por passthrough ou partilha por SR-IOV, com compromissos entre desempenho e flexibilidade.
     \item O sobrecompromisso é admissível em memória, recurso reclamável, e exige vigilância acrescida em armazenamento, onde o espaço escrito não é recuperável.
     \item A migração por pré-cópia converge apenas quando a largura de banda excede a taxa de modificação de páginas.
-    \item Máquinas virtuais e contentores diferem na fronteira de isolamento, do hardware ou do núcleo, o que determina a sua aplicação em cenários multi-cliente.
+    \item Máquinas virtuais e containers diferem na fronteira de isolamento, do hardware ou do núcleo, o que determina a sua aplicação em cenários multi-cliente.
 \end{itemize}
 \end{frame}
 

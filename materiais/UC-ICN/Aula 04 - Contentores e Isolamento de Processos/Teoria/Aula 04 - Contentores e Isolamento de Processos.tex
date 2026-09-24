@@ -56,7 +56,7 @@
 
 \usepackage{csquotes}
 
-\title{Contentores e Isolamento de Processos}
+\title{Containers e Isolamento de Processos}
 \subtitle{Infraestruturas de Computação na Nuvem, Aula 04}
 \author{Catarina Silva}
 \institute{ESTGA, Universidade de Aveiro}
@@ -72,7 +72,7 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Contentores vs máquinas virtuais.
+    \item Containers vs máquinas virtuais.
     \item Primitivas Linux de isolamento: namespaces e cgroups.
     \item Union filesystems, imagens em camadas e as suas limitações.
 \end{itemize}
@@ -85,17 +85,17 @@
     \item Arquitetura Docker: daemon, CLI, containerd, runc.
     \item Registries de imagens e versionamento por tags.
     \item Redes e volumes em Docker.
-    \item Boas práticas e segurança de contentores.
-    \item Contentores de aplicação vs contentores de sistema.
+    \item Boas práticas e segurança de containers.
+    \item Containers de aplicação vs containers de sistema.
     \item OCI e a convergência com máquinas virtuais leves.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Contentores vs Máquinas Virtuais}
+\frametitle{Containers vs Máquinas Virtuais}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Contentores partilham o kernel do sistema operativo do host, ao contrário das VMs, que virtualizam hardware e correm um kernel próprio.
+    \item Containers partilham o kernel do sistema operativo do host, ao contrário das VMs, que virtualizam hardware e correm um kernel próprio.
     \item Overhead muito menor: sem hipervisor completo nem sistema operativo convidado duplicado.
     \item Arranque quase instantâneo, tipicamente em segundos (ou menos), em vez dos minutos típicos de uma VM.
     \item Contrapartida: isolamento menos forte do que numa VM, já que dependem inteiramente das primitivas de isolamento do kernel do host.
@@ -119,8 +119,8 @@
     \setlength\itemsep{0.4cm}
     \item \textbf{UTS}: hostname e domainname próprios.
     \item \textbf{IPC}: mecanismos de comunicação entre processos isolados (semáforos, filas de mensagens).
-    \item \textbf{USER}: mapeamento de identificadores de utilizador e grupo, permitindo root dentro do contentor sem privilégios no host.
-    \item Um contentor Docker é, na prática, um processo Linux normal ao qual foram atribuídos vários destes namespaces.
+    \item \textbf{USER}: mapeamento de identificadores de utilizador e grupo, permitindo root dentro do container sem privilégios no host.
+    \item Um container Docker é, na prática, um processo Linux normal ao qual foram atribuídos vários destes namespaces.
 \end{itemize}
 \end{frame}
 
@@ -143,7 +143,7 @@
     \item Escrever valores nesses ficheiros define os limites aplicados a um grupo de processos.
     \item \textbf{cgroups v1}: hierarquias separadas e independentes para cada tipo de recurso (CPU, memória, I/O).
     \item \textbf{cgroups v2}: hierarquia única e unificada, com um modelo de delegação mais coerente; é o modelo usado por omissão nas distribuições Linux recentes.
-    \item Sem cgroups, um único contentor descontrolado poderia consumir toda a memória ou CPU do host.
+    \item Sem cgroups, um único container descontrolado poderia consumir toda a memória ou CPU do host.
 \end{itemize}
 \end{frame}
 
@@ -161,11 +161,11 @@
 \frametitle{Isolamento Não é Segurança Absoluta}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Todos os contentores de um host partilham o mesmo kernel: uma vulnerabilidade no kernel é uma superfície de ataque comum.
-    \item \textbf{Capabilities}: o Linux divide os privilégios de root em capacidades individuais (ex.\ \texttt{CAP\_NET\_ADMIN}); um contentor deve receber apenas as estritamente necessárias.
+    \item Todos os containers de um host partilham o mesmo kernel: uma vulnerabilidade no kernel é uma superfície de ataque comum.
+    \item \textbf{Capabilities}: o Linux divide os privilégios de root em capacidades individuais (ex.\ \texttt{CAP\_NET\_ADMIN}); um container deve receber apenas as estritamente necessárias.
     \item \textbf{Seccomp}: filtra as chamadas de sistema (\textit{syscalls}) que um processo pode invocar, reduzindo a superfície exposta do kernel.
     \item \textbf{AppArmor} e \textbf{SELinux}: mecanismos de controlo de acesso obrigatório, que restringem o que cada processo pode aceder.
-    \item Quando é exigido isolamento forte (ex.\ entre clientes diferentes), uma VM continua a ser mais segura do que um contentor.
+    \item Quando é exigido isolamento forte (ex.\ entre clientes diferentes), uma VM continua a ser mais segura do que um container.
 \end{itemize}
 \end{frame}
 
@@ -175,7 +175,7 @@
     \setlength\itemsep{0.4cm}
     \item OverlayFS combina múltiplos diretórios (camadas) numa única vista de sistema de ficheiros.
     \item Uma imagem Docker é composta por várias camadas só de leitura, empilhadas umas sobre as outras.
-    \item Ao correr um contentor, é adicionada uma camada de escrita (writable layer) no topo, específica dessa instância.
+    \item Ao correr um container, é adicionada uma camada de escrita (writable layer) no topo, específica dessa instância.
     \item Copy-on-write: alterações a ficheiros de camadas inferiores são copiadas para a camada de escrita antes de modificadas, preservando a imagem original.
 \end{itemize}
 \end{frame}
@@ -184,7 +184,7 @@
 \frametitle{OverlayFS na Prática: Limitações}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item No host, cada contentor corresponde a um diretório em \texttt{/var/lib/docker/overlay2/<ID>/}: \texttt{merged} (a vista final, dentro do contentor) e \texttt{diff} (só as alterações dessa camada).
+    \item No host, cada container corresponde a um diretório em \texttt{/var/lib/docker/overlay2/<ID>/}: \texttt{merged} (a vista final, dentro do container) e \texttt{diff} (só as alterações dessa camada).
     \item OverlayFS não suporta todas as operações POSIX -- é uma união de diretórios, não um sistema de ficheiros completo.
     \item Abrir um ficheiro para escrita depois de já estar aberto para leitura obriga a copiá-lo primeiro para a camada de escrita: os dois descritores deixam de apontar para o mesmo ficheiro.
     \item \texttt{rename} não é suportado diretamente: a aplicação tem de copiar e depois apagar o original, o que é mais lento e ocupa mais espaço.
@@ -198,8 +198,8 @@
     \setlength\itemsep{0.4cm}
     \item \textbf{Docker CLI}: interface de linha de comandos usada pelo utilizador.
     \item \textbf{dockerd}: daemon que recebe os pedidos da CLI (ou da API) e gere imagens, redes e volumes.
-    \item \textbf{containerd}: runtime de alto nível, responsável pelo ciclo de vida dos contentores (criação, execução, paragem).
-    \item \textbf{runc}: runtime de baixo nível que efetivamente cria o contentor, aplicando namespaces e cgroups.
+    \item \textbf{containerd}: runtime de alto nível, responsável pelo ciclo de vida dos containers (criação, execução, paragem).
+    \item \textbf{runc}: runtime de baixo nível que efetivamente cria o container, aplicando namespaces e cgroups.
 \end{itemize}
 \end{frame}
 
@@ -210,7 +210,7 @@
     \item Um Dockerfile descreve, em passos declarativos, como construir uma imagem (imagem base, dependências, código, comando de arranque).
     \item Cada instrução do Dockerfile gera, em regra, uma nova camada da imagem.
     \item O comando \texttt{docker build} executa estes passos e produz a imagem final.
-    \item A imagem resultante pode depois ser instanciada em um ou mais contentores com \texttt{docker run}.
+    \item A imagem resultante pode depois ser instanciada em um ou mais containers com \texttt{docker run}.
 \end{itemize}
 \end{frame}
 
@@ -229,11 +229,11 @@
 \frametitle{Redes em Docker}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{bridge}: rede virtual isolada no host, usada por omissão; os contentores comunicam entre si e saem para o exterior por NAT.
-    \item Numa rede bridge \emph{personalizada}, o Docker fornece resolução de nomes: um contentor alcança outro pelo seu nome.
-    \item \textbf{host}: o contentor usa diretamente a pilha de rede do host, sem isolamento de rede (sem namespace NET próprio).
+    \item \textbf{bridge}: rede virtual isolada no host, usada por omissão; os containers comunicam entre si e saem para o exterior por NAT.
+    \item Numa rede bridge \emph{personalizada}, o Docker fornece resolução de nomes: um container alcança outro pelo seu nome.
+    \item \textbf{host}: o container usa diretamente a pilha de rede do host, sem isolamento de rede (sem namespace NET próprio).
     \item \textbf{none}: sem qualquer interface de rede, para cargas de trabalho totalmente isoladas.
-    \item Publicação de portas (\texttt{-p 8080:80}) mapeia uma porta do host para uma porta do contentor.
+    \item Publicação de portas (\texttt{-p 8080:80}) mapeia uma porta do host para uma porta do container.
 \end{itemize}
 \end{frame}
 
@@ -241,11 +241,11 @@
 \frametitle{Persistência: Volumes e Bind Mounts}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item A camada de escrita de um contentor desaparece quando este é removido -- por omissão, os dados não persistem.
+    \item A camada de escrita de um container desaparece quando este é removido -- por omissão, os dados não persistem.
     \item \textbf{Volumes}: geridos pelo Docker, guardados numa área própria do host; a forma recomendada de persistir dados.
-    \item \textbf{Bind mounts}: mapeiam um diretório concreto do host para dentro do contentor; úteis em desenvolvimento, mas dependentes da estrutura do host.
+    \item \textbf{Bind mounts}: mapeiam um diretório concreto do host para dentro do container; úteis em desenvolvimento, mas dependentes da estrutura do host.
     \item \textbf{tmpfs}: armazenamento apenas em memória, que nunca chega ao disco -- adequado a dados sensíveis ou temporários.
-    \item Separar dados do ciclo de vida do contentor é essencial para tratar contentores como recursos descartáveis.
+    \item Separar dados do ciclo de vida do container é essencial para tratar containers como recursos descartáveis.
 \end{itemize}
 \end{frame}
 
@@ -263,12 +263,12 @@
 \end{frame}
 
 \begin{frame}
-\frametitle{Contentores de Aplicação vs de Sistema}
+\frametitle{Containers de Aplicação vs de Sistema}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Contentor de aplicação} (Docker): corre tipicamente um único processo/serviço; é efémero e descartável.
-    \item Não tem um sistema de init completo; o ciclo de vida do contentor é o ciclo de vida desse processo.
-    \item \textbf{Contentor de sistema} (LXC, visto na Aula 03): comporta-se como uma máquina Linux completa, com \texttt{systemd} e múltiplos serviços.
+    \item \textbf{Container de aplicação} (Docker): corre tipicamente um único processo/serviço; é efémero e descartável.
+    \item Não tem um sistema de init completo; o ciclo de vida do container é o ciclo de vida desse processo.
+    \item \textbf{Container de sistema} (LXC, visto na Aula 03): comporta-se como uma máquina Linux completa, com \texttt{systemd} e múltiplos serviços.
     \item Ambos usam as mesmas primitivas do kernel (namespaces e cgroups) -- a diferença está na forma de utilização, não na tecnologia de base.
     \item Nos laboratórios desta UC usamos os dois: LXC no Proxmox para máquinas de sistema, Docker para empacotar aplicações.
 \end{itemize}
@@ -278,21 +278,21 @@
 \frametitle{OCI: Open Container Initiative}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Iniciativa que define especificações abertas e neutras de fornecedor para formatos de contentores.
-    \item \textbf{image-spec}: define o formato de uma imagem de contentor, independente da ferramenta que a construiu.
-    \item \textbf{runtime-spec}: define como um runtime deve criar e executar um contentor a partir dessa imagem.
+    \item Iniciativa que define especificações abertas e neutras de fornecedor para formatos de containers.
+    \item \textbf{image-spec}: define o formato de uma imagem de container, independente da ferramenta que a construiu.
+    \item \textbf{runtime-spec}: define como um runtime deve criar e executar um container a partir dessa imagem.
     \item Garante portabilidade: a mesma imagem pode correr em diferentes runtimes compatíveis com OCI, como runc, crun ou gVisor.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Contentores como Máquinas Virtuais Leves}
+\frametitle{Containers como Máquinas Virtuais Leves}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item A fronteira entre contentor e VM (Aula 03) está a esbater-se: se o runtime e o formato de imagem seguem OCI, a implementação por baixo deixa de ser relevante para quem usa o contentor.
-    \item \textbf{Kata Containers}: implementa a mesma interface OCI, mas cada "contentor" corre dentro de uma micro-VM leve (com o seu próprio kernel), combinando a portabilidade de Docker com o isolamento de hardware de uma VM.
-    \item \textbf{gVisor}: outra abordagem híbrida -- intercepta as \textit{syscalls} do contentor num kernel de utilizador, sem chegar a expor o kernel real do host.
-    \item Motivação: cargas multi-tenant (ex.\ funções de clientes diferentes no mesmo host) em que o isolamento fraco de um contentor tradicional é insuficiente.
+    \item A fronteira entre container e VM (Aula 03) está a esbater-se: se o runtime e o formato de imagem seguem OCI, a implementação por baixo deixa de ser relevante para quem usa o container.
+    \item \textbf{Kata Containers}: implementa a mesma interface OCI, mas cada "container" corre dentro de uma micro-VM leve (com o seu próprio kernel), combinando a portabilidade de Docker com o isolamento de hardware de uma VM.
+    \item \textbf{gVisor}: outra abordagem híbrida -- intercepta as \textit{syscalls} do container num kernel de utilizador, sem chegar a expor o kernel real do host.
+    \item Motivação: cargas multi-tenant (ex.\ funções de clientes diferentes no mesmo host) em que o isolamento fraco de um container tradicional é insuficiente.
 \end{itemize}
 \end{frame}
 
@@ -300,7 +300,7 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Contentores partilham o kernel do host, oferecendo menor overhead e arranque quase instantâneo face a VMs.
+    \item Containers partilham o kernel do host, oferecendo menor overhead e arranque quase instantâneo face a VMs.
     \item Namespaces isolam o que um processo vê (PID, NET, MNT, UTS, IPC, USER); cgroups limitam o que consome (CPU, memória, I/O).
     \item OverlayFS e imagens em camadas permitem reutilização eficiente de camadas comuns entre imagens, à custa de limitações POSIX (escrita concorrente, rename) que justificam o uso de volumes para I/O intensivo.
 \end{itemize}
@@ -310,10 +310,10 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Docker articula dockerd, containerd e runc para transformar um Dockerfile numa imagem e, depois, num contentor em execução.
+    \item Docker articula dockerd, containerd e runc para transformar um Dockerfile numa imagem e, depois, num container em execução.
     \item Registries (como o Docker Hub) distribuem imagens versionadas por tags; redes bridge e volumes tratam de comunicação e persistência.
-    \item O isolamento de contentores não é absoluto: capabilities, seccomp e AppArmor/SELinux reforçam-no, mas uma VM continua a isolar melhor -- por isso soluções como Kata Containers e gVisor aproximam as duas abordagens.
-    \item OCI garante portabilidade das imagens entre diferentes runtimes de contentores.
+    \item O isolamento de containers não é absoluto: capabilities, seccomp e AppArmor/SELinux reforçam-no, mas uma VM continua a isolar melhor -- por isso soluções como Kata Containers e gVisor aproximam as duas abordagens.
+    \item OCI garante portabilidade das imagens entre diferentes runtimes de containers.
 \end{itemize}
 \end{frame}
 

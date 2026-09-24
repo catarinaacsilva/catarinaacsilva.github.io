@@ -84,7 +84,7 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Open vSwitch e redes de contentores/Kubernetes.
+    \item Open vSwitch e redes de containers/Kubernetes.
     \item Redes overlay: VLAN, VXLAN e outros encapsulamentos.
     \item Network Functions Virtualization (NFV).
     \item Microssegmentação e políticas de rede.
@@ -199,7 +199,7 @@
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Open vSwitch é um switch virtual, programável via OpenFlow, amplamente usado em hipervisores e datacenters.
-    \item Substitui a bridge de rede tradicional em hosts que correm máquinas virtuais ou contentores.
+    \item Substitui a bridge de rede tradicional em hosts que correm máquinas virtuais ou containers.
     \item Relembrando a Aula 05: as redes que o Kubernetes usa para ligar Pods entre nós assentam frequentemente em switches programáveis deste tipo.
     \item Permite aplicar políticas de rede (isolamento, QoS, monitorização) de forma centralizada e programática.
 \end{itemize}
@@ -212,7 +212,7 @@
     \item Datacenters de cloud precisam de muitas redes virtuais isoladas sobre a mesma infraestrutura física.
     \item VLANs tradicionais limitam-se a 4094 identificadores -- insuficiente à escala de cloud.
     \item \textbf{VXLAN} encapsula tráfego de camada 2 dentro de pacotes UDP (camada 3), criando redes overlay independentes da topologia física.
-    \item Permite milhões de segmentos de rede lógicos e mobilidade de VMs/contentores entre servidores físicos sem reconfigurar a rede física.
+    \item Permite milhões de segmentos de rede lógicos e mobilidade de VMs/containers entre servidores físicos sem reconfigurar a rede física.
 \end{itemize}
 \end{frame}
 
@@ -291,7 +291,7 @@
     \setlength\itemsep{0.4cm}
     \item SDN separa o plano de controlo (centralizado) do plano de dados (distribuído pelos switches).
     \item OpenFlow é o protocolo southbound típico, baseado em tabelas de fluxos match-action.
-    \item Open vSwitch materializa este modelo em hipervisores e infraestrutura de contentores.
+    \item Open vSwitch materializa este modelo em hipervisores e infraestrutura de containers.
 \end{itemize}
 \end{frame}
 

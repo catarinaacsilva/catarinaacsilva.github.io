@@ -248,9 +248,9 @@
     \item Hipervisores tipo 1 (bare-metal) vs tipo 2 (hosted); requisitos de Popek e Goldberg (Aula 03).
     \item Virtualização completa, paravirtualização e assistida por hardware (VT-x/AMD-V); virtio.
     \item Formatos de disco, thin provisioning, snapshots, clones e templates; migração ao vivo.
-    \item Contentores: namespaces isolam o que se \emph{vê}; cgroups limitam o que se \emph{consome} (Aula 04).
+    \item Containers: namespaces isolam o que se \emph{vê}; cgroups limitam o que se \emph{consome} (Aula 04).
     \item Imagens em camadas (OverlayFS), arquitetura Docker (dockerd/containerd/runc) e o standard OCI.
-    \item Contentores de aplicação (Docker) vs de sistema (LXC): mesma tecnologia, usos distintos.
+    \item Containers de aplicação (Docker) vs de sistema (LXC): mesma tecnologia, usos distintos.
 \end{itemize}
 \end{frame}
 
@@ -310,7 +310,7 @@
 \frametitle{Temas Transversais do Semestre}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Abstração em camadas}: contentor sobre VM sobre hypervisor sobre hardware -- cada camada esconde a de baixo e cobra algum overhead.
+    \item \textbf{Abstração em camadas}: container sobre VM sobre hypervisor sobre hardware -- cada camada esconde a de baixo e cobra algum overhead.
     \item \textbf{Declarar em vez de mandar fazer}: Kubernetes, Terraform e Ansible partilham o mesmo modelo de estado desejado e reconciliação.
     \item \textbf{Eliminar pontos únicos de falha}: redundância de energia (C1), de instâncias (C4), de discos e de nós (C5).
     \item \textbf{Compromissos, não soluções perfeitas}: CAP/PACELC, custo vs disponibilidade, isolamento vs desempenho.
@@ -324,7 +324,7 @@
     \setlength\itemsep{0.4cm}
     \item O teste incide sobre a totalidade dos blocos C1-C6, com peso de 40\% na avaliação discreta.
     \item Rever, para cada bloco, os conceitos centrais e o vocabulário técnico introduzido (nomes de protocolos, camadas, algoritmos).
-    \item Prestar atenção às ligações entre aulas destacadas ao longo do semestre (ex.\ SLA $\rightarrow$ disponibilidade, contentores $\rightarrow$ Kubernetes $\rightarrow$ SDN).
+    \item Prestar atenção às ligações entre aulas destacadas ao longo do semestre (ex.\ SLA $\rightarrow$ disponibilidade, containers $\rightarrow$ Kubernetes $\rightarrow$ SDN).
     \item Rever os enunciados dos guiões práticos: várias questões de verificação exploram a mesma matéria de forma aplicada.
 \end{itemize}
 \end{frame}

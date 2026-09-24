@@ -15,6 +15,7 @@
 \usepackage{amssymb}
 \usepackage{fancyhdr}
 \usepackage{hyperref}
+\usepackage{pdflscape}
 \tcbuselibrary{skins,breakable,listings}
 
 \definecolor{BgCream}{HTML}{FAF8F5}
@@ -84,7 +85,7 @@
 \newtcolorbox{registo}{
   breakable, colback=SoftBlush!25, colframe=NudeTaupe,
   boxrule=0.6pt, arc=2pt, left=7pt, right=7pt, top=6pt, bottom=6pt,
-  title={\small\bfseries Registe a observação}, coltitle=TextEspresso,
+  title={\small\bfseries Pare e observe}, coltitle=TextEspresso,
   colbacktitle=SoftBlush!55, fonttitle=\small\bfseries
 }
 
@@ -106,16 +107,16 @@
 \setlist[enumerate]{itemsep=0.22cm, topsep=0.2cm}
 
 \begin{document}
-\labtitle{03}{Primeiro Contacto com Contentores}{Aula 03}
+\labtitle{03}{Primeiro Contacto com Containers}{Aula 03}
 
 \section*{Objetivo e enquadramento}
 
 A Aula 03 estabelece, no plano teórico, a distinção entre virtualização completa, na qual o hypervisor apresenta hardware virtual e cada instância executa um núcleo próprio, e virtualização ao nível do sistema operativo, na qual as instâncias partilham o núcleo do anfitrião. Este laboratório destina-se a tornar essa distinção observável em equipamento próprio.
 
-O trabalho decorre no computador pessoal de cada aluno e não requer acesso ao servidor da unidade curricular. A duração estimada é de sessenta a noventa minutos. Não se pressupõe experiência prévia com contentores.
+O trabalho decorre no computador pessoal de cada aluno e não requer acesso ao servidor da unidade curricular. Destina-se a exploração durante a aula, não constituindo trabalho a entregar. Não se pressupõe experiência prévia com containers.
 
 \begin{nota}
-O laboratório utiliza Docker por ser a implementação de contentores de instalação mais simples em qualquer sistema operativo. Os mecanismos de núcleo que a sustentam, designadamente \emph{namespaces} e \emph{cgroups}, constituem matéria da Aula 04. O objetivo neste momento não é dominar a ferramenta, mas observar o comportamento que a teoria descreve.
+O laboratório utiliza Docker por ser a implementação de containers de instalação mais simples em qualquer sistema operativo. Os mecanismos de núcleo que a sustentam, designadamente \emph{namespaces} e \emph{cgroups}, constituem matéria da Aula 04. O objetivo neste momento não é dominar a ferramenta, mas observar o comportamento que a teoria descreve.
 \end{nota}
 
 \section*{Resultados de aprendizagem}
@@ -123,17 +124,32 @@ O laboratório utiliza Docker por ser a implementação de contentores de instal
 No final deste laboratório, o aluno deve ser capaz de:
 
 \begin{itemize}
-  \item Executar e inspecionar um contentor, distinguindo imagem de instância em execução.
-  \item Demonstrar experimentalmente a partilha do núcleo entre contentor e anfitrião.
+  \item Executar e inspecionar um container, distinguindo imagem de instância em execução.
+  \item Demonstrar experimentalmente a partilha do núcleo entre container e anfitrião.
   \item Identificar, na sua própria máquina, onde se situa o hypervisor da Aula 03.
-  \item Publicar um serviço em rede a partir de um contentor e justificar o mapeamento de portos.
+  \item Publicar um serviço em rede a partir de um container e justificar o mapeamento de portos.
   \item Construir uma imagem a partir de um \texttt{Dockerfile} e explicar a sua estrutura em camadas.
-  \item Aplicar limites de recursos a um contentor e observar o seu efeito.
+  \item Aplicar limites de recursos a um container e observar o seu efeito.
 \end{itemize}
 
-\section*{Entrega}
+\section*{Como utilizar este guião}
 
-Ao longo do guião surgem caixas \emph{Registe a observação}. Reúna as respostas num documento único, em PDF, com identificação do aluno, incluindo as capturas de ecrã solicitadas. A entrega é individual.
+O guião não constitui trabalho a entregar. Destina-se a ser percorrido durante a aula, ao ritmo de cada aluno, com acompanhamento da docente.
+
+Ao longo do texto surgem caixas \emph{Pare e observe}. Assinalam os momentos em que interessa deter a execução e interpretar o resultado obtido, isoladamente ou em discussão com os colegas, antes de prosseguir. São esses momentos, e não a execução dos comandos, que constituem o objeto do trabalho.
+
+\section*{Percurso}
+
+A figura da página seguinte apresenta a sequência do guião. Os passos progridem da simples execução de um comando até ao controlo dos recursos atribuídos, e o passo~3 assinala a observação central, aquela que revela a arquitetura de virtualização do próprio computador.
+
+\begin{landscape}
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\includegraphics[width=\linewidth]{../Diagramas/a03-percurso-laboratorio.png}
+\end{center}
+\vspace*{\fill}
+\end{landscape}
 
 \clearpage
 
@@ -168,7 +184,7 @@ O primeiro comando indica a versão instalada. O segundo apresenta o estado do m
 \texttt{docker --version} devolve uma linha com a versão, e \texttt{docker info} termina sem mensagem de erro. Caso surja \texttt{Cannot connect to the Docker daemon}, o serviço não se encontra em execução: consulte a secção de resolução de problemas.
 \end{verificar}
 
-\section{O primeiro contentor}
+\section{O primeiro container}
 
 Execute:
 
@@ -184,32 +200,32 @@ Hello from Docker!
 This message shows that your installation appears to be working correctly.
 \end{saida}
 
-A primeira linha merece atenção. A imagem não existia localmente, pelo que foi transferida de um repositório remoto antes da execução. Esta separação entre \textbf{imagem}, o conjunto de ficheiros imutável que serve de modelo, e \textbf{contentor}, a instância em execução criada a partir dela, é análoga à distinção entre um ficheiro de disco virtual e uma máquina virtual em execução, discutida na Aula 03.
+A primeira linha merece atenção. A imagem não existia localmente, pelo que foi transferida de um repositório remoto antes da execução. Esta separação entre \textbf{imagem}, o conjunto de ficheiros imutável que serve de modelo, e \textbf{container}, a instância em execução criada a partir dela, é análoga à distinção entre um ficheiro de disco virtual e uma máquina virtual em execução, discutida na Aula 03.
 
-Confirme que o contentor terminou mas continua registado:
+Confirme que o container terminou mas continua registado:
 
 \begin{terminal}
 docker ps
 docker ps -a
 \end{terminal}
 
-O primeiro comando lista apenas contentores em execução e não apresentará resultados. O segundo inclui os já terminados, entre os quais o \texttt{hello-world} com estado \texttt{Exited}.
+O primeiro comando lista apenas containers em execução e não apresentará resultados. O segundo inclui os já terminados, entre os quais o \texttt{hello-world} com estado \texttt{Exited}.
 
 \begin{nota}
-Um contentor termina quando o processo que lhe deu origem termina. Não existe, ao contrário de uma máquina virtual, um sistema de arranque a manter a instância ativa na ausência de trabalho.
+Um container termina quando o processo que lhe deu origem termina. Não existe, ao contrário de uma máquina virtual, um sistema de arranque a manter a instância ativa na ausência de trabalho.
 \end{nota}
 
 \section{Observar o isolamento}
 
-Inicie um contentor interativo baseado em Alpine Linux, uma distribuição de dimensão reduzida:
+Inicie um container interativo baseado em Alpine Linux, uma distribuição de dimensão reduzida:
 
 \begin{terminal}
 docker run -it --rm alpine sh
 \end{terminal}
 
-A opção \texttt{-it} liga o terminal ao contentor e \texttt{--rm} remove-o automaticamente ao terminar. A linha de comandos passa a ser a do interior do contentor.
+A opção \texttt{-it} liga o terminal ao container e \texttt{--rm} remove-o automaticamente ao terminar. A linha de comandos passa a ser a do interior do container.
 
-Execute, já dentro do contentor:
+Execute, já dentro do container:
 
 \begin{terminal}
 hostname
@@ -221,22 +237,22 @@ cat /etc/os-release
 Observe cada resultado. O \texttt{hostname} não corresponde ao da máquina. A lista de processos contém dois ou três elementos, e o processo \texttt{sh} apresenta o identificador~1, posição reservada ao primeiro processo de um sistema. A raiz do sistema de ficheiros não contém os ficheiros pessoais. O ficheiro \texttt{/etc/os-release} identifica Alpine Linux, independentemente do sistema operativo instalado no computador.
 
 \begin{registo}
-\textbf{Observação 1.} Registe o resultado de \texttt{ps aux} dentro do contentor. Quantos processos são visíveis? Compare com o número de processos em execução no seu computador. Justifique a diferença em termos do isolamento descrito na Aula 03.
+\textbf{Observação 1.} Observe o resultado de \texttt{ps aux} dentro do container. Quantos processos são visíveis? Compare com o número de processos em execução no seu computador. Justifique a diferença em termos do isolamento descrito na Aula 03.
 \end{registo}
 
-\textbf{Não termine ainda este contentor.} A secção seguinte utiliza-o.
+\textbf{Não termine ainda este container.} A secção seguinte utiliza-o.
 
 \section{A prova da partilha do núcleo}
 
 Esta é a observação central do laboratório e liga-se diretamente à distinção estabelecida na aula.
 
-Ainda dentro do contentor, execute:
+Ainda dentro do container, execute:
 
 \begin{terminal}
 uname -r
 \end{terminal}
 
-Registe a versão apresentada. Termine o contentor com \texttt{exit} e execute, agora no seu computador:
+Registe a versão apresentada. Termine o container com \texttt{exit} e execute, agora no seu computador:
 
 \begin{terminal}
 uname -r
@@ -250,16 +266,16 @@ Em Windows, \texttt{uname} não existe. Utilize antes, em PowerShell, o comando 
 
 O resultado depende do sistema operativo do computador, e a diferença é ela própria matéria da Aula 03.
 
-\textbf{Em Linux.} As duas versões coincidem exatamente. O contentor não possui núcleo próprio: executa sobre o núcleo do anfitrião, que apenas lhe apresenta uma vista isolada dos recursos. Alpine e a distribuição instalada partilham o mesmo núcleo e diferem somente no espaço de utilizador.
+\textbf{Em Linux.} As duas versões coincidem exatamente. O container não possui núcleo próprio: executa sobre o núcleo do anfitrião, que apenas lhe apresenta uma vista isolada dos recursos. Alpine e a distribuição instalada partilham o mesmo núcleo e diferem somente no espaço de utilizador.
 
-\textbf{Em Windows ou macOS.} As duas versões diferem, e o núcleo comunicado dentro do contentor é um núcleo Linux, embora o sistema operativo instalado não o seja. A explicação encontra-se na aula: o Docker Desktop executa uma máquina virtual Linux sobre um hypervisor do sistema, o Hyper-V ou WSL~2 em Windows, o Virtualization.framework em macOS. O contentor partilha o núcleo dessa máquina virtual, e não o do computador.
+\textbf{Em Windows ou macOS.} As duas versões diferem, e o núcleo comunicado dentro do container é um núcleo Linux, embora o sistema operativo instalado não o seja. A explicação encontra-se na aula: o Docker Desktop executa uma máquina virtual Linux sobre um hypervisor do sistema, o Hyper-V ou WSL~2 em Windows, o Virtualization.framework em macOS. O container partilha o núcleo dessa máquina virtual, e não o do computador.
 
 \begin{nota}
-Daqui decorre uma observação de alcance mais geral. Em Windows e macOS coexistem, na mesma máquina, os dois modelos de virtualização estudados na aula: virtualização completa, que sustenta a máquina virtual Linux, e virtualização ao nível do sistema operativo, que produz o contentor no seu interior. A afirmação corrente de que contentores dispensam máquinas virtuais é, nestes sistemas, incorreta.
+Daqui decorre uma observação de alcance mais geral. Em Windows e macOS coexistem, na mesma máquina, os dois modelos de virtualização estudados na aula: virtualização completa, que sustenta a máquina virtual Linux, e virtualização ao nível do sistema operativo, que produz o container no seu interior. A afirmação corrente de que containers dispensam máquinas virtuais é, nestes sistemas, incorreta.
 \end{nota}
 
 \begin{registo}
-\textbf{Observação 2.} Apresente as duas versões de núcleo obtidas e identifique o seu sistema operativo. Diga se coincidem e justifique. Caso não coincidam, indique onde se situa o hypervisor e que papel desempenha.
+\textbf{Observação 2.} Compare as duas versões de núcleo obtidas, tendo presente o seu sistema operativo. Diga se coincidem e justifique. Caso não coincidam, indique onde se situa o hypervisor e que papel desempenha.
 \end{registo}
 
 \section{Imagens e camadas}
@@ -282,12 +298,12 @@ docker history nginx:alpine
 Cada linha corresponde a uma \textbf{camada}, produzida por uma instrução de construção. As camadas são imutáveis e partilhadas entre imagens que delas derivem, o que evita a duplicação de conteúdo comum. O mecanismo é análogo ao dos discos virtuais diferenciais discutidos na Aula 03, nos quais um disco base é partilhado por várias instâncias.
 
 \begin{registo}
-\textbf{Observação 3.} Indique a dimensão de \texttt{nginx:alpine} e o número de camadas apresentado por \texttt{docker history}. Explique por que motivo duas imagens derivadas da mesma base ocupam, em conjunto, menos espaço do que a soma das suas dimensões individuais.
+\textbf{Observação 3.} Repare na dimensão de \texttt{nginx:alpine} e o número de camadas apresentado por \texttt{docker history}. Explique por que motivo duas imagens derivadas da mesma base ocupam, em conjunto, menos espaço do que a soma das suas dimensões individuais.
 \end{registo}
 
 \section{Publicar um serviço}
 
-Inicie o servidor web em segundo plano, mapeando o porto 8080 do computador para o porto 80 do contentor:
+Inicie o servidor web em segundo plano, mapeando o porto 8080 do computador para o porto 80 do container:
 
 \begin{terminal}
 docker run -d --name web -p 8080:80 nginx:alpine
@@ -296,16 +312,16 @@ docker ps
 
 Abra \url{http://localhost:8080} num navegador. Deverá surgir a página de boas-vindas do Nginx.
 
-O mapeamento é necessário porque o contentor possui uma pilha de rede própria, com endereço distinto do da máquina. Sem \texttt{-p}, o serviço permanece acessível apenas no interior da rede de contentores. A opção estabelece uma regra de reencaminhamento entre o porto do anfitrião e o porto do contentor.
+O mapeamento é necessário porque o container possui uma pilha de rede própria, com endereço distinto do da máquina. Sem \texttt{-p}, o serviço permanece acessível apenas no interior da rede de containers. A opção estabelece uma regra de reencaminhamento entre o porto do anfitrião e o porto do container.
 
-Consulte os registos e o interior do contentor em execução:
+Consulte os registos e o interior do container em execução:
 
 \begin{terminal}
 docker logs web
 docker exec -it web sh
 \end{terminal}
 
-Dentro do contentor, confirme que o servidor está ativo e observe os ficheiros servidos:
+Dentro do container, confirme que o servidor está ativo e observe os ficheiros servidos:
 
 \begin{terminal}
 ls /usr/share/nginx/html
@@ -316,7 +332,7 @@ exit
 A página responde em \texttt{localhost:8080} e \texttt{docker logs web} apresenta ao menos um pedido HTTP registado, correspondente ao acesso efetuado pelo navegador.
 \end{verificar}
 
-Termine e remova o contentor:
+Termine e remova o container:
 
 \begin{terminal}
 docker stop web
@@ -335,7 +351,7 @@ Crie um diretório de trabalho e, no seu interior, dois ficheiros.
 <head><meta charset="utf-8"><title>ICN</title></head>
 <body>
   <h1>Infraestruturas de Computacao na Nuvem</h1>
-  <p>Pagina servida a partir de um contentor construido localmente.</p>
+  <p>Pagina servida a partir de um container construido localmente.</p>
 </body>
 </html>
 \end{terminal}
@@ -360,7 +376,7 @@ docker run -d --name meusite -p 8080:80 icn-site:v1
 Aceda novamente a \url{http://localhost:8080}. A página apresentada é agora a construída localmente.
 
 \begin{registo}
-\textbf{Observação 4.} Anexe uma captura de ecrã da página servida pela sua imagem. Execute \texttt{docker images} e compare a dimensão de \texttt{icn-site:v1} com a de \texttt{nginx:alpine}. Explique a diferença observada com base no modelo de camadas.
+\textbf{Observação 4.} Confirme que a página servida é a sua. Execute \texttt{docker images} e compare a dimensão de \texttt{icn-site:v1} com a de \texttt{nginx:alpine}. Explique a diferença observada com base no modelo de camadas.
 \end{registo}
 
 \subsection{Reconstrução e reutilização de camadas}
@@ -375,7 +391,7 @@ Observe as mensagens de construção. As camadas anteriores à alteração são 
 
 \section{Persistência}
 
-A camada de escrita de um contentor é descartada com ele. Confirme experimentalmente:
+A camada de escrita de um container é descartada com ele. Confirme experimentalmente:
 
 \begin{terminal}
 docker exec meusite sh -c "echo teste > /tmp/ficheiro.txt"
@@ -385,9 +401,9 @@ docker run -d --name meusite -p 8080:80 icn-site:v1
 docker exec meusite cat /tmp/ficheiro.txt
 \end{terminal}
 
-O último comando falha: o ficheiro não existe na nova instância, criada a partir da imagem original e sem qualquer memória do contentor anterior.
+O último comando falha: o ficheiro não existe na nova instância, criada a partir da imagem original e sem qualquer memória do container anterior.
 
-Repita com um volume, que persiste independentemente do ciclo de vida do contentor:
+Repita com um volume, que persiste independentemente do ciclo de vida do container:
 
 \begin{terminal}
 docker volume create dados-icn
@@ -399,27 +415,27 @@ docker run -d --name meusite -p 8080:80 -v dados-icn:/dados icn-site:v1
 docker exec meusite cat /dados/ficheiro.txt
 \end{terminal}
 
-O conteúdo sobrevive agora à destruição e recriação do contentor.
+O conteúdo sobrevive agora à destruição e recriação do container.
 
 \begin{registo}
-\textbf{Observação 5.} Descreva o que sucedeu em cada um dos dois casos. Relacione o resultado com a distinção, estabelecida na Aula 03, entre o disco de uma máquina virtual e o estado volátil de uma instância.
+\textbf{Observação 5.} Note o que sucedeu em cada um dos dois casos. Relacione o resultado com a distinção, estabelecida na Aula 03, entre o disco de uma máquina virtual e o estado volátil de uma instância.
 \end{registo}
 
 \section{Limitar recursos}
 
-Execute um contentor com memória e processador limitados:
+Execute um container com memória e processador limitados:
 
 \begin{terminal}
 docker run -d --name limitado --memory=256m --cpus=0.5 nginx:alpine
 docker stats --no-stream
 \end{terminal}
 
-A coluna \texttt{MEM USAGE / LIMIT} apresenta o limite imposto e não a memória total do computador. O contentor não consegue exceder o valor declarado: caso o tente, o seu processo é terminado pelo sistema.
+A coluna \texttt{MEM USAGE / LIMIT} apresenta o limite imposto e não a memória total do computador. O container não consegue exceder o valor declarado: caso o tente, o seu processo é terminado pelo sistema.
 
-Este mecanismo constitui a contrapartida, no modelo de contentores, da atribuição de memória a uma máquina virtual. A diferença é relevante: uma máquina virtual reserva a memória declarada, ao passo que um contentor apenas fica impedido de a exceder, consumindo em cada instante o que efetivamente necessita.
+Este mecanismo constitui a contrapartida, no modelo de containers, da atribuição de memória a uma máquina virtual. A diferença é relevante: uma máquina virtual reserva a memória declarada, ao passo que um container apenas fica impedido de a exceder, consumindo em cada instante o que efetivamente necessita.
 
 \begin{registo}
-\textbf{Observação 6.} Apresente a saída de \texttt{docker stats --no-stream}. Compare o modelo de limite aqui observado com o modelo de reserva de uma máquina virtual, e indique qual dos dois permite maior densidade de instâncias no mesmo anfitrião.
+\textbf{Observação 6.} Leia a saída de \texttt{docker stats --no-stream}. Compare o modelo de limite aqui observado com o modelo de reserva de uma máquina virtual, e indique qual dos dois permite maior densidade de instâncias no mesmo anfitrião.
 \end{registo}
 
 \section{Limpeza}
@@ -440,7 +456,7 @@ docker system prune -a
 \end{terminal}
 
 \begin{atencao}
-O comando \texttt{docker system prune -a} remove todas as imagens não associadas a contentores em execução, incluindo imagens transferidas noutros contextos. Utilize-o apenas se não tiver trabalho por concluir noutros projetos.
+O comando \texttt{docker system prune -a} remove todas as imagens não associadas a containers em execução, incluindo imagens transferidas noutros contextos. Utilize-o apenas se não tiver trabalho por concluir noutros projetos.
 \end{atencao}
 
 \section{Resolução de problemas}
@@ -455,7 +471,7 @@ O utilizador não pertence ao grupo \texttt{docker}. Execute \texttt{sudo usermo
 O porto 8080 está ocupado por outro processo. Utilize outro porto no lado do anfitrião, por exemplo \texttt{-p 8081:80}, e ajuste o endereço no navegador em conformidade.
 
 \problema{O navegador não apresenta a página}
-Confirme com \texttt{docker ps} que o contentor se encontra em execução. Caso não apareça na lista, consulte \texttt{docker ps -a} e, em seguida, \texttt{docker logs <nome>} para identificar a causa da terminação.
+Confirme com \texttt{docker ps} que o container se encontra em execução. Caso não apareça na lista, consulte \texttt{docker ps -a} e, em seguida, \texttt{docker logs <nome>} para identificar a causa da terminação.
 
 \problema{\texttt{docker build} falha com \texttt{failed to read dockerfile}}
 O comando foi executado fora do diretório que contém o \texttt{Dockerfile}, ou o ficheiro foi guardado com extensão. Confirme com \texttt{ls} que existe um ficheiro de nome exatamente \texttt{Dockerfile}.
@@ -467,20 +483,19 @@ O comando pertence a sistemas Unix. Utilize \texttt{wsl uname -r} em PowerShell.
 
 \begin{itemize}
   \item[$\square$] Docker instalado e \texttt{docker info} executa sem erro.
-  \item[$\square$] \texttt{hello-world} executado, distinção entre imagem e contentor compreendida.
+  \item[$\square$] \texttt{hello-world} executado, distinção entre imagem e container compreendida.
   \item[$\square$] Isolamento observado: hostname, processos e sistema de ficheiros próprios (Observação~1).
-  \item[$\square$] Versões de núcleo comparadas dentro e fora do contentor, resultado interpretado (Observação~2).
+  \item[$\square$] Versões de núcleo comparadas dentro e fora do container, resultado interpretado (Observação~2).
   \item[$\square$] Estrutura em camadas de uma imagem inspecionada (Observação~3).
   \item[$\square$] Serviço publicado e acessível em \texttt{localhost:8080}.
   \item[$\square$] Imagem própria construída a partir de \texttt{Dockerfile} (Observação~4).
   \item[$\square$] Comportamento de persistência com e sem volume verificado (Observação~5).
   \item[$\square$] Limites de recursos aplicados e observados (Observação~6).
   \item[$\square$] Recursos removidos.
-  \item[$\square$] Documento de entrega reunido em PDF com as seis observações.
 \end{itemize}
 
 \section*{Continuação}
 
-A Aula 04 estabelece os mecanismos de núcleo que sustentam o comportamento aqui observado: os \emph{namespaces}, responsáveis pelo isolamento constatado na Observação~1, e os \emph{cgroups}, responsáveis pelos limites da Observação~6. As observações registadas neste laboratório servirão de referência concreta para essa exposição.
+A Aula 04 estabelece os mecanismos de núcleo que sustentam o comportamento aqui observado: os \emph{namespaces}, responsáveis pelo isolamento constatado na Observação~1, e os \emph{cgroups}, responsáveis pelos limites da Observação~6. As observações feitas neste laboratório servirão de referência concreta para essa exposição.
 
 \end{document}

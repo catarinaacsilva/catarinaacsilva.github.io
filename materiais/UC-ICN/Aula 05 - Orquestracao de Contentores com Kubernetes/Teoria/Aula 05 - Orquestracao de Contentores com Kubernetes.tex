@@ -56,7 +56,7 @@
 
 \usepackage{csquotes}
 
-\title{Orquestração de Contentores com Kubernetes}
+\title{Orquestração de Containers com Kubernetes}
 \subtitle{Infraestruturas de Computação na Nuvem, Aula 05}
 \author{Catarina Silva}
 \institute{ESTGA, Universidade de Aveiro}
@@ -96,7 +96,7 @@
 \frametitle{Porque Precisamos de Orquestração}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O Docker, por si só, gere contentores num único host — não decide onde correr cada contentor, nem reage a falhas.
+    \item O Docker, por si só, gere containers num único host — não decide onde correr cada container, nem reage a falhas.
     \item Aplicações em produção precisam de vários hosts, para tolerância a falhas e para distribuir carga.
     \item É necessário decidir automaticamente em que nó correr cada carga de trabalho (agendamento/scheduling).
     \item É necessário detetar falhas e recuperar delas sem intervenção manual.
@@ -120,8 +120,8 @@
     \setlength\itemsep{0.4cm}
     \item \textbf{controller manager}: corre os controladores que comparam o estado atual com o estado desejado e agem para os aproximar.
     \item Os \textbf{worker nodes} são onde as cargas de trabalho efetivamente correm.
-    \item \textbf{kubelet}: agente que garante que os contentores descritos para o nó estão de facto a correr.
-    \item \textbf{kube-proxy} e o \textbf{container runtime} (ex.: containerd) completam o nó, tratando de rede e execução de contentores.
+    \item \textbf{kubelet}: agente que garante que os containers descritos para o nó estão de facto a correr.
+    \item \textbf{kube-proxy} e o \textbf{container runtime} (ex.: containerd) completam o nó, tratando de rede e execução de containers.
 \end{itemize}
 \end{frame}
 
@@ -139,7 +139,7 @@
 \frametitle{Objetos Principais do Kubernetes \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Pod}: unidade mínima de execução; agrupa um ou mais contentores que partilham rede e armazenamento.
+    \item \textbf{Pod}: unidade mínima de execução; agrupa um ou mais containers que partilham rede e armazenamento.
     \item \textbf{Deployment}: descreve o estado desejado de uma aplicação (imagem, número de réplicas, estratégia de atualização).
     \item O Deployment não gere Pods diretamente — delega isso num ReplicaSet.
 \end{itemize}
@@ -170,8 +170,8 @@
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Um Pod passa por várias fases: Pending, Running, Succeeded, Failed.
-    \item \textbf{Liveness probe}: verifica se o contentor continua saudável; se falhar, o kubelet reinicia-o.
-    \item \textbf{Readiness probe}: verifica se o contentor está pronto para receber tráfego, antes de ser incluído num Service.
+    \item \textbf{Liveness probe}: verifica se o container continua saudável; se falhar, o kubelet reinicia-o.
+    \item \textbf{Readiness probe}: verifica se o container está pronto para receber tráfego, antes de ser incluído num Service.
     \item Se um Pod morrer, o ReplicaSet cria automaticamente um novo, aproximando o cluster do estado desejado.
 \end{itemize}
 \end{frame}
@@ -238,10 +238,10 @@
 \frametitle{Configuração e Segredos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{ConfigMap}: guarda dados de configuração não sensíveis, separando-os da imagem do contentor.
+    \item \textbf{ConfigMap}: guarda dados de configuração não sensíveis, separando-os da imagem do container.
     \item \textbf{Secret}: destinado a dados sensíveis (passwords, chaves, tokens).
     \item Atenção: por omissão, os Secrets são apenas codificados em base64 -- \emph{não} cifrados. É preciso ativar cifra em repouso no etcd e restringir acessos por RBAC.
-    \item Ambos podem ser expostos ao contentor como variáveis de ambiente ou como ficheiros montados.
+    \item Ambos podem ser expostos ao container como variáveis de ambiente ou como ficheiros montados.
     \item Separar configuração da imagem permite usar a mesma imagem em desenvolvimento, teste e produção.
 \end{itemize}
 \end{frame}
@@ -275,8 +275,8 @@
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item \textbf{Requests}: recursos que o Pod garantidamente precisa; o scheduler usa este valor para escolher um nó com capacidade suficiente.
-    \item \textbf{Limits}: teto máximo que o contentor pode consumir, aplicado através dos cgroups vistos na Aula 04.
-    \item Exceder o limite de memória leva à terminação do contentor (OOM kill); exceder o de CPU resulta apenas em \textit{throttling}.
+    \item \textbf{Limits}: teto máximo que o container pode consumir, aplicado através dos cgroups vistos na Aula 04.
+    \item Exceder o limite de memória leva à terminação do container (OOM kill); exceder o de CPU resulta apenas em \textit{throttling}.
     \item \textbf{nodeSelector} e \textbf{affinity}: influenciam em que nós um Pod pode ou deve ser colocado.
     \item \textbf{Taints e tolerations}: mecanismo inverso, em que um nó repele Pods que não tolerem explicitamente a sua marca.
 \end{itemize}
@@ -287,7 +287,7 @@
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item \textbf{Docker Swarm}: solução de orquestração nativa do Docker, mais simples de configurar, mas com ecossistema e funcionalidades mais limitadas.
-    \item \textbf{HashiCorp Nomad}: orquestrador genérico, capaz de agendar não só contentores mas também outras cargas de trabalho (binários, VMs).
+    \item \textbf{HashiCorp Nomad}: orquestrador genérico, capaz de agendar não só containers mas também outras cargas de trabalho (binários, VMs).
     \item Kubernetes é hoje o standard de facto, com o ecossistema mais vasto e maior adoção na indústria.
     \item A escolha depende da complexidade do caso de uso e da curva de aprendizagem que a equipa está disposta a assumir.
 \end{itemize}
@@ -297,7 +297,7 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Orquestração é necessária para gerir contentores de forma fiável em múltiplos hosts.
+    \item Orquestração é necessária para gerir containers de forma fiável em múltiplos hosts.
     \item Kubernetes separa control plane (API server, etcd, scheduler, controller manager) de worker nodes (kubelet, kube-proxy, runtime).
     \item Pod, Deployment, ReplicaSet, Service e Namespace são os objetos centrais para descrever e expor aplicações.
 \end{itemize}
