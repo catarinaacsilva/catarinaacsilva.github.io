@@ -1,0 +1,132 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\titleformat{\section}{\color{TextEspresso}\Large\bfseries}{\thesection}{0.5em}{}[{\color{NudeTaupe}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{TextEspresso}\large\bfseries}{\thesubsection}{0.5em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{NudeTaupe},
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\guiaotitle}[2]{%
+  \begin{center}
+  {\Large\bfseries\color{TextEspresso} #1}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} #2}\\[0.2cm]
+  {\color{NudeTaupe}\rule{4cm}{0.5pt}}
+  \end{center}
+  \vspace{0.5cm}
+}
+
+\begin{document}
+\guiaotitle{Guião 04 -- Containers e Isolamento de Processos}{Infraestruturas de Computação na Nuvem, Aula 04}
+
+\section{Objetivos}
+\begin{itemize}[itemsep=0.2cm]
+  \item Arrancar um serviço com Docker Compose e observar o isolamento dado pelos namespaces e pelos cgroups.
+  \item Comparar o mesmo processo visto de dentro e de fora do container.
+  \item Verificar que um container é um processo do host, e não uma máquina virtual.
+\end{itemize}
+
+\section{Pré-requisitos e Material}
+\begin{itemize}[itemsep=0.2cm]
+  \item Docker e Docker Compose instalados (na VM \texttt{icn-lab} da Aula 03 ou no portátil).
+  \item Conhecimentos da Aula 04: namespaces, cgroups e capabilities.
+\end{itemize}
+
+\section{Parte 1 -- Arrancar o serviço}
+\begin{enumerate}[label=\arabic*.]
+  \item Criar o ficheiro \texttt{docker-compose.yml} com um Redis, um volume para os dados e um limite de memória:
+\begin{lstlisting}
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    mem_limit: 256m
+    volumes:
+      - redis-data:/data
+volumes:
+  redis-data:
+\end{lstlisting}
+  \item Arrancar e confirmar o estado:
+\begin{lstlisting}
+docker compose up -d --build
+docker compose ps
+\end{lstlisting}
+\end{enumerate}
+
+\section{Parte 2 -- Explorar o isolamento por dentro}
+Abrir uma shell no container e executar os comandos abaixo.
+\begin{lstlisting}
+docker compose exec redis sh
+hostname                       # ID do container, nao o nome do portatil
+ps aux                         # so o redis-server e a shell
+ip addr                        # IP proprio, numa rede propria
+cat /sys/fs/cgroup/memory.max  # limite imposto pelo cgroup
+ls /data                       # o volume montado
+redis-cli ping                 # PONG
+\end{lstlisting}
+
+\textbf{Questões.}
+\begin{enumerate}[label=\arabic*.]
+  \item Que namespace explica cada uma das três primeiras observações (\texttt{hostname}, \texttt{ps}, \texttt{ip addr})?
+  \item Que valor tem \texttt{memory.max} e de onde vem?
+  \item O que acontece aos ficheiros de \texttt{/data} se o container for removido e recriado?
+\end{enumerate}
+
+\section{Parte 3 -- O mesmo processo visto do host}
+Com a shell da Parte 2 ainda aberta, noutro terminal:
+\begin{lstlisting}
+docker ps
+docker top redis
+\end{lstlisting}
+
+\begin{enumerate}[label=\arabic*.]
+  \item Registar o PID, o PPID e o utilizador do \texttt{sh} dentro do container (\texttt{ps aux}) e fora dele (\texttt{docker top}).
+  \item Preencher a tabela seguinte e justificar cada linha.
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{l|c|c}
+  & Dentro & Fora \\ \hline
+  PID & & \\
+  PPID & & \\
+  Utilizador & & \\
+\end{tabular}
+\end{center}
+
+\textbf{Resultado esperado.}
+Dentro do container o \texttt{sh} tem o PID 1, porque é o primeiro processo do namespace PID.
+Fora, é o mesmo processo com um PID alto (por exemplo 48213), cujo pai é normalmente o \texttt{containerd-shim}.
+O utilizador é \texttt{root} nos dois lados: por omissão o Docker não usa o namespace USER, pelo que o root do container é o root do host com menos capabilities.
+É por isso que se recomenda a instrução \texttt{USER} no Dockerfile ou o modo \emph{rootless}.
+
+Terminar o processo do lado do host (\texttt{docker kill redis}) fecha de imediato a shell do primeiro terminal, o que confirma que se trata do mesmo processo.
+
+\textbf{Nota.}
+No Docker Desktop (Mac ou Windows) os PIDs e o root mostrados pelo \texttt{docker top} são os da VM Linux onde o Docker corre, e não os do portátil.
+
+\section{Limpeza}
+\begin{lstlisting}
+docker compose down -v
+\end{lstlisting}
+
+\end{document}

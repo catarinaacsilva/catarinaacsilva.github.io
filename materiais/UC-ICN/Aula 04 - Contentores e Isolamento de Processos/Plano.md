@@ -7,6 +7,9 @@
 ## Teoria
 - Aula 04 - Containers e Isolamento de Processos.tex
 
+## Prática
+- Guiao 04 - Containers e Isolamento de Processos.tex (Docker Compose com Redis; PID dentro vs fora do container)
+
 ## Diagramas
 Fonte editável (`.drawio`) e PNG em `Diagramas/`:
 - a04-namespaces-cgroups
