@@ -265,3 +265,4 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .journey-col .timeline { max-width: none; margin: 0; }
 .journey-col .timeline-content { padding: 1.25rem 1.5rem; }
 @media (max-width: 900px) { .journey-grid { grid-template-columns: 1fr; } }
+.journey-img { display: block; width: 100%; height: auto; }
