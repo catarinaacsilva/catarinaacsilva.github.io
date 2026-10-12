@@ -108,6 +108,7 @@ const COURSES = [
         'Evolução das Tecnologias Web', 'HTML Semântico e Formulários', 'Fundamentos de CSS',
         'CSS Avançado e Layouts', 'Fundamentos de JavaScript', 'Manipulação do DOM e Eventos',
         'JavaScript Assíncrono e APIs'],
+      slides: [1, 3, 4, 5, 6, 7], lab: [1, 2, 3, 4, 5, 6, 7],
       code: { 2: '../materiais/UC-WEB/Aula2/formulario_auditoria.html' } },
     { file: 'uc-tciot.html', name: 'Tecnologias de Comunicação para a Internet das Coisas', lectures: [
         'Introdução à IoT, Arquitetura de Referência e Tecnologias Sem Fios',
@@ -118,6 +119,7 @@ const COURSES = [
         '6TiSCH e Encaminhamento em Redes de Baixo Consumo',
         'Protocolos da Camada de Sessão: HTTP, CoAP e XMPP', 'Middleware Orientado a Mensagens: MQTT e AMQP',
         'Integração Prática: Zigbee2MQTT', 'Revisão e Entrega do Mini-Projeto'],
+      slides: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], lab: [2, 3, 4, 5, 6, 7, 12, 13],
       code: { 2: '../materiais/UC-TCIOT/Aula02/codigo.zip', 4: '../materiais/UC-TCIOT/Aula04/codigo.zip',
               5: '../materiais/UC-TCIOT/Aula05/codigo.zip', 6: '../materiais/UC-TCIOT/Aula06/codigo.zip',
               13: '../materiais/UC-TCIOT/Aula13/firmware.zip' } },
@@ -128,7 +130,8 @@ const COURSES = [
         'Automatização de Configurações: Infraestrutura como Código (IaC)',
         'Disponibilidade e Escalabilidade de Serviços', 'Redundância e Desacoplamento de Serviços',
         'Armazenamento de Dados: Arquiteturas e Sistemas Locais', 'Armazenamento Remoto e Distribuído',
-        'Tecnologias de Administração de Sistemas: SNMP', 'WBEM, WS-Management e Revisão Geral'] },
+        'Tecnologias de Administração de Sistemas: SNMP', 'WBEM, WS-Management e Revisão Geral'],
+      slides: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], lab: [3, 4, 5, 9, 10, 11, 12, 13] },
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -142,9 +145,15 @@ document.addEventListener('DOMContentLoaded', () => {
     nav.innerHTML = '<p class="sidebar-title">Unidades curriculares</p>' + COURSES.map(c => {
         const open = c.file === current;
         const items = c.lectures.map((t, i) => {
-            const code = c.code && c.code[i + 1];
-            const mark = code ? `<a class="sidebar-code" href="${code}" title="Código-fonte" aria-label="Código-fonte da aula ${i + 1}"><i class="fab fa-github"></i></a>` : '';
-            return `<li><a href="${c.file}#lecture-${i + 1}" data-lecture="${i + 1}"><span>${i + 1}</span>${t}</a>${mark}</li>`;
+            const n = i + 1;
+            const code = c.code && c.code[n];
+            // Três posições fixas antes do título: slides, laboratório, código-fonte
+            const icons = `<span class="sidebar-icons">
+                <i class="fas fa-desktop${c.slides.includes(n) ? '' : ' is-empty'}" title="Slides"></i>
+                <i class="fas fa-laptop-code${c.lab.includes(n) ? '' : ' is-empty'}" title="Laboratório / guião"></i>
+                ${code ? `<a class="sidebar-code" href="${code}" title="Código-fonte" aria-label="Código-fonte da aula ${n}"><i class="fab fa-github"></i></a>` : '<i class="fab fa-github is-empty"></i>'}
+            </span>`;
+            return `<li>${icons}<a href="${c.file}#lecture-${n}" data-lecture="${n}"><span>${n}</span>${t}</a></li>`;
         }).join('');
         return `<div class="sidebar-course${open ? ' is-open' : ''}">
             <button type="button" class="sidebar-course-btn" aria-expanded="${open}">
