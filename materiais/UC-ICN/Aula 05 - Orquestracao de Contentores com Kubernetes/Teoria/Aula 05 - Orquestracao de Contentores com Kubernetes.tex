@@ -93,6 +93,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Percurso da Aula}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-roteiro.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Porque Precisamos de Orquestração}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -101,6 +110,15 @@
     \item É necessário decidir automaticamente em que nó correr cada carga de trabalho (agendamento/scheduling).
     \item É necessário detetar falhas e recuperar delas sem intervenção manual.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{As Questões que a Orquestração Resolve}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-porque.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -130,6 +148,15 @@
 \vfill
 \begin{center}
 \includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-arquitetura.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
+\frametitle{Do Pedido ao Container}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-fluxo-pedido.png}
 \end{center}
 \vfill
 \end{frame}
@@ -164,6 +191,24 @@
 \vfill
 \end{frame}
 
+\begin{frame}
+\frametitle{Por Dentro de um Pod}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-pod-interior.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
+\frametitle{Namespaces do Kubernetes}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-namespaces.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Ciclo de Vida de um Pod e Self-Healing}
@@ -177,6 +222,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Fases do Pod e Sondas}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-pod-fases.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Declarativo vs Imperativo}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -185,6 +239,15 @@
     \item \texttt{kubectl apply -f manifesto.yaml} aplica (ou atualiza) o estado descrito no ficheiro.
     \item Abordagem declarativa é a recomendada em produção: reprodutível, versionável e auditável.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Duas Formas de Pedir}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-declarativo.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -208,6 +271,15 @@
 \vfill
 \end{frame}
 
+\begin{frame}
+\frametitle{Self-Healing na Prática: Perda de um Nó}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-self-healing-no.png}
+\end{center}
+\vfill
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Tipos de Service}
@@ -222,9 +294,18 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Tipos de Service, Visualmente}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-tipos-service.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{O Modelo de Rede do Kubernetes}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
+    \setlength\itemsep{0.28cm}
     \item Regra fundamental: cada Pod tem um endereço IP próprio e todos os Pods comunicam entre si sem NAT.
     \item Esta rede plana é implementada por um \textbf{plugin CNI} (Container Network Interface), não pelo Kubernetes em si.
     \item Exemplos de plugins CNI: Flannel, Calico, Weave Net, Cilium.
@@ -232,6 +313,15 @@
     \item \textbf{CoreDNS}: fornece resolução de nomes interna, permitindo alcançar um Service pelo nome em vez do IP.
     \item Este modelo de rede será retomado na Aula 06, no contexto mais geral da SDN.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Rede Plana de Pods}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-rede-pods.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -247,9 +337,18 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Configuração Fora da Imagem}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-config-secret.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Armazenamento Persistente}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
+    \setlength\itemsep{0.28cm}
     \item Pods são efémeros: quando um Pod desaparece, o seu sistema de ficheiros local desaparece com ele.
     \item \textbf{PersistentVolume (PV)}: recurso de armazenamento disponibilizado no cluster.
     \item \textbf{PersistentVolumeClaim (PVC)}: pedido de armazenamento feito por uma aplicação, com capacidade e modo de acesso.
@@ -257,6 +356,15 @@
     \item \textbf{StatefulSet}: alternativa ao Deployment para aplicações com estado, que garante identidade e armazenamento estáveis por réplica.
     \item Estes conceitos ligam-se diretamente às Aulas 10 e 11, sobre armazenamento.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Do Pod ao Armazenamento}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-pv-pvc.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -268,6 +376,15 @@
     \item Útil para tarefas pontuais: migrações de base de dados, processamento em lote, geração de relatórios.
     \item \textbf{CronJob}: agenda Jobs para correr periodicamente, com uma sintaxe semelhante ao \texttt{cron} do Unix (ex.: backups noturnos).
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Job e CronJob, Visualmente}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-job-cronjob.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -283,6 +400,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Requests e Limits, Visualmente}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-requests-limits.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Alternativas de Orquestração}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -291,6 +417,15 @@
     \item Kubernetes é hoje o standard de facto, com o ecossistema mais vasto e maior adoção na indústria.
     \item A escolha depende da complexidade do caso de uso e da curva de aprendizagem que a equipa está disposta a assumir.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Orquestradores em Comparação}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-alternativas.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -312,6 +447,24 @@
     \item ConfigMaps, Secrets e PersistentVolumes separam configuração e dados do ciclo de vida dos Pods; Jobs e CronJobs cobrem cargas de trabalho pontuais ou periódicas.
     \item Requests e limits guiam o agendamento e aplicam-se através dos cgroups vistos na Aula 04.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Mapa da Aula}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-mapa.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
+\frametitle{Ligações a Outras Aulas}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a05-ligacoes.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}[plain]
