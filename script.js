@@ -29,6 +29,7 @@ function openViewer(title, url) {
     // Atualiza os textos e os links
     viewerTitle.textContent = title;
     viewerDownload.href = url;
+    viewerDownload.download = decodeURIComponent(url.split('/').pop());
     
     // Suporte tanto para <iframe> como para <object>
     if (viewerFrame.tagName.toLowerCase() === 'iframe') {
@@ -45,6 +46,32 @@ function openViewer(title, url) {
         viewerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
 }
+
+// Exportar PDF: o atributo download sozinho falha em alguns browsers (abre o PDF
+// em vez de o guardar), por isso o ficheiro é obtido como blob e guardado.
+document.addEventListener('DOMContentLoaded', () => {
+    const link = document.getElementById('viewer-download');
+    if (!link) return;
+    link.addEventListener('click', async (e) => {
+        const url = link.getAttribute('href');
+        if (!url || url === '#') { e.preventDefault(); return; }
+        try {
+            e.preventDefault();
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(res.status);
+            const blobUrl = URL.createObjectURL(await res.blob());
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = link.download;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        } catch (err) {
+            window.open(url, '_blank');   // alternativa: abre o PDF num novo separador
+        }
+    });
+});
 
 function closeViewer() {
     const viewerSection = document.getElementById('document-viewer');

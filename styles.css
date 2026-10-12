@@ -217,3 +217,13 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
     .outline-item { gap: 1rem; padding: 1.1rem 0.25rem; flex-wrap: wrap; }
     .outline-mats { margin-left: 3rem; margin-top: 0.4rem; }
 }
+
+/* --- Alinhamento dos cartões das UCs --- */
+.course-card { display: flex; flex-direction: column; }
+.course-card .btn-formal { margin-top: auto; align-self: stretch; }
+.course-card > p { flex-grow: 1; }
+
+/* --- Texto secundário em inglês (páginas bilingues) --- */
+.lecture-title-en { font-size: 0.85rem; font-style: italic; color: var(--text-light); margin: 0.25rem 0 0; }
+.outline-en { display: block; font-size: 0.85em; font-style: italic; color: var(--text-light); font-weight: 400; }
+.h2-en { font-size: 0.6em; font-weight: 400; color: var(--text-light); }
