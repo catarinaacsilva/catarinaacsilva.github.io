@@ -118,11 +118,6 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .course-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
 .course-header h3 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--primary-color); margin-bottom: 0.5rem; }
 .course-level { display: inline-block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); font-weight: 600; }
-.course-materials { list-style: none; }
-.course-materials li { margin-bottom: 1rem; }
-.course-materials a { display: flex; align-items: center; color: var(--text-main); font-size: 0.95rem; }
-.course-materials a::before { content: '\f15b'; font-family: 'Font Awesome 6 Free'; font-weight: 400; color: var(--accent-color); margin-right: 10px; }
-.course-materials a:hover { color: var(--accent-color); padding-left: 5px; }
 
 /* --- Contactos / Footer --- */
 .footer { background-color: var(--primary-color); color: white; padding: 5rem 0 2rem 0; }
@@ -178,44 +173,12 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .btn-close-viewer:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
 .pdf-viewer { width: 100%; height: 75vh; min-height: 600px; border: 1px solid var(--border-color); border-radius: 4px; background-color: #e9ecef; }
-/* --- Estrutura do programa (Course Outline) --- */
-.outline { list-style: none; margin: 0 0 3.5rem 0; border-top: 1px solid var(--border-color); }
-.outline-item {
-    display: flex; align-items: baseline; gap: 1.5rem;
-    padding: 1.4rem 0.25rem; border-bottom: 1px solid var(--border-color);
-    cursor: pointer; transition: padding-left 0.3s;
-}
-.outline-item:hover, .outline-item:focus { padding-left: 0.75rem; outline: none; }
-.outline-item:focus-visible { box-shadow: inset 3px 0 0 var(--accent-color); }
-.outline-num {
-    font-family: var(--font-heading); font-weight: 600; font-size: 0.9rem;
-    color: var(--accent-color); flex: 0 0 auto; min-width: 2rem; letter-spacing: 1px;
-}
-.outline-body { flex: 1 1 auto; display: block; }
-.outline-topic {
-    display: block; font-family: var(--font-heading); font-size: 1.1rem;
-    color: var(--primary-color); line-height: 1.4; transition: color 0.3s;
-}
-.outline-desc { display: block; color: var(--text-light); font-size: 0.9rem; line-height: 1.6; margin-top: 0.2rem; }
-.outline-item:hover .outline-topic { color: var(--accent-color); }
-.outline-mats {
-    flex: 0 0 auto; margin-left: auto; white-space: nowrap;
-    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-light); transition: color 0.3s;
-}
-.outline-item:hover .outline-mats { color: var(--accent-color); }
-
-/* Realce do cartão ao ser escolhido no índice */
+/* Realce do cartão ao ser escolhido na barra lateral */
 .lecture-card.is-target { animation: cardPulse 1.6s ease; }
 @keyframes cardPulse {
     0%   { box-shadow: 0 0 0 0 rgba(164,140,98,0.5); }
     45%  { box-shadow: 0 0 0 9px rgba(164,140,98,0); }
     100% { box-shadow: 0 0 0 0 rgba(164,140,98,0); }
-}
-
-@media (max-width: 600px) {
-    .outline-item { gap: 1rem; padding: 1.1rem 0.25rem; flex-wrap: wrap; }
-    .outline-mats { margin-left: 3rem; margin-top: 0.4rem; }
 }
 
 /* --- Alinhamento dos cartões das UCs --- */
@@ -225,7 +188,6 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 
 /* --- Texto secundário em inglês (páginas bilingues) --- */
 .lecture-title-en { font-size: 0.85rem; font-style: italic; color: var(--text-light); margin: 0.25rem 0 0; }
-.outline-en { display: block; font-size: 0.85em; font-style: italic; color: var(--text-light); font-weight: 400; }
 .h2-en { font-size: 0.6em; font-weight: 400; color: var(--text-light); }
 
 /* --- Barra lateral das UCs (estilo wiki) --- */
