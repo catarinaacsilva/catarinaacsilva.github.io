@@ -254,14 +254,3 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .bio-highlights li { display: flex; align-items: center; gap: 0.8rem; font-size: 0.9rem; line-height: 1.35; color: var(--text-main); }
 .bio-highlights svg { flex: none; width: 1.7rem; height: 1.7rem; color: var(--accent-color); }
 
-/* --- Janela de código no cabeçalho --- */
-.hero-row { display: flex; align-items: center; justify-content: space-between; gap: 3rem; }
-.hero-row .brand { flex: 1 1 auto; min-width: 0; }
-.hero-code { flex: none; width: 380px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; background: rgba(8,16,26,0.55); box-shadow: 0 18px 40px rgba(0,0,0,0.25); backdrop-filter: blur(2px); font-family: 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 0.82rem; }
-.hero-code-bar { display: flex; align-items: center; gap: 6px; padding: 0.55rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.hero-code-bar span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.22); }
-.hero-code-bar span:first-child { background: var(--accent-color); }
-.hero-code-bar em { margin-left: auto; font-style: normal; font-size: 0.72rem; color: rgba(255,255,255,0.5); }
-.hero-code pre { margin: 0; padding: 1rem 1.1rem; line-height: 1.65; color: rgba(255,255,255,0.82); white-space: pre; overflow: hidden; }
-.c-k { color: #8fb4d9; } .c-v { color: #fff; } .c-p { color: #c9d6e3; } .c-s { color: var(--accent-color); }
-@media (max-width: 1000px) { .hero-code { display: none; } }
