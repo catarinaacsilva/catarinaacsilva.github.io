@@ -6,6 +6,7 @@
     --bg-main: #ffffff;
     --bg-muted: #f8f9fa;
     --border-color: #eaeaea;
+    --page-max: clamp(960px, 92vw, 1500px); /* largura útil: quase todo o ecrã num portátil, limitada em monitores grandes */
     
     --font-heading: 'Lora', serif;
     --font-body: 'Open Sans', sans-serif;
@@ -29,7 +30,7 @@ a:hover { color: var(--accent-color); }
     color: white;
     padding: 3rem 0 0 0;
 }
-.header-container { max-width: 1000px; margin: 0 auto; padding: 0 2rem; }
+.header-container { max-width: calc(var(--page-max) + 4rem); margin: 0 auto; padding: 0 2rem; }
 .brand h1 { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 600; margin-bottom: 0.5rem; }
 .brand .title { font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem; letter-spacing: 1px; text-transform: uppercase; }
 
@@ -41,7 +42,7 @@ a:hover { color: var(--accent-color); }
 /* --- Layout Geral das Secções --- */
 .section { padding: 6rem 2rem; }
 .bg-muted { background-color: var(--bg-muted); }
-.container { max-width: 1000px; margin: 0 auto; }
+.container { max-width: var(--page-max); margin: 0 auto; }
 
 h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; color: var(--primary-color); }
 .divider { width: 50px; height: 3px; background-color: var(--accent-color); margin: 1.5rem 0; }
@@ -191,8 +192,8 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .h2-en { font-size: 0.6em; font-weight: 400; color: var(--text-light); }
 
 /* --- Barra lateral das UCs (estilo wiki) --- */
-.course-layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 3rem; max-width: 1280px; margin: 0 auto; padding: 0 2rem; align-items: start; }
-.course-layout .container { max-width: none; }
+.course-layout { display: grid; grid-template-columns: clamp(270px, 22vw, 360px) minmax(0, 1fr); gap: 3rem; max-width: var(--page-max); margin: 0 auto; padding: 0; align-items: start; }
+.course-layout .container { max-width: none; margin: 0; width: 100%; }
 .course-sidebar { position: sticky; top: 1.5rem; max-height: calc(100vh - 3rem); overflow-y: auto; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem 0.5rem; font-size: 0.9rem; }
 .sidebar-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); font-weight: 600; padding: 0 0.75rem; margin-bottom: 0.75rem; }
 .sidebar-course { border-top: 1px solid var(--border-color); }
