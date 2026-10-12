@@ -221,9 +221,29 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .header { position: relative; isolation: isolate; overflow: hidden; }
 .header::before {
     content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='560' height='176' viewBox='0 0 560 176'><g fill='%23fff'><rect x='20' y='10' width='28' height='5' rx='2.5'/><rect x='58' y='10' width='56' height='5' rx='2.5'/><rect x='124' y='10' width='96' height='5' rx='2.5'/><rect x='20' y='32' width='72' height='5' rx='2.5'/><rect x='102' y='32' width='18' height='5' rx='2.5'/><rect x='44' y='54' width='72' height='5' rx='2.5'/><rect x='126' y='54' width='28' height='5' rx='2.5'/><rect x='20' y='76' width='56' height='5' rx='2.5'/><rect x='86' y='76' width='56' height='5' rx='2.5'/><rect x='20' y='98' width='18' height='5' rx='2.5'/><rect x='48' y='98' width='72' height='5' rx='2.5'/><rect x='130' y='98' width='56' height='5' rx='2.5'/><rect x='20' y='120' width='28' height='5' rx='2.5'/><rect x='58' y='120' width='96' height='5' rx='2.5'/><rect x='92' y='142' width='72' height='5' rx='2.5'/><rect x='174' y='142' width='72' height='5' rx='2.5'/><rect x='44' y='164' width='28' height='5' rx='2.5'/><rect x='82' y='164' width='18' height='5' rx='2.5'/></g></svg>");
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='560' height='176' viewBox='0 0 560 176'><g fill='%23fff'><rect x='20' y='10' width='28' height='5' rx='2.5'/><rect x='58' y='10' width='56' height='5' rx='2.5'/><rect x='124' y='10' width='96' height='5' rx='2.5'/><rect x='20' y='32' width='72' height='5' rx='2.5'/><rect x='102' y='32' width='18' height='5' rx='2.5'/><rect x='44' y='54' width='72' height='5' rx='2.5' fill='%23a48c62'/><rect x='126' y='54' width='28' height='5' rx='2.5'/><rect x='20' y='76' width='56' height='5' rx='2.5'/><rect x='86' y='76' width='56' height='5' rx='2.5'/><rect x='20' y='98' width='18' height='5' rx='2.5'/><rect x='48' y='98' width='72' height='5' rx='2.5'/><rect x='130' y='98' width='56' height='5' rx='2.5' fill='%23a48c62'/><rect x='20' y='120' width='28' height='5' rx='2.5'/><rect x='58' y='120' width='96' height='5' rx='2.5'/><rect x='92' y='142' width='72' height='5' rx='2.5'/><rect x='174' y='142' width='72' height='5' rx='2.5'/><rect x='44' y='164' width='28' height='5' rx='2.5'/><rect x='82' y='164' width='18' height='5' rx='2.5' fill='%23a48c62'/></g></svg>");
     background-size: 560px 176px;
-    opacity: 0.12;
+    opacity: 0.16;
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.6) 55%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.6) 55%, transparent 100%);
 }
+
+/* --- Cabeçalho da página inicial: profundidade, prompt e navegação numerada --- */
+.header {
+    background-image:
+        radial-gradient(ellipse 60% 120% at 88% 0%, rgba(164,140,98,0.22), transparent 70%),
+        linear-gradient(135deg, #1f3347 0%, var(--primary-color) 55%, #131f2c 100%);
+    border-bottom: 3px solid var(--accent-color);
+}
+.brand h1::before { content: '> '; color: var(--accent-color); font-family: 'SFMono-Regular', Menlo, Consolas, monospace; font-weight: 400; }
+.brand h1::after { content: '_'; color: var(--accent-color); font-family: 'SFMono-Regular', Menlo, Consolas, monospace; font-weight: 400; margin-left: 0.15em; animation: caret 1.1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .brand h1::after { animation: none; } }
+.brand .title { font-family: 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 0.95rem; text-transform: none; letter-spacing: 0.5px; opacity: 0.85; }
+.brand .title::before { content: '// '; color: var(--accent-color); }
+.nav-links { counter-reset: nav; }
+.nav-links li { counter-increment: nav; }
+.nav-links a { position: relative; padding-bottom: 4px; }
+.nav-links a::before { content: counter(nav, decimal-leading-zero); color: var(--accent-color); font-family: 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 0.7rem; margin-right: 0.5rem; vertical-align: 0.15em; }
+.nav-links a::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: var(--accent-color); transform: scaleX(0); transform-origin: left; transition: transform 0.25s; }
+.nav-links a:hover::after { transform: scaleX(1); }
