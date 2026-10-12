@@ -57,9 +57,10 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .btn-formal:hover { background-color: var(--primary-color); color: white; }
 
 /* --- Biografia --- */
-.bio-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 4rem; align-items: start; }
+.bio-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 4rem; align-items: center; }
 .bio-image img { display: block; width: 100%; max-width: 280px; aspect-ratio: 1; object-fit: cover; object-position: center 25%; border-radius: 50%; border: 4px solid var(--bg-main); box-shadow: 0 0 0 2px var(--accent-color), 0 12px 30px rgba(0,0,0,0.12); margin: 0 auto; }
 .bio-text p { margin-bottom: 1.5rem; text-align: justify; }
+.bio-text p:last-child { margin-bottom: 0; }
 
 /* --- TIMELINE DE EDUCAÇÃO --- */
 .education-container { margin-top: 5rem; padding-top: 3rem; border-top: 1px solid var(--border-color); }
