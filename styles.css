@@ -259,3 +259,9 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 /* --- Páginas das UCs: usam praticamente toda a janela (limite só em ecrãs muito grandes) --- */
 .course-page { --page-max: min(96vw, 2200px); }
 .course-page .lectures-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+/* --- Percurso académico e profissional lado a lado --- */
+.journey-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem; align-items: start; }
+.journey-col .timeline { max-width: none; margin: 0; }
+.journey-col .timeline-content { padding: 1.25rem 1.5rem; }
+@media (max-width: 900px) { .journey-grid { grid-template-columns: 1fr; } }
