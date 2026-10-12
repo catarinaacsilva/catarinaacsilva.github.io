@@ -203,6 +203,10 @@ h2 { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; colo
 .sidebar-lectures, .sidebar-open { display: none; }
 .sidebar-course.is-open .sidebar-lectures { display: block; list-style: none; margin: 0 0 0.5rem; padding: 0; }
 .sidebar-course.is-open .sidebar-open { display: block; padding: 0.25rem 0.75rem 0.75rem; font-size: 0.8rem; color: var(--text-light); }
+.sidebar-lectures li { display: flex; align-items: flex-start; }
+.sidebar-lectures li > a:first-child { flex: 1 1 auto; }
+.sidebar-lectures .sidebar-code { flex: none; padding: 0.4rem 0.75rem 0.4rem 0; color: var(--text-light); border-left: 0; }
+.sidebar-lectures .sidebar-code:hover { color: var(--primary-color); background: none; }
 .sidebar-lectures a { display: flex; gap: 0.6rem; padding: 0.4rem 0.75rem; color: var(--text-main); border-left: 2px solid transparent; line-height: 1.35; }
 .sidebar-lectures a span { color: var(--accent-color); font-weight: 600; min-width: 1.4rem; }
 .sidebar-lectures a:hover { background: var(--bg-muted); border-left-color: var(--accent-color); }
