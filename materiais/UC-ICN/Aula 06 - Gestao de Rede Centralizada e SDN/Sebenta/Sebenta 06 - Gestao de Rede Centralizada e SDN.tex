@@ -1,0 +1,313 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{06}{Gestão de Rede Centralizada e SDN}{Aula 06}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 06. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada. A aula é expositiva e retoma dois temas anteriores: os namespaces de rede da Aula 04, que isolam a pilha de rede de cada container, e o cluster Kubernetes da Aula 05, cuja rede de Pods foi usada sem ter sido explicada.
+
+A leitura sequencial é a mais proveitosa. A aula começa pelas limitações da gestão de rede tradicional, apresenta a separação entre plano de controlo e plano de dados e a arquitetura SDN, e detalha o OpenFlow, as tabelas de fluxos e os modelos reativo e proativo. Passa depois pelos controllers e pelo Open vSwitch, pelas redes overlay, pela virtualização de funções de rede e pela microssegmentação, e termina com a concretização destes conceitos no Proxmox e no Kubernetes.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+A Aula 05 mostrou que o Kubernetes decide onde correm os Pods, mas deixou em aberto uma pergunta: por que caminho chega um pacote de um Pod num nó a um Pod noutro nó? A resposta está na rede, e a rede de um datacenter moderno já não se gere equipamento a equipamento. Gere-se como software.
+
+Esta aula apresenta o modelo que o torna possível. A ideia central é separar quem decide para onde vai o tráfego de quem o encaminha, e entregar a decisão a um elemento centralizado e programável. Daí decorrem o protocolo OpenFlow, os switches virtuais, as redes overlay e as políticas de segurança por carga de trabalho.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira metade da agenda trata da motivação e do modelo. Parte das limitações da gestão de rede tradicional, explica a distinção entre plano de controlo e plano de dados e descreve a arquitetura da SDN, com os seus três níveis e as duas interfaces que os ligam.
+
+Segue-se o OpenFlow, o protocolo através do qual o controller instala regras nos switches, e a forma como essas regras se organizam em tabelas de fluxos. A metade fecha com a distinção entre os modelos reativo e proativo e com os controllers disponíveis.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda metade da agenda desce ao concreto. O Open vSwitch é o switch virtual programável que materializa o modelo em hipervisores e em hosts de containers. As redes overlay, em particular a VXLAN, resolvem o problema de criar muitas redes lógicas isoladas sobre a mesma infraestrutura física.
+
+A virtualização de funções de rede e a microssegmentação mostram o que a programabilidade permite fazer com o tráfego: colocar funções em software e aplicar políticas de segurança a cada carga de trabalho. A aula termina com o Proxmox e o Kubernetes, onde estes conceitos já estão presentes, e com as vantagens e os riscos da centralização.
+}
+
+\pagina{slides/slide-04.png}{
+O percurso organiza-se em seis blocos. O primeiro justifica a centralização a partir dos limites do modelo tradicional. O segundo apresenta a separação dos planos e a arquitetura SDN. O terceiro detalha o OpenFlow e as tabelas de fluxos, e o quarto os controllers e o Open vSwitch. O quinto trata das redes overlay, e o sexto reúne a virtualização de funções, as políticas de rede e as plataformas concretas.
+
+As cores distinguem os blocos de base, a bege, os centrais, a verde, e os que completam o quadro, a branco. Os dois blocos verdes são o núcleo da aula: sem eles, os restantes perdem o contexto.
+}
+
+\pagina{slides/slide-05.png}{
+Numa rede tradicional, cada switch e cada router é um equipamento autónomo. Contém o hardware que encaminha pacotes e contém também a inteligência que decide como encaminhá-los: os protocolos de routing, a aprendizagem de endereços, as listas de controlo de acesso. A configuração faz-se equipamento a equipamento, normalmente através de uma interface de linha de comandos própria de cada fabricante.
+
+Esta arquitetura funcionou durante décadas porque as redes eram relativamente estáticas e pequenas. Num datacenter com centenas ou milhares de switches, onde as cargas de trabalho surgem e desaparecem em segundos, deixa de ser adequada. A motivação da SDN é retirar a inteligência de decisão dos equipamentos individuais e geri-la num único ponto.
+}
+
+\pagina{slides/slide-06.png}{
+A figura mostra o administrador a configurar quatro switches, um de cada vez. Cada switch contém o plano de controlo e o plano de dados, e por isso cada um tem de ser configurado e mantido de forma independente.
+
+Os três problemas à direita decorrem desta organização. Configurar centenas de equipamentos um a um é lento. Cada intervenção manual é uma oportunidade de erro, e configurações que deviam ser idênticas acabam por divergir. E, sem uma visão global, verificar se a rede cumpre a política pretendida exige percorrer os equipamentos um a um, o que torna a auditoria difícil.
+}
+
+\pagina{slides/slide-07.png}{
+O plano de dados, ou \emph{data plane}, é a parte que encaminha pacotes. Dado um pacote que chega a uma porta, consulta as regras que tem instaladas e decide, em microssegundos, por que porta o deve enviar. Tem de ser rápido, e por isso executa-se em hardware especializado ou em código otimizado do núcleo.
+
+O plano de controlo, ou \emph{control plane}, decide quais são essas regras. Constrói a visão da topologia, calcula os caminhos e define as políticas. Pode ser mais lento, porque atua sobre o conjunto da rede e não sobre cada pacote.
+
+Nas redes tradicionais os dois planos coexistem no mesmo equipamento. Na SDN, o plano de controlo é retirado dos switches e centralizado num \emph{controller}. Os switches ficam reduzidos ao que fazem melhor: aplicar regras a pacotes.
+}
+
+\pagina{slides/slide-08.png}{
+O diagrama coloca lado a lado os dois modelos. À esquerda, a decisão está distribuída: cada equipamento tem a sua inteligência e constrói a sua própria visão da rede através de protocolos de troca de informação. À direita, a decisão está concentrada no controller, que tem uma visão global e se limita a instruir os switches.
+
+A consequência prática é a forma de mudar o comportamento da rede. No modelo tradicional, alterar uma política significa reconfigurar vários equipamentos. No modelo SDN, altera-se a política no controller e este atualiza as regras onde for necessário. A rede passa a ser programável, tal como um servidor.
+}
+
+\pagina{slides/slide-09.png}{
+A arquitetura SDN organiza-se em três níveis. A camada de infraestrutura é formada pelos switches, físicos ou virtuais, que apenas têm plano de dados. O controller, no nível intermédio, é o plano de controlo: conhece a rede inteira e decide as regras. A camada de aplicações contém o software que exprime políticas, como o routing, a firewall ou o balanceamento de carga, e que as entrega ao controller.
+
+Duas interfaces ligam os níveis. A interface \emph{southbound} liga o controller aos switches, e o OpenFlow é o exemplo mais conhecido. A interface \emph{northbound} liga as aplicações ao controller e, em geral, é uma API REST. Os nomes decorrem da forma habitual de desenhar o diagrama, com as aplicações em cima e a infraestrutura em baixo.
+}
+
+\pagina{slides/slide-10.png}{
+O diagrama reproduz as três camadas. A seta superior, a API \emph{northbound}, é o canal pelo qual uma aplicação pede ao controller um comportamento, por exemplo que determinado tráfego seja bloqueado. As setas inferiores, a interface \emph{southbound}, são o canal pelo qual o controller instala as regras correspondentes nos switches.
+
+Convém reparar que a aplicação não fala com os switches. Desconhece o fabricante, o modelo e o protocolo de cada um. É o controller que traduz a intenção em regras concretas, e por isso a mesma aplicação funciona sobre equipamento diferente.
+}
+
+\pagina{slides/slide-11.png}{
+O OpenFlow é o protocolo \emph{southbound} mais difundido. Define as mensagens que o controller e o switch trocam e o modelo de dados que o switch expõe: uma ou mais tabelas de fluxos. Cada tabela contém entradas do tipo \emph{match} e ação.
+
+O \emph{match} descreve os pacotes a que a entrada se aplica, através de campos do cabeçalho: porta de entrada, endereços MAC, endereços IP, protocolo, portas de transporte. A \emph{action} diz o que fazer com o pacote: encaminhá-lo por uma porta, descartá-lo, enviá-lo ao controller ou modificar um cabeçalho.
+
+Quando nenhuma entrada corresponde ao pacote, o comportamento depende da configuração. É habitual instalar uma entrada de prioridade mínima que envia o pacote ao controller, e é este mecanismo que sustenta o modelo reativo, adiante.
+}
+
+\pagina{slides/slide-12.png}{
+Para além do \emph{match} e das ações, cada entrada de fluxo tem três elementos que a tornam gerível. A prioridade resolve o caso em que vários \emph{matches} correspondem ao mesmo pacote: aplica-se a entrada de maior prioridade. É assim que uma regra específica, como o bloqueio de um par de hosts, se sobrepõe a uma regra genérica de encaminhamento.
+
+Os contadores registam quantos pacotes e quantos bytes corresponderam à entrada. Constituem a base da monitorização, porque permitem saber quanto tráfego cada fluxo gera sem instalar nenhuma sonda adicional.
+
+Os \emph{timeouts} controlam o tempo de vida. O \emph{idle timeout} remove a entrada quando deixa de haver tráfego durante um período, e o \emph{hard timeout} remove-a ao fim de um tempo fixo, independentemente do uso. Como a memória das tabelas é limitada, estes mecanismos evitam que ela se encha de fluxos que já não existem.
+}
+
+\pagina{slides/slide-13.png}{
+A tabela mostra quatro entradas de um switch, ordenadas por prioridade. A primeira, de prioridade 100, descarta o tráfego IP entre dois endereços e tem um \emph{hard timeout} de 60 segundos. As duas seguintes, de prioridades 10 e 1, encaminham tramas para a porta de um determinado destino, e vão expirar ao fim de 30 segundos sem uso. A última, de prioridade 0, corresponde a qualquer pacote e envia-o ao controller.
+
+Dois pontos de leitura. Primeiro, a ordem de avaliação é dada pela prioridade e não pela posição na tabela. Segundo, a entrada de prioridade 0 funciona como rede de segurança: só é usada quando nenhuma outra corresponde, e o seu contador, que aqui indica sete pacotes, mede quantas vezes o controller foi consultado.
+}
+
+\pagina{slides/slide-14.png}{
+No modelo reativo, o switch arranca com uma tabela quase vazia. Quando chega o primeiro pacote de um fluxo desconhecido, é enviado ao controller numa mensagem \emph{packet-in}. O controller decide, instala a regra e devolve o pacote. Os pacotes seguintes do mesmo fluxo já encontram a regra e não voltam a incomodar o controller.
+
+A vantagem é que as tabelas só contêm fluxos ativos. O custo é que o primeiro pacote de cada fluxo sofre um atraso adicional e que o controller pode tornar-se um estrangulamento quando surgem muitos fluxos novos em simultâneo.
+
+No modelo proativo, as regras são instaladas antes de haver tráfego. Nenhum pacote espera pelo controller, mas é preciso conhecer os fluxos previamente, e a tabela pode ficar ocupada com regras que nunca serão usadas. As implementações reais combinam as duas abordagens: instalam proativamente o essencial e deixam o resto para o modo reativo.
+}
+
+\pagina{slides/slide-15.png}{
+A figura coloca os dois modelos em paralelo. À esquerda, a sequência reativa tem quatro passos, e é o terceiro, a instalação da regra, que acontece depois da chegada do pacote. À direita, a sequência proativa começa pela instalação, e o primeiro pacote é encaminhado de imediato.
+
+As caixas inferiores resumem o compromisso. O reativo poupa espaço nas tabelas e obriga o primeiro pacote a esperar. O proativo elimina a espera e exige que se saiba de antemão que fluxos vão existir. A escolha depende do tipo de rede: uma rede com padrões estáveis favorece o proativo, e uma rede muito dinâmica favorece o reativo.
+}
+
+\pagina{slides/slide-16.png}{
+O diagrama segue um pacote de h1 para h2 num switch que ainda não tem regra para ele. No passo 1, o pacote chega ao switch. No passo 2, nenhuma entrada corresponde, e o switch envia o pacote ao controller numa mensagem \emph{packet-in}. No passo 3, o controller decide a porta de saída e responde com duas mensagens: uma \emph{flow-mod}, que instala a regra, e uma \emph{packet-out}, que manda o pacote em espera para a porta escolhida. No passo 4, os pacotes seguintes seguem a regra sem passar pelo controller.
+
+Este percurso explica uma observação que se fará no laboratório. Sem controller, o switch não tem a quem perguntar e o tráfego fica retido. Com controller, o primeiro \texttt{ping} demora mais do que os seguintes, porque inclui a ida ao controller.
+}
+
+\pagina{slides/slide-17.png}{
+Há vários controllers à escolha, com públicos diferentes. O Ryu, escrito em Python, é simples e legível, e por isso foi o escolhido para o laboratório: o código de um \emph{learning switch} cabe numa página. O OpenDaylight e o ONOS são plataformas de grande dimensão, em Java, desenhadas para operadores de telecomunicações e redes extensas, com funcionalidades de alta disponibilidade. O Faucet é um controller leve, com configuração declarativa, orientado a ambientes de produção mais pequenos.
+
+A API \emph{northbound}, tipicamente REST, permite que sistemas externos definam políticas sem falar OpenFlow. Na prática, é por aqui que uma plataforma de orquestração pede à rede que acompanhe a criação de uma máquina virtual.
+}
+
+\pagina{slides/slide-18.png}{
+O Open vSwitch, abreviadamente OVS, é um switch virtual de código aberto. Corre no anfitrião e liga as interfaces virtuais das máquinas virtuais ou dos containers entre si e à rede física. Pode ser programado via OpenFlow, o que o torna a ponte entre o modelo SDN e a infraestrutura virtualizada.
+
+Em muitos anfitriões substitui a bridge Linux tradicional, porque oferece mais do que a simples comutação de camada 2: túneis, estatísticas por fluxo, QoS e políticas de segurança. É o motor de rede de várias plataformas de virtualização e de nuvem.
+
+A ligação ao que já foi estudado é direta. As redes que ligam Pods entre nós, na Aula 05, assentam em mecanismos desta família, e o mesmo princípio de ligar interfaces virtuais a um switch em software é o que o Mininet reproduz no laboratório.
+}
+
+\pagina{slides/slide-19.png}{
+O OVS tem dois processos principais no espaço do utilizador. O \texttt{ovs-vswitchd} é o daemon que implementa a lógica do switch e comunica com o controller por OpenFlow. O \texttt{ovsdb-server} guarda a configuração, como as bridges e as portas, numa pequena base de dados.
+
+O caminho rápido dos pacotes não passa pelo espaço do utilizador. Fica no núcleo do sistema, no \emph{datapath}, que mantém em cache as decisões já tomadas. Só o primeiro pacote de cada fluxo sobe ao \texttt{ovs-vswitchd}, e os seguintes são tratados no núcleo, à velocidade da linha.
+
+Duas ferramentas de linha de comandos acompanham o sistema. O \texttt{ovs-vsctl} configura bridges e portas, e o \texttt{ovs-ofctl} inspeciona e altera as tabelas de fluxos. São as que se usam no laboratório.
+}
+
+\pagina{slides/slide-20.png}{
+Um datacenter de nuvem serve muitos clientes, cada um com direito a redes isoladas. Fazê-lo com redes físicas separadas é inviável. A alternativa é construir redes virtuais sobre a mesma infraestrutura.
+
+As VLAN tradicionais seguem esse princípio, mas o identificador tem 12 bits, o que dá 4094 redes utilizáveis. À escala de uma nuvem pública, é insuficiente. Além disso, as VLAN exigem configuração nos switches físicos ao longo do caminho.
+
+A VXLAN encapsula tramas de camada 2 em pacotes UDP, que a rede física encaminha como qualquer outro tráfego IP. Cria assim redes lógicas independentes da topologia física, em número muito superior, e permite mover máquinas virtuais entre servidores sem reconfigurar a rede subjacente.
+}
+
+\pagina{slides/slide-21.png}{
+A VXLAN identifica cada rede lógica por um VNI, um identificador de 24 bits, o que permite cerca de 16 milhões de segmentos. O ponto em que a trama é encapsulada e desencapsulada chama-se VTEP, \emph{VXLAN Tunnel Endpoint}. Pode ser um switch virtual no anfitrião ou um equipamento físico.
+
+Existem alternativas. O GRE é um encapsulamento mais simples e antigo. O Geneve foi desenhado para ser extensível, com campos opcionais de comprimento variável, e é usado por vários sistemas de rede virtual mais recentes.
+
+Todo o encapsulamento tem um custo. Os cabeçalhos adicionais ocupam espaço em cada pacote, pelo que o MTU útil do overlay é inferior ao da rede física, ou então esta tem de aceitar pacotes maiores. Convém ainda fixar a terminologia: a rede física é o \emph{underlay}, e a rede virtual construída sobre ela é o \emph{overlay}.
+}
+
+\pagina{slides/slide-22.png}{
+Na parte superior comparam-se os espaços de endereçamento: 12 bits na VLAN e 24 bits na VXLAN. A diferença de 4094 para cerca de 16 milhões é a razão pela qual a VXLAN domina em ambientes de nuvem.
+
+Na parte inferior mostra-se a estrutura de um pacote VXLAN. A trama original da máquina virtual, com os seus cabeçalhos Ethernet e IP e os dados, viaja intacta. À volta dela são acrescentados quatro cabeçalhos: um Ethernet e um IP externos, que dizem como chegar ao VTEP de destino, um UDP, normalmente com o porto 4789, e o cabeçalho VXLAN, que transporta o VNI. Somados, ocupam 50 bytes. Por isso, numa rede física com MTU de 1500, o overlay anuncia habitualmente 1450.
+}
+
+\pagina{slides/slide-23.png}{
+A figura separa dois níveis que convém nunca confundir. Na parte inferior está o \emph{underlay}: as máquinas com os seus endereços reais, ligadas pela rede física. Na parte superior está o \emph{overlay}: a rede virtual dos Pods, com endereços próprios, que não existe fisicamente.
+
+O percurso lê-se de cima para baixo no lado esquerdo e de baixo para cima no lado direito. O Pod de origem entrega o pacote ao VTEP local, que o encapsula em UDP. O pacote encapsulado atravessa a rede física como tráfego comum entre as duas máquinas. No destino, o VTEP desencapsula-o e entrega a trama original ao Pod. Do ponto de vista dos Pods, é como se estivessem na mesma rede local.
+}
+
+\pagina{slides/slide-24.png}{
+A virtualização de funções de rede, ou NFV, é complementar da SDN. Em vez de comprar um equipamento dedicado para cada função, executa-se a função como software em servidores genéricos. Firewalls, balanceadores de carga, routers e gateways de VPN são os exemplos habituais.
+
+A distinção entre as duas é útil. A SDN diz respeito a \emph{como} o tráfego é encaminhado, e a NFV diz respeito a \emph{onde} correm as funções que o tratam. Podem usar-se separadamente, mas combinam bem: o controller encaminha o tráfego pelas funções virtuais certas.
+
+Essa sequência chama-se \emph{service chaining}: o tráfego atravessa, por exemplo, uma firewall, depois um balanceador e por fim o servidor. A vantagem principal é a elasticidade, porque instanciar ou remover uma função passa a ser tão simples como lançar qualquer outra carga de trabalho.
+}
+
+\pagina{slides/slide-25.png}{
+À esquerda, três equipamentos físicos em cadeia, cada um com hardware próprio. Acrescentar capacidade a uma função implica comprar, instalar e ligar mais equipamento, e a cadeia é fixada pela cablagem. À direita, as mesmas três funções passam a ser software, as VNF, a correr num servidor genérico, sob um hipervisor ou em containers.
+
+A caixa inferior resume os ganhos. A cadeia de serviço passa a ser definida por configuração e pode ser alterada sem tocar na cablagem. A capacidade acompanha a procura, porque cada função pode ser replicada ou removida em segundos. O preço a pagar é o desempenho: o software em servidores genéricos precisa, em tráfego muito intenso, de técnicas de aceleração para igualar o hardware dedicado.
+}
+
+\pagina{slides/slide-26.png}{
+O modelo clássico de segurança de rede assenta num perímetro. Uma firewall na fronteira separa o exterior, hostil, do interior, considerado de confiança. Dentro do perímetro, as máquinas comunicam livremente.
+
+O problema é o que acontece depois de o perímetro ser ultrapassado. Basta comprometer uma máquina para que o atacante se mova lateralmente, de máquina em máquina, sem encontrar resistência. Num datacenter moderno, onde as cargas de trabalho são muitas e dinâmicas, o interior é grande e a confiança implícita é um risco.
+
+A microssegmentação aplica políticas ao nível de cada carga de trabalho. Cada fluxo é permitido ou negado explicitamente, e o que não estiver previsto é recusado. A programabilidade da SDN torna isto exequível: as políticas definem-se centralmente e são aplicadas em cada switch virtual. No Kubernetes, o recurso NetworkPolicy concretiza a ideia, ao restringir que Pods podem comunicar com quais.
+}
+
+\pagina{slides/slide-27.png}{
+À esquerda, o perímetro. A firewall protege a fronteira, e dentro dela as três camadas, web, aplicação e base de dados, comunicam sem restrição. As setas a vermelho mostram o caminho que um atacante pode seguir depois de entrar pela primeira.
+
+À direita, a microssegmentação. Cada carga de trabalho tem a sua política, e a comunicação entre elas é limitada ao que é necessário. A camada web pode falar com a aplicação, e a aplicação com a base de dados, mas a web não chega à base de dados. Um compromisso da camada web já não dá acesso direto aos dados.
+}
+
+\pagina{slides/slide-28.png}{
+O Proxmox VE liga as máquinas virtuais através de bridges Linux, como a \texttt{vmbr0}, e foi o que se usou nos guiões anteriores. Uma bridge é um switch de camada 2 em software, simples e eficaz, mas sem programabilidade.
+
+O Proxmox dispõe também de um módulo SDN. Permite definir \emph{zonas}, entre as quais a VXLAN, e \emph{VNets} sobre a infraestrutura física, de modo que várias máquinas em servidores diferentes partilhem a mesma rede lógica. É a aplicação direta do conceito de overlay a um ambiente de virtualização.
+
+No Kubernetes, o plugin CNI desempenha o papel da camada de rede programável. O Flannel, por omissão, cria um overlay entre os nós com encapsulamento VXLAN. Ou seja, um cluster como o da Aula 05 já usa os conceitos desta aula, ainda que não se tenha falado deles.
+}
+
+\pagina{slides/slide-29.png}{
+O Kubernetes exige que cada Pod tenha o seu endereço IP e que qualquer Pod possa comunicar com qualquer outro, mesmo noutro nó. Não diz como. Quem o resolve é o plugin CNI.
+
+A figura mostra o caso do Flannel com VXLAN. Em cada nó, os Pods ligam-se a uma bridge local, a \texttt{cni0}, e a interface \texttt{flannel.1} faz de VTEP. Quando o Pod A do nó 1 envia um pacote ao Pod do nó 2, o VTEP do nó 1 encapsula-o em UDP e envia-o pela rede física para o nó 2, onde o outro VTEP o desencapsula. Cada nó recebe uma sub-rede própria da rede dos Pods, o que permite saber para que nó encaminhar cada destino.
+
+Para o Pod, nada disto é visível. Comunica com o endereço do outro Pod como se estivesse na mesma rede local.
+}
+
+\pagina{slides/slide-30.png}{
+Por omissão, o Kubernetes permite que qualquer Pod comunique com qualquer outro. A NetworkPolicy altera isso. Quando uma política seleciona um Pod, apenas é permitido o tráfego que a política enumera, e o restante é recusado.
+
+No exemplo, o frontend pode contactar o backend no porto TCP 8080, e o backend pode contactar a base de dados no porto 5432. Não existe nenhuma regra que permita ao frontend chegar à base de dados, pelo que essa ligação é negada. Cada política seleciona os Pods por etiquetas, tal como o Service da Aula 05.
+
+Há uma condição que convém conhecer. A NetworkPolicy é apenas uma declaração: quem a aplica é o plugin CNI. Plugins como o Calico ou o Cilium aplicam-na. O Flannel, sozinho, não a aplica, e as políticas criadas num cluster assim não têm efeito.
+}
+
+\pagina{slides/slide-31.png}{
+A centralização traz vantagens claras. Há uma visão global da rede, as políticas são consistentes porque são definidas num só lugar, a automação torna-se natural, e a rede passa a ser tratada como software, com tudo o que isso permite: versões, revisão, testes.
+
+O reverso é o controller ser um ponto crítico. Se falhar, a rede pode ficar sem capacidade de decidir, e se for comprometido, o atacante controla o encaminhamento de toda a rede. A mitigação da disponibilidade é replicar o controller em cluster, o mesmo padrão que será estudado nas Aulas 08 e 09 para outros serviços.
+
+A segurança do canal entre controller e switches merece atenção especial, porque concentra o poder de decisão. Deve ser autenticado e cifrado, e o acesso ao controller deve ser tão restrito como o acesso ao próprio datacenter.
+}
+
+\pagina{slides/slide-32.png}{
+A figura mostra um cluster de três controllers, com o estado replicado entre si, ligados ao mesmo switch. Se um falhar, os outros continuam a responder, e o switch mantém sempre um controller com quem falar.
+
+As caixas inferiores tratam o caso extremo, em que o switch perde todos os controllers. No Open vSwitch isto define-se pelo \emph{fail-mode}. No modo \emph{standalone}, o switch passa a comportar-se como um switch tradicional e mantém o tráfego a fluir, com a perda da programabilidade. No modo \emph{secure}, não aceita novos fluxos, e apenas as regras já instaladas continuam a ser aplicadas. A escolha é um compromisso entre disponibilidade e controlo.
+}
+
+\pagina{slides/slide-33.png}{
+O mapa reúne os conceitos da aula em três ideias. A primeira é separar a decisão: o plano de controlo centralizado e o OpenFlow, com o seu modelo de \emph{match} e ação. A segunda é isolar redes: a rede física como \emph{underlay} e as redes lógicas como \emph{overlay}, identificadas por um VNI. A terceira é virtualizar e proteger: funções de rede em software e políticas por carga de trabalho.
+
+A linha inferior lista as concretizações encontradas: o Open vSwitch, o Ryu, o Flannel, o módulo SDN do Proxmox e a NetworkPolicy. Cada uma é uma instância de uma das três ideias, e saber a que ideia pertence ajuda a perceber o que faz.
+}
+
+\pagina{slides/slide-34.png}{
+A síntese resume a primeira metade da matéria. A SDN separa o plano de controlo, centralizado no controller, do plano de dados, distribuído pelos switches. O OpenFlow é o protocolo \emph{southbound} típico e assenta em tabelas de fluxos com entradas \emph{match} e ação, com prioridade, contadores e \emph{timeouts}.
+
+O Open vSwitch concretiza este modelo em hipervisores e em hosts de containers. O controller pode instalar as regras de forma reativa, quando surge o primeiro pacote, ou de forma proativa, antes de haver tráfego, e as implementações reais misturam as duas.
+}
+
+\pagina{slides/slide-35.png}{
+A segunda parte da síntese recolhe o resto. A VXLAN e os restantes encapsulamentos criam redes overlay escaláveis sobre um underlay físico, o que é essencial em datacenters partilhados por muitos clientes. A NFV virtualiza as próprias funções de rede, e a microssegmentação aplica políticas a cada carga de trabalho, e não apenas no perímetro.
+
+O cluster da Aula 05 e as bridges e o módulo SDN do Proxmox são instâncias concretas destes conceitos. A centralização oferece consistência e automação, mas exige que se cuide da disponibilidade e da segurança do controller. A Aula 07 prolonga esta lógica: a configuração, que aqui se centralizou para a rede, passa a ser descrita como código para toda a infraestrutura.
+}
+
+\pagina{slides/slide-36.png}{
+Este é o espaço para questões e comentários. Sugere-se que o estudante, antes do laboratório, consiga explicar com palavras suas três coisas: porque é que um switch sem controller não encaminha tráfego, o que acontece, passo a passo, ao primeiro pacote de um fluxo no modelo reativo, e qual a diferença entre o underlay e o overlay.
+
+O laboratório da Aula 06 torna observáveis as duas primeiras, com o Mininet, o Open vSwitch e o Ryu, e a terceira, com um túnel VXLAN criado entre dois namespaces de rede.
+}
+
+\end{document}

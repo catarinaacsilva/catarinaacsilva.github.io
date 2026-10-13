@@ -94,6 +94,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Percurso da Aula}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-roteiro.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Gestão de Rede Tradicional}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -102,6 +111,15 @@
     \item Em datacenters com centenas ou milhares de switches, este modelo não escala: lento, sujeito a erro humano e difícil de auditar.
     \item Motivação central da SDN: mover a inteligência de decisão para fora dos equipamentos individuais.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Os Limites do Modelo Tradicional}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-limites.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -138,6 +156,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{As Camadas da Arquitetura SDN}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-arquitetura.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{OpenFlow e Tabelas de Fluxos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -162,6 +189,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Uma Tabela de Fluxos Concreta}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-tabela-fluxos.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Modelo Reativo vs Proativo}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -171,6 +207,15 @@
     \item Vantagem: nenhum pacote espera pelo controller. Desvantagem: exige conhecer previamente os fluxos e ocupa espaço nas tabelas.
     \item Implementações reais combinam frequentemente as duas abordagens.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Reativo e Proativo em Comparação}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-reativo-proativo.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -206,6 +251,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Open vSwitch por Dentro}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-ovs.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Redes Overlay: VXLAN}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -226,6 +280,15 @@
     \item Custo: o cabeçalho adicional reduz o espaço útil de cada pacote, obrigando a ajustar o MTU da rede subjacente.
     \item Distinção útil: a rede física subjacente designa-se \textbf{underlay}; a rede virtual construída sobre ela, \textbf{overlay}.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{VLAN, VXLAN e o Quadro Encapsulado}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-vxlan-quadro.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -251,6 +314,15 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Do Equipamento Dedicado à Função Virtual}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-nfv.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Microssegmentação e Políticas de Rede}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -260,6 +332,15 @@
     \item A programabilidade da SDN torna isto viável em escala: as políticas são definidas centralmente e aplicadas em cada switch virtual.
     \item No Kubernetes, o recurso \textbf{NetworkPolicy} concretiza esta ideia, restringindo que Pods podem comunicar entre si.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Perímetro e Microssegmentação}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-microssegmentacao.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
@@ -275,6 +356,24 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{A Rede de Pods do Kubernetes}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-k8s-cni.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
+\frametitle{NetworkPolicy em Ação}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-networkpolicy.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
 \frametitle{Vantagens e Desafios da Centralização}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
@@ -283,6 +382,24 @@
     \item Mitigação: controllers em cluster (alta disponibilidade), replicando o padrão já visto para outros serviços na Aula 08/09.
     \item \textbf{Segurança}: o canal controller-switch tem de ser protegido, pois concentra o poder de decisão de toda a rede.
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{O Controller como Ponto Crítico}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-controller-ha.png}
+\end{center}
+\vfill
+\end{frame}
+
+\begin{frame}
+\frametitle{Mapa da Aula}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a06-mapa.png}
+\end{center}
+\vfill
 \end{frame}
 
 \begin{frame}
