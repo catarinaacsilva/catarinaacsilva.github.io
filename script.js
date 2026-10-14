@@ -120,9 +120,9 @@ const COURSES = [
         'Protocolos da Camada de Sessão: HTTP, CoAP e XMPP', 'Middleware Orientado a Mensagens: MQTT e AMQP',
         'Integração Prática: Zigbee2MQTT', 'Revisão e Entrega do Mini-Projeto'],
       slides: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], lab: [2, 3, 4, 5, 6, 7, 12, 13],
-      code: { 2: '../materiais/UC-TCIOT/Aula02/codigo.zip', 4: '../materiais/UC-TCIOT/Aula04/codigo.zip',
-              5: '../materiais/UC-TCIOT/Aula05/codigo.zip', 6: '../materiais/UC-TCIOT/Aula06/codigo.zip',
-              13: '../materiais/UC-TCIOT/Aula13/firmware.zip' } },
+      code: { 2: '../materiais/UC-TCIOT/Aula02/PT/codigo.zip', 4: '../materiais/UC-TCIOT/Aula04/PT/codigo.zip',
+              5: '../materiais/UC-TCIOT/Aula05/PT/codigo.zip', 6: '../materiais/UC-TCIOT/Aula06/PT/codigo.zip',
+              13: '../materiais/UC-TCIOT/Aula13/PT/firmware.zip' } },
     { file: 'uc-icn.html', name: 'Infraestruturas de Computação na Nuvem', lectures: [
         'Introdução e Contexto de Datacenters', 'Arquitetura de Datacenters e Modelos de Operação',
         'Virtualização de Sistemas', 'Contentores e Isolamento de Processos',
