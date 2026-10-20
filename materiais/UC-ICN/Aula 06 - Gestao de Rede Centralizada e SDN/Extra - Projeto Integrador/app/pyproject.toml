@@ -1,0 +1,13 @@
+[project]
+name = "ticketrush"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "flask==3.1.3",
+    "gunicorn==26.2.0",
+    "redis==8.1.0",
+    "psycopg[binary]==3.3.6",
+]
+
+[tool.setuptools]
+packages = ["ticketrush"]

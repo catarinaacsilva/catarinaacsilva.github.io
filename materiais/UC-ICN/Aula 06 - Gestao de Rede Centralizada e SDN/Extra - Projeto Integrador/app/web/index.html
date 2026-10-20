@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt"><head><meta charset="utf-8"><title>TicketRush</title>
+<style>body{font-family:sans-serif;max-width:640px;margin:2em auto}
+li{margin:.6em 0}button{margin-left:1em}small{color:#666}</style></head>
+<body><h1>TicketRush</h1><ul id="list"></ul><p id="msg"></p>
+<small id="inst"></small>
+<script>
+async function load(){
+  const r = await (await fetch('/api/events')).json();
+  document.getElementById('inst').textContent = 'servido por: ' + r.instance;
+  document.getElementById('list').innerHTML = r.events.map(e =>
+    `<li>${e.name} - <b>${e.left}</b> bilhetes
+     <button onclick="buy(${e.id})">Reservar</button></li>`).join('');
+}
+async function buy(id){
+  const r = await fetch(`/api/events/${id}/reserve`, {method:'POST'});
+  const j = await r.json();
+  document.getElementById('msg').textContent = r.ok ? `Pedido ${j.order} em fila (${j.instance})` : j.error;
+  load();
+}
+load();
+</script></body></html>
