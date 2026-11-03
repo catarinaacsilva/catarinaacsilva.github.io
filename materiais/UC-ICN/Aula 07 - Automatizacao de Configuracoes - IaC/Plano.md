@@ -7,6 +7,9 @@
 ## Teoria
 - Aula 07 - Automatizacao de Configuracoes - IaC.tex
 
+## Laboratório
+- Laboratorio 07 - Primeiro Contacto com Infrastructure as Code.tex (7 passos: imperativo vs declarativo, playbook Ansible, Terraform com provider Docker, inventory gerado pelo Terraform, Ansible Vault; máquina virtual Ubuntu 22.04 com Multipass; não é para entregar; comandos não testados numa máquina real)
+
 ## Sebenta
 - Sebenta 07 - Automatizacao de Configuracoes - IaC.tex (uma página por slide, 33 slides; imagens em Sebenta/slides)
 
@@ -24,6 +27,7 @@ Fonte editável (`.drawio`) e PNG em `Diagramas/`:
 - a07-gitops
 - a07-devops-infinito
 - a07-integracao-stack (Git/Terraform/Ansible/Docker/Kubernetes)
+- Laboratório (g07-*): percurso, ferramentas, topologia
 - a07-resumo-aula (graphical abstract, logos GitHub/Terraform/Ansible via simple-icons)
 
 ## Notas para o docente
