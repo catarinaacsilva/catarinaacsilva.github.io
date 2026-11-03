@@ -62,6 +62,20 @@
 \institute{ESTGA, Universidade de Aveiro}
 \date{2026}
 
+
+\usepackage{fancyvrb}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\figframe}[2]{%
+\begin{frame}
+\frametitle{#1}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/#2.png}
+\end{center}
+\vfill
+\end{frame}}
+
 \begin{document}
 
 \begin{frame}[plain]
@@ -69,15 +83,27 @@
 \end{frame}
 
 \begin{frame}
+\frametitle{Objetivos de Aprendizagem}
+\begin{itemize}
+    \setlength\itemsep{0.25cm}
+    \item Justificar a automatização da configuração e do provisionamento face à gestão manual de infraestrutura.
+    \item Distinguir abordagens declarativas e imperativas e explicar o conceito de idempotência.
+    \item Descrever a arquitetura e os componentes do Ansible.
+    \item Explicar o funcionamento do Terraform, em particular o state file e o ciclo plan/apply.
+    \item Diferenciar provisionamento de gestão de configuração.
+    \item Aplicar boas práticas de gestão de segredos e CI/CD a infraestrutura.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item DevOps: a tensão entre desenvolvimento e operações.
-    \item Motivação: dos scripts manuais à automatização.
+    \item DevOps e a tensão entre desenvolvimento e operações.
+    \item Limitações da configuração manual.
     \item Infrastructure as Code (IaC).
-    \item Declarativo vs imperativo; idempotência.
-    \item Gestão de configuração: Ansible vs Puppet/Chef.
-    \item Estrutura de um projeto Ansible.
+    \item Abordagens declarativa e imperativa; idempotência.
+    \item Gestão de configuração com Ansible.
 \end{itemize}
 \end{frame}
 
@@ -85,102 +111,104 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Provisionamento declarativo com Terraform.
-    \item Gestão do ficheiro de estado.
-    \item Configuração vs provisionamento.
-    \item Infraestrutura mutável vs imutável.
+    \item Provisionamento declarativo com Terraform e gestão do state file.
+    \item Provisionamento versus gestão de configuração.
     \item Gestão de segredos.
-    \item CI/CD e GitOps aplicados a infraestrutura.
+    \item CI/CD aplicado a infraestrutura.
+\end{itemize}
+\end{frame}
+
+\figframe{Visão Geral da Aula}{a07-resumo-aula}
+
+\begin{frame}
+\frametitle{DevOps e a Tensão Entre Desenvolvimento e Operações}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item As equipas de \textbf{Dev} (evolução do software) e de \textbf{Ops} (estabilidade da infraestrutura) têm incentivos historicamente opostos: maximizar a frequência de alterações versus minimizar o risco de falha.
+    \item A separação organizacional gera handoffs manuais, ambientes inconsistentes e lead times elevados entre commit e produção.
+    \item A resposta burocrática (aprovações manuais, janelas de alteração rígidas) aumenta o lead time sem melhorar a qualidade.
+    \item \textbf{DevOps} designa a cultura e o conjunto de práticas que integram as duas funções num único ciclo, assente em versionamento, integração e entrega contínuas, e automatização.
+\end{itemize}
+\end{frame}
+
+\figframe{O Ciclo DevOps}{a07-devops-infinito}
+
+\begin{frame}
+\frametitle{Cenários de Aplicação do DevOps}
+\begin{itemize}
+    \setlength\itemsep{0.15cm}
+    \item Na integração contínua, cada commit desencadeia a compilação e a execução automática de testes.
+    \item Na entrega e implantação contínuas, as versões seguem para produção de forma frequente e reversível.
+    \item As implantações progressivas (canary, blue-green) e as feature flags limitam o impacto de cada alteração.
+    \item A criação de ambientes efémeros de teste por pull request exige infraestrutura provisionada a pedido.
+    \item A observabilidade (métricas, logs, alertas) alimenta o planeamento do ciclo seguinte.
+    \item O DevSecOps integra no pipeline a análise de dependências e a deteção de segredos expostos.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{DevOps: a Tensão Entre Desenvolvimento e Operações}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Historicamente, as equipas de \textbf{Dev} (criar e evoluir software) e \textbf{Ops} (manter a infraestrutura estável) têm objetivos em tensão: uma quer mudar depressa, a outra quer que nada quebre.
-    \item Sintoma clássico: ``funciona na minha máquina'' (Dev) contra ``não é o servidor, é o teu código'' (Ops) -- cada equipa desconfia da outra.
-    \item Resposta tradicional (burocracia, processos rígidos, aprovações manuais) tende a piorar o problema: mais lentidão, sem mais qualidade.
-    \item \textbf{DevOps}: cultura e conjunto de práticas que aproxima as duas equipas, apoiada em infraestrutura flexível, versionamento, integração contínua e automatização -- o tema desta aula.
-\end{itemize}
+\frametitle{Relevância para a Unidade Curricular}
+\vspace{1cm}
+\begin{ideiachave}
+O DevOps surge nesta unidade curricular porque a automatização da infraestrutura é a condição técnica que permite aos cenários anteriores serem executados de forma contínua, repetível e auditável.
+\end{ideiachave}
 \end{frame}
 
 \begin{frame}
-\frametitle{O Problema da Configuração Manual}
+\frametitle{Limitações da Configuração Manual}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Configurar servidores à mão não escala além de algumas máquinas.
-    \item \textbf{Configuration drift}: cada servidor evolui de forma diferente ao longo do tempo.
-    \item Erro humano: passos esquecidos, comandos mal aplicados, falta de consistência.
-    \item Falta de reprodutibilidade: difícil recriar um ambiente igual a outro.
+    \setlength\itemsep{0.3cm}
+    \item Não escala: o esforço cresce linearmente com o número de servidores.
+    \item O \textbf{configuration drift} resulta da evolução independente de cada servidor e é difícil de detetar sem inventário do estado real.
+    \item O erro humano (passos omitidos, comandos mal aplicados) gera inconsistências difíceis de diagnosticar.
+    \item Os ambientes de desenvolvimento, teste e produção divergem, pelo que os testes deixam de ser representativos.
+    \item A recuperação de desastres é lenta, pois recriar a infraestrutura manualmente demora horas ou dias (RTO elevado).
+    \item A auditoria e a conformidade exigem registo de quem alterou o quê e quando.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Consequências da Falta de Automatização}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item ``Funciona na minha máquina'': ambientes de desenvolvimento, teste e produção divergem.
-    \item Recuperação de desastre lenta: recriar infraestrutura manualmente demora horas ou dias.
-    \item Auditoria e conformidade difíceis sem registo do que foi alterado e quando.
-    \item Escalar equipas e sistemas exige processos repetíveis.
-\end{itemize}
-\end{frame}
+\figframe{Configuração Manual e Infrastructure as Code}{a07-manual-vs-iac}
 
 \begin{frame}
 \frametitle{Infrastructure as Code (IaC)}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Infraestrutura descrita em ficheiros de texto (código), não em passos manuais.
-    \item Código versionado em Git: histórico, revisão por pares, rollback.
-    \item \textbf{Idempotência}: aplicar a mesma definição várias vezes produz sempre o mesmo resultado.
-    \item \textbf{Repetibilidade}: o mesmo código gera ambientes idênticos, em qualquer altura.
+    \setlength\itemsep{0.3cm}
+    \item A infraestrutura (servidores, redes, serviços) é descrita em ficheiros de texto (YAML, HCL) e não através de passos manuais.
+    \item O código é versionado em Git, o que permite histórico, revisão por pares (code review) e rollback para qualquer versão.
+    \item A \textbf{idempotência} garante que aplicar a mesma definição várias vezes converge sempre para o mesmo estado.
+    \item A \textbf{repetibilidade} permite gerar ambientes idênticos em qualquer momento e testar alterações antes de produção (lint, dry-run).
+    \item O código constitui documentação atualizada e reduz o tempo de provisionamento de dias para minutos.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Vantagens do IaC}
+\frametitle{Do Princípio às Ferramentas}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Documentação viva: o código \emph{é} a documentação da infraestrutura.
-    \item Testabilidade: as mudanças podem ser validadas antes de chegar a produção.
-    \item Redução do tempo de provisionamento de dias para minutos.
-    \item Base para práticas de DevOps e para escalar operações.
+    \item O IaC é um princípio e não uma ferramenta: define que a infraestrutura deve ser descrita, versionada e aplicada como código.
+    \item A sua concretização envolve dois problemas distintos.
+    \item O primeiro consiste em garantir que os recursos existem (VMs, redes, storage), o que corresponde ao \textbf{provisionamento}, abordado pelo \textbf{Terraform}.
+    \item O segundo consiste em definir o que corre dentro de cada recurso (pacotes, ficheiros, serviços), o que corresponde à \textbf{gestão de configuração}, abordada pelo \textbf{Ansible}.
+    \item Em ambos os casos aplicam-se os mesmos fundamentos, a descrição declarativa do estado e a idempotência.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Declarativo vs Imperativo}
+\frametitle{Ansible e Terraform}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Imperativo}: descreve-se a \emph{sequência de passos} a executar (ex.\ um script shell: instalar, copiar, reiniciar).
-    \item Problema: o resultado depende do estado inicial da máquina, e repetir o script pode causar efeitos indesejados.
-    \item \textbf{Declarativo}: descreve-se o \emph{estado final pretendido}; a ferramenta determina que ações são necessárias para lá chegar.
-    \item É o mesmo princípio já visto no Kubernetes (Aula 05): declarar o estado desejado e deixar o sistema reconciliar.
-    \item A abordagem declarativa é o que torna a idempotência possível.
+    \setlength\itemsep{0.6cm}
+    \item O \textbf{Ansible} é uma ferramenta open source de gestão de configuração e automatização, que aplica por SSH, sem agente, o estado descrito em playbooks YAML a máquinas já existentes.
+    \item O \textbf{Terraform} é uma ferramenta open source de provisionamento declarativo, que cria, altera e destrói recursos de infraestrutura (VMs, redes, storage) através das APIs dos providers, a partir de código HCL.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Idempotência na Prática}
+\frametitle{Abordagens Imperativa e Declarativa}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Uma operação é \textbf{idempotente} se aplicá-la várias vezes produz o mesmo resultado que aplicá-la uma só vez.
-    \item Exemplo não idempotente: \texttt{echo "linha" >> ficheiro.conf} -- cada execução acrescenta uma nova linha.
-    \item Exemplo idempotente: "garantir que o ficheiro contém esta linha" -- se já lá estiver, nada acontece.
-    \item Consequência operacional: pode-se aplicar o mesmo código repetidamente, com segurança, para corrigir \emph{drift}.
-    \item As ferramentas reportam o que mudou (\textit{changed}) e o que já estava conforme (\textit{ok}), tornando as execuções auditáveis.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Gestão de Configuração: Agentless vs Agent-Based}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Ferramentas de gestão de configuração definem o estado desejado \emph{dentro} de uma máquina já existente.
-    \item \textbf{Agentless} (ex.\ Ansible): liga-se via SSH, sem necessidade de instalar software no host gerido.
-    \item \textbf{Agent-based} (ex.\ Puppet, Chef): requer um agente instalado e em execução em cada host gerido.
-    \item Trade-off: simplicidade e menor overhead vs maior escalabilidade em ambientes muito grandes.
+    \item Na abordagem \textbf{imperativa} descreve-se a sequência de passos (por exemplo, um script shell), pelo que o resultado depende do estado inicial.
+    \item Na abordagem \textbf{declarativa} descreve-se o estado final e a ferramenta calcula as ações necessárias, tal como no Kubernetes (Aula 05).
+    \item Esta abordagem torna possível a \textbf{idempotência}: reaplicar a definição converge para o mesmo estado, e as ferramentas reportam o que mudou (\textit{changed}) e o que já estava conforme (\textit{ok}).
 \end{itemize}
 \end{frame}
 
@@ -188,157 +216,188 @@
 \frametitle{Ansible}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Comunica por SSH; não exige agente no host gerido.
-    \item Playbooks escritos em \textbf{YAML}, legíveis e declarativos.
-    \item \textbf{Inventory}: ficheiro que lista os hosts geridos, agrupados por função.
-    \item Módulos idempotentes: instalar pacotes, copiar ficheiros, gerir serviços.
+    \item Comunica por SSH (porta 22) e não exige agente: cada módulo é transferido para o host, executado com Python e removido.
+    \item Os playbooks são escritos em \textbf{YAML} e descrevem o estado desejado de forma declarativa.
+    \item O \textbf{inventory} lista os hosts geridos, agrupados por função.
+    \item Os módulos (\texttt{apt}, \texttt{copy}, \texttt{service}) são idempotentes.
+    \item O Ansible é mantido pela Red Hat e distribuído como software open source.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Estrutura de um Projeto Ansible}
+\frametitle{Componentes de um Projeto Ansible}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Playbook}: ficheiro YAML que associa um conjunto de \emph{tasks} a um grupo de hosts.
-    \item \textbf{Task}: uma ação individual, executada por um \textbf{módulo} (ex.\ \texttt{apt}, \texttt{copy}, \texttt{service}).
-    \item \textbf{Handler}: task especial, executada apenas se outra task notificar que algo mudou (ex.\ reiniciar um serviço após alterar a configuração).
-    \item \textbf{Role}: forma de organizar tasks, variáveis, templates e ficheiros numa unidade reutilizável.
-    \item \textbf{Template Jinja2}: ficheiro de configuração com variáveis, preenchido de forma diferente para cada host.
-    \item \textbf{Facts}: informação recolhida automaticamente sobre cada host (SO, memória, IPs), utilizável nas condições e templates.
+    \setlength\itemsep{0.3cm}
+    \item Um \textbf{playbook} é um ficheiro YAML que associa um conjunto de tasks a um grupo de hosts.
+    \item Uma \textbf{task} é uma ação individual, executada por um \textbf{módulo}.
+    \item Um \textbf{handler} é uma task executada apenas quando outra notifica que algo mudou (por exemplo, reiniciar o serviço após alterar a configuração).
+    \item Uma \textbf{role} organiza tasks, variáveis, templates e ficheiros numa unidade reutilizável.
+    \item Um \textbf{template Jinja2} é um ficheiro de configuração parametrizado por variáveis, instanciado para cada host.
+    \item Os \textbf{facts} são informação recolhida automaticamente sobre cada host (sistema operativo, memória, endereços IP).
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Puppet e Chef}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Exigem um \textbf{agente} instalado em cada host, que comunica periodicamente com um servidor central.
-    \item Puppet: linguagem declarativa própria (manifests); modelo cliente-servidor com verificações periódicas.
-    \item Chef: ``recipes'' escritas em Ruby (DSL); também assenta em agentes e um servidor central.
-    \item Adequados a parques muito grandes, com necessidade de garantir conformidade contínua.
-\end{itemize}
-\end{frame}
+\figframe{Estrutura de um Projeto Ansible}{a07-ansible-estrutura}
 
-\begin{frame}
-\frametitle{Ansible vs Puppet vs Chef: Prós e Contras}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Ansible}: curva de aprendizagem suave (YAML, sem DSL própria), sem agentes -- mas menos expressivo que uma linguagem completa e mais lento em parques muito grandes.
-    \item \textbf{Puppet}: comunidade madura, interface web completa, mas a linguagem declarativa própria tem uma curva de aprendizagem mais acentuada e o modelo baseado em dependências pode complicar-se em projetos grandes.
-    \item \textbf{Chef}: máximo controlo e flexibilidade (as ``recipes'' são código Ruby real), mas exige saber Ruby e tende a gerar bases de código mais complexas.
-    \item Não há uma escolha universalmente certa: a decisão pesa simplicidade operacional, dimensão do parque e o perfil técnico da equipa.
-\end{itemize}
+\begin{frame}[fragile]
+\frametitle{Exemplo de Playbook}
+\begin{Verbatim}[fontsize=\scriptsize]
+- hosts: webservers
+  become: true
+  tasks:
+    - name: Instalar o Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+    - name: Copiar a configuração
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify: Reiniciar o Nginx
+  handlers:
+    - name: Reiniciar o Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+\end{Verbatim}
+\small Numa segunda execução sem alterações, todas as tasks reportam \textit{ok} e o handler não é executado.
 \end{frame}
 
 \begin{frame}
 \frametitle{Terraform e Provisionamento Declarativo}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Terraform: ferramenta declarativa para provisionar recursos de infraestrutura (VMs, redes, storage).
-    \item \textbf{Providers}: plugins que traduzem código Terraform em chamadas a APIs de clouds ou serviços específicos.
-    \item \textbf{Ficheiro de estado (state file)}: regista o que foi efetivamente criado, para comparar com o desejado.
-    \item Fluxo \texttt{plan} / \texttt{apply}: primeiro mostra as alterações previstas, só depois as executa.
+    \item O Terraform é uma ferramenta declarativa para provisionar recursos de infraestrutura (VMs, redes, storage).
+    \item Os \textbf{providers} são plugins que traduzem o código em chamadas às APIs de clouds ou plataformas específicas.
+    \item O \textbf{state file} regista o que foi efetivamente criado, para o comparar com o estado desejado.
+    \item O fluxo \texttt{plan} / \texttt{apply} mostra primeiro as alterações previstas e só depois as executa.
+    \item A linguagem usada é a HCL (HashiCorp Configuration Language).
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Exemplo de Configuração Terraform}
+\begin{Verbatim}[fontsize=\scriptsize]
+terraform {
+  required_providers {
+    proxmox = { source = "bpg/proxmox" }
+  }
+}
+
+variable "vm_count" { default = 2 }
+
+resource "proxmox_virtual_environment_vm" "web" {
+  count     = var.vm_count
+  name      = "web-${count.index + 1}"
+  node_name = "pve1"
+  cpu    { cores = 2 }
+  memory { dedicated = 2048 }
+}
+\end{Verbatim}
+\vspace{0.1cm}
+\small Alterar \texttt{vm\_count} para 3 e executar \texttt{terraform plan} indica a criação de uma única VM adicional.
+\end{frame}
+
+\figframe{Terraform, State File e Providers}{a07-terraform-estado}
+
 \begin{frame}
-\frametitle{Gestão de Configuração vs Provisionamento}
+\frametitle{O State File}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Provisionamento}: decide \emph{que} máquinas e recursos existem (ex.\ Terraform).
-    \item \textbf{Gestão de configuração}: decide \emph{o que corre} dentro de cada máquina (ex.\ Ansible, Puppet).
-    \item Fluxo comum: Terraform cria a VM $\rightarrow$ Ansible instala e configura o software.
-    \item As duas camadas são complementares, não concorrentes.
+    \item O \textbf{state file} regista o mapeamento entre os recursos descritos no código e os recursos reais.
+    \item Permite ao Terraform determinar, em cada execução, o que já existe, o que falta criar e o que deve ser destruído.
+    \item Em equipa, o estado deve residir num \textbf{backend remoto} partilhado, com \textbf{locking} para evitar execuções simultâneas.
+    \item O ficheiro pode conter dados sensíveis em texto simples e deve ser tratado como um segredo.
+    \item Alterações manuais fora do Terraform introduzem drift e serão revertidas na aplicação seguinte.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{As Duas Camadas, Lado a Lado}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a07-provisionamento-config.png}
-\end{center}
-\vfill
-\end{frame}
-
+\figframe{O Ciclo Plan / Apply}{a07-plan-apply}
 
 \begin{frame}
-\frametitle{Terraform: o Ficheiro de Estado}
+\frametitle{Provisionamento e Gestão de Configuração}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O \textbf{state file} regista o mapeamento entre os recursos descritos no código e os recursos reais criados.
-    \item É o que permite ao Terraform saber, em cada execução, o que já existe, o que falta criar e o que deve destruir.
-    \item Em equipa, o estado deve ser guardado num \textbf{backend remoto} partilhado (não em ficheiro local), com \textbf{locking} para evitar execuções simultâneas.
-    \item O ficheiro de estado pode conter dados sensíveis em texto simples -- deve ser tratado como um segredo.
-    \item \textbf{Drift}: alterações feitas manualmente fora do Terraform passam a divergir do estado registado, e serão revertidas na aplicação seguinte.
+    \item O \textbf{provisionamento} decide que máquinas e recursos existem (por exemplo, Terraform).
+    \item A \textbf{gestão de configuração} decide o que corre dentro de cada máquina (por exemplo, Ansible, Puppet).
+    \item Fluxo habitual: o Terraform cria a VM e o Ansible instala e configura o software.
+    \item As duas camadas são complementares e não concorrentes.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{O Ciclo Plan / Apply}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a07-plan-apply.png}
-\end{center}
-\vfill
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Infraestrutura Mutável vs Imutável}
+\frametitle{Integração com Docker, Kubernetes, Terraform e Ansible}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\small
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Mutável}: os servidores existentes são atualizados no lugar (\textit{in-place}), acumulando alterações ao longo do tempo.
-    \item Risco: divergência progressiva entre máquinas -- os chamados \emph{snowflake servers}, difíceis de reproduzir.
-    \item \textbf{Imutável}: nunca se altera um servidor em produção; constrói-se uma nova imagem e substitui-se o servidor inteiro.
-    \item Vantagem: cada implantação parte de um estado conhecido e reprodutível; o rollback é trocar de volta para a imagem anterior.
-    \item Os containers (Aula 04) são o exemplo mais puro deste modelo: a imagem é fixa, e atualizar significa substituir.
+    \setlength\itemsep{0.15cm}
+    \item O Terraform provisiona VMs, rede e storage, incluindo os nós do cluster.
+    \item O Ansible configura esses nós e instala o container runtime.
+    \item O Docker empacota a aplicação numa imagem imutável, publicada num registry pelo CI/CD.
+    \item O Kubernetes executa a imagem de forma declarativa, a partir de manifests YAML.
+    \item Tudo é versionado no Git e aplicado pelo mesmo pipeline.
 \end{itemize}
+\end{column}
+\begin{column}{0.46\textwidth}
+\vspace{-0.3cm}
+\includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{../Diagramas/a07-integracao-stack.png}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}
 \frametitle{Gestão de Segredos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Problema central do IaC: o código vai para o Git, mas passwords, chaves e tokens não podem ir com ele.
-    \item \textbf{Ansible Vault}: cifra ficheiros de variáveis, permitindo guardá-los no repositório em segurança.
-    \item \textbf{HashiCorp Vault} e serviços equivalentes: armazenam segredos centralmente, fornecendo-os às ferramentas apenas em tempo de execução.
-    \item Variáveis de ambiente injetadas pelo sistema de CI/CD, nunca escritas no repositório.
-    \item Regra prática: se um segredo alguma vez foi commitado, deve considerar-se comprometido e ser rodado.
+    \item O código de infraestrutura é versionado em Git, mas passwords, chaves e tokens não podem ser guardados no repositório em texto simples.
+    \item O \textbf{Ansible Vault} cifra ficheiros de variáveis, permitindo guardá-los no repositório.
+    \item O \textbf{HashiCorp Vault} e serviços equivalentes armazenam segredos de forma centralizada e fornecem-nos às ferramentas apenas em tempo de execução.
+    \item As variáveis de ambiente podem ser injetadas pelo sistema de CI/CD, sem nunca serem escritas no repositório.
+    \item Um segredo que tenha sido alguma vez submetido (commit) deve ser considerado comprometido e rodado.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{CI/CD para Infraestrutura}
+\small
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Aplicar os mesmos princípios de integração e entrega contínua ao código de infraestrutura.
-    \item Pipeline típico: validar sintaxe $\rightarrow$ \texttt{plan}/dry-run $\rightarrow$ revisão $\rightarrow$ \texttt{apply} automático.
-    \item Testes automatizados de infraestrutura antes de qualquer mudança chegar a produção.
-    \item Reduz o risco de mudanças manuais não controladas (``shadow IT'' de infraestrutura).
+    \setlength\itemsep{0.2cm}
+    \item Aplicam-se ao código de infraestrutura os mesmos princípios de integração e entrega contínuas usados no software.
+    \item O pipeline valida a sintaxe, gera o plano (\texttt{plan} ou dry-run), submete-o a revisão e só então executa o \texttt{apply}.
+    \item Os testes automatizados antecedem qualquer alteração em produção, o que reduz o risco de alterações manuais não controladas.
 \end{itemize}
+\vfill
+\begin{center}
+\includegraphics[width=0.9\textwidth,height=0.32\textheight,keepaspectratio]{../Diagramas/a07-pipeline-iac.png}
+\end{center}
 \end{frame}
 
 \begin{frame}
-\frametitle{GitOps}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Evolução do CI/CD para infraestrutura: o repositório Git passa a ser a \emph{única fonte de verdade} sobre o estado desejado.
-    \item Um agente instalado no ambiente alvo observa o repositório e reconcilia continuamente a realidade com o que lá está declarado.
-    \item Toda a alteração passa por um \emph{commit} e por revisão em \emph{pull request}: fica registada, auditável e reversível.
-    \item Modelo \textbf{pull} em vez de \textbf{push}: o ambiente vai buscar a configuração, em vez de a receber do exterior -- vantajoso em termos de segurança.
-    \item Ferramentas comuns no ecossistema Kubernetes: Argo CD e Flux.
-\end{itemize}
+\frametitle{Síntese de Conceitos de Infraestrutura}
+\scriptsize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{L{2.6cm}L{5.6cm}L{3.6cm}}
+\textbf{Conceito} & \textbf{Definição técnica} & \textbf{Exemplo} \\
+\hline
+Idempotência & f(f(x)) = f(x): reaplicar a definição não altera o estado & \texttt{state: present} \\
+Configuration drift & Divergência entre o estado real e o declarado & Edição manual de \texttt{nginx.conf} \\
+Declarativo & Especifica-se o estado final; o motor calcula o delta & Playbook, ficheiro \texttt{.tf} \\
+State file & Mapeamento entre recursos declarados e reais & \texttt{terraform.tfstate} \\
+Agentless / agent-based & Push por SSH versus pull por agente residente & Ansible; Puppet, Chef \\
+Imutabilidade & Substituição da instância em vez de alteração in-place & Imagem Packer / Docker \\
+Reconciliação & Ciclo contínuo observar, comparar e corrigir & Argo CD, Flux \\
+\end{tabular}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item DevOps nasce da tensão entre Dev (mudar depressa) e Ops (manter estável); automatização é a resposta prática a essa tensão.
-    \item Configuração manual leva a drift, erros e falta de reprodutibilidade.
-    \item IaC trata a infraestrutura como código: versionado, idempotente, repetível.
-    \item Ansible (agentless, SSH, YAML) vs Puppet/Chef (agent-based) -- cada um com o seu compromisso entre simplicidade e controlo.
+    \item O DevOps responde à tensão entre Dev e Ops através de cultura, automatização e versionamento.
+    \item A configuração manual conduz a drift, erros e falta de reprodutibilidade.
+    \item O IaC trata a infraestrutura como código versionado, idempotente e repetível.
+    \item O Ansible (agentless, SSH, YAML) contrasta com Puppet e Chef (agent-based), que mantêm um agente em cada host.
 \end{itemize}
 \end{frame}
 
@@ -346,10 +405,21 @@
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Terraform provisiona recursos de forma declarativa (providers, state, plan/apply); o ficheiro de estado é crítico e sensível.
-    \item Provisionamento (que recursos existem) vs gestão de configuração (o que corre neles) -- camadas complementares.
-    \item Infraestrutura imutável substitui em vez de alterar; segredos nunca vão para o repositório em texto simples.
-    \item CI/CD e GitOps automatizam teste e aplicação de mudanças, com o Git como fonte de verdade.
+    \item O Terraform provisiona recursos de forma declarativa (providers, state, plan/apply) e o state file é crítico e sensível.
+    \item Provisionamento e gestão de configuração são camadas complementares.
+    \item Os segredos nunca vão para o repositório em texto simples.
+    \item O CI/CD automatiza o teste e a aplicação de alterações, com o Git como fonte de verdade.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Leitura Complementar}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Morris, K. \emph{Infrastructure as Code}, 2.ª ed., O'Reilly, 2020.
+    \item Brikman, Y. \emph{Terraform: Up \& Running}, 3.ª ed., O'Reilly, 2022.
+    \item Hochstein, L. e Moser, R. \emph{Ansible: Up and Running}, 3.ª ed., O'Reilly, 2022.
+    \item Documentação oficial do Ansible (docs.ansible.com) e do Terraform (developer.hashicorp.com/terraform).
 \end{itemize}
 \end{frame}
 

@@ -7,10 +7,24 @@
 ## Teoria
 - Aula 07 - Automatizacao de Configuracoes - IaC.tex
 
+## Sebenta
+- Sebenta 07 - Automatizacao de Configuracoes - IaC.tex (uma página por slide, 33 slides; imagens em Sebenta/slides)
+
 ## Diagramas
 Fonte editável (`.drawio`) e PNG em `Diagramas/`:
 - a07-plan-apply
 - a07-provisionamento-config
+- a07-manual-vs-iac
+- a07-imperativo-declarativo
+- a07-agentless-agent
+- a07-ansible-estrutura
+- a07-terraform-estado
+- a07-mutavel-imutavel
+- a07-pipeline-iac
+- a07-gitops
+- a07-devops-infinito
+- a07-integracao-stack (Git/Terraform/Ansible/Docker/Kubernetes)
+- a07-resumo-aula (graphical abstract, logos GitHub/Terraform/Ansible via simple-icons)
 
 ## Notas para o docente
 Aula expositiva, sem componente laboratorial. Dar ênfase à distinção entre gestão de configuração e provisionamento, pois é a fonte de confusão mais comum — o diagrama `a07-provisionamento-config` é o recurso central para isso.
