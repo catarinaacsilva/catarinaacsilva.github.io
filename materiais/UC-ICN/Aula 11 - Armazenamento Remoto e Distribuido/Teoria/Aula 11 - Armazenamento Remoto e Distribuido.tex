@@ -62,6 +62,16 @@
 \institute{ESTGA, Universidade de Aveiro}
 \date{2026}
 
+\newcommand{\figframe}[2]{%
+\begin{frame}
+\frametitle{#1}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/#2.png}
+\end{center}
+\vfill
+\end{frame}}
+
 \begin{document}
 
 \begin{frame}[plain]
@@ -72,11 +82,11 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Armazenamento em rede: NAS vs. SAN.
+    \item Armazenamento em rede, NAS e SAN.
     \item NFS e iSCSI em detalhe.
-    \item Sistemas de ficheiros distribuídos.
-    \item Ceph: arquitetura e componentes.
+    \item Sistemas de ficheiros distribuídos e arquitetura do Ceph.
     \item Armazenamento de objetos e a API S3.
+    \item Consistência, o teorema CAP e o modelo PACELC.
 \end{itemize}
 \end{frame}
 
@@ -84,193 +94,216 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Consistência em sistemas distribuídos e o teorema CAP.
-    \item Para além do CAP: o modelo PACELC.
     \item Replicação e sharding.
-    \item Erasure coding vs replicação.
-    \item Armazenamento distribuído no Proxmox e no Kubernetes.
+    \item Erasure coding e replicação.
+    \item Armazenamento distribuído no Proxmox.
+    \item Armazenamento distribuído no Kubernetes.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Armazenamento em Rede: NAS vs. SAN \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Armazenamento em Rede, NAS \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{NAS} (Network Attached Storage): expõe armazenamento ao nível de \textbf{ficheiro}, através da rede.
-    \item Protocolos típicos: \textbf{NFS} (ambientes Unix/Linux) e \textbf{SMB/CIFS} (ambientes Windows).
-    \item Os clientes veem uma hierarquia de pastas e ficheiros, tal como num disco local partilhado.
+    \item O NAS (Network Attached Storage) expõe armazenamento ao nível do ficheiro, através da rede.
+    \item Os protocolos típicos são o NFS (ambientes Unix e Linux) e o SMB (ambientes Windows).
+    \item Os clientes veem uma hierarquia de pastas e ficheiros, como num disco local partilhado.
+    \item O servidor gere o sistema de ficheiros e coordena os acessos simultâneos.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Armazenamento em Rede: NAS vs. SAN \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Armazenamento em Rede, SAN \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{SAN} (Storage Area Network): expõe armazenamento ao nível de \textbf{bloco}, através de uma rede dedicada.
-    \item Protocolos típicos: \textbf{iSCSI} (sobre TCP/IP) e \textbf{Fibre Channel} (rede dedicada de alto desempenho).
-    \item O cliente vê o armazenamento como se fosse um disco local, formatando-o com o seu próprio sistema de ficheiros.
-    \item NAS é mais simples de gerir; SAN tende a oferecer melhor desempenho e controlo mais fino.
+    \item A SAN (Storage Area Network) expõe armazenamento ao nível do bloco, tipicamente por uma rede dedicada.
+    \item Os protocolos típicos são o iSCSI (sobre TCP/IP) e o Fibre Channel (rede dedicada de alto desempenho).
+    \item O cliente vê o armazenamento como um disco local e formata-o com o seu próprio sistema de ficheiros.
+    \item O NAS é mais simples de gerir, e a SAN tende a dar mais desempenho e controlo mais fino.
 \end{itemize}
 \end{frame}
+
+\figframe{Quem Gere o Sistema de Ficheiros}{a11-nas-vs-san}
 
 \begin{frame}
 \frametitle{NFS em Detalhe}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O servidor \emph{exporta} diretórios (definidos em \texttt{/etc/exports}); os clientes montam-nos como se fossem locais.
-    \item Opções de exportação relevantes: \texttt{rw}/\texttt{ro} (leitura-escrita ou apenas leitura), \texttt{sync} (confirma escritas em disco antes de responder) e \texttt{root\_squash} (mapeia o root remoto para um utilizador sem privilégios).
-    \item \textbf{NFSv3} é sem estado; \textbf{NFSv4} introduz estado, melhor desempenho através de firewalls (porta única) e integração com Kerberos.
-    \item As permissões baseiam-se em UIDs/GIDs numéricos: se não forem consistentes entre máquinas, os acessos comportam-se de forma inesperada.
-    \item Vários clientes podem montar a mesma partilha simultaneamente -- é o modelo natural de partilha de ficheiros.
+    \setlength\itemsep{0.12cm}
+    \item O servidor exporta diretórios, definidos em \texttt{/etc/exports}, e os clientes montam-nos como se fossem locais.
+    \item As opções incluem \texttt{rw} ou \texttt{ro}, \texttt{sync}, que confirma a escrita em disco antes de responder, e \texttt{root\_squash}, que mapeia o root remoto para um utilizador sem privilégios.
+    \item O NFSv3 não guarda estado, e o NFSv4 introduz estado, uma única porta, o que ajuda com firewalls, e integração com Kerberos.
+    \item As permissões baseiam-se em UIDs e GIDs numéricos, e se não forem consistentes entre máquinas os acessos comportam-se de forma inesperada.
+    \item Vários clientes montam a mesma partilha em simultâneo, que é o modelo natural de partilha de ficheiros.
 \end{itemize}
 \end{frame}
+
+\figframe{Exportação e Montagem NFS}{a11-nfs}
 
 \begin{frame}
 \frametitle{iSCSI em Detalhe}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Transporta comandos SCSI sobre TCP/IP, permitindo usar a rede existente em vez de uma rede Fibre Channel dedicada.
-    \item \textbf{Target}: o servidor que disponibiliza o armazenamento. \textbf{Initiator}: o cliente que se liga a ele.
-    \item \textbf{IQN} (iSCSI Qualified Name): identificador único de cada target e initiator, usado nas listas de controlo de acesso.
-    \item \textbf{LUN} (Logical Unit Number): identifica cada unidade de armazenamento disponibilizada por um target.
-    \item Diferença essencial face ao NFS: o cliente recebe um \emph{dispositivo de bloco} em bruto, que tem de particionar e formatar.
-    \item Consequência importante: um sistema de ficheiros comum (ex.\ ext4) \textbf{não} pode ser montado em escrita por dois clientes em simultâneo -- corromper-se-ia.
+    \setlength\itemsep{0.12cm}
+    \item O iSCSI transporta comandos SCSI sobre TCP/IP, e aproveita a rede existente em vez de uma rede Fibre Channel dedicada.
+    \item O target é o servidor que disponibiliza o armazenamento, e o initiator é o cliente que se liga a ele.
+    \item O IQN (iSCSI Qualified Name) identifica cada target e initiator e usa-se nas listas de controlo de acesso.
+    \item O LUN (Logical Unit Number) identifica cada unidade de armazenamento oferecida por um target.
+    \item Face ao NFS, o cliente recebe um dispositivo de bloco em bruto, que tem de particionar e formatar.
+    \item Um sistema de ficheiros comum, como o ext4, não pode ser montado em escrita por dois clientes em simultâneo, porque ficaria corrompido.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Quem Gere o Sistema de Ficheiros}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a11-nas-vs-san.png}
-\end{center}
-\vfill
-\end{frame}
-
+\figframe{Target, Initiator e LUN}{a11-iscsi}
 
 \begin{frame}
 \frametitle{Sistemas de Ficheiros Distribuídos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Motivação: um único servidor NAS/SAN tem limites de capacidade e desempenho.
-    \item Sistemas de ficheiros distribuídos espalham os dados por várias máquinas, escalando além de um único nó.
-    \item \textbf{HDFS} (Hadoop Distributed File System): pensado para grandes volumes de dados e processamento em lote.
-    \item \textbf{Ceph} e \textbf{GlusterFS}: sistemas de armazenamento distribuído de uso geral, com replicação e tolerância a falhas.
+    \item Um único servidor NAS ou SAN tem limites de capacidade e de desempenho.
+    \item Os sistemas de ficheiros distribuídos espalham os dados por várias máquinas e escalam além de um só nó.
+    \item O HDFS (Hadoop Distributed File System) foi pensado para grandes volumes de dados e processamento em lote.
+    \item O Ceph e o GlusterFS são sistemas distribuídos de uso geral, com replicação e tolerância a falhas.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Ceph: Arquitetura}
+\frametitle{Ceph, Arquitetura}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Plataforma de armazenamento distribuído que oferece, sobre a mesma infraestrutura, acesso por \textbf{bloco}, \textbf{ficheiro} e \textbf{objeto}.
-    \item \textbf{OSD} (Object Storage Daemon): processo responsável por um disco; guarda os dados e trata da replicação e recuperação.
-    \item \textbf{MON} (Monitor): mantém o mapa do cluster e garante o consenso sobre o seu estado.
-    \item \textbf{MDS} (Metadata Server): gere os metadados quando se usa o sistema de ficheiros CephFS.
-    \item \textbf{CRUSH}: algoritmo que calcula onde cada objeto reside, dispensando uma tabela central de localização -- é o que permite escalar sem um ponto de estrangulamento.
-    \item Sem controlador central, o Ceph evita por construção o \emph{single point of failure} discutido na Aula 09.
+    \setlength\itemsep{0.12cm}
+    \item O Ceph é uma plataforma distribuída que oferece, sobre a mesma infraestrutura, acesso por bloco, ficheiro e objeto.
+    \item O OSD (Object Storage Daemon) é o processo responsável por um disco, e trata da replicação e da recuperação.
+    \item O MON (Monitor) mantém o mapa do cluster e garante o consenso sobre o seu estado.
+    \item O MDS (Metadata Server) gere os metadados quando se usa o CephFS.
+    \item O CRUSH é o algoritmo que calcula onde cada objeto reside, sem tabela central de localização, o que permite escalar sem ponto de estrangulamento.
+    \item Sem controlador central, evita-se o single point of failure da Aula 09.
 \end{itemize}
 \end{frame}
+
+\figframe{Componentes do Ceph}{a11-ceph}
 
 \begin{frame}
 \frametitle{Armazenamento de Objetos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Modelo baseado em \textbf{buckets} (containers) e \textbf{objetos} identificados por uma chave, com metadados associados.
-    \item Acesso feito através de uma API HTTP, em vez de um protocolo de sistema de ficheiros ou de bloco.
-    \item A API \textbf{S3} (Amazon Simple Storage Service) tornou-se a referência de facto do setor.
-    \item \textbf{MinIO} é uma alternativa open-source compatível com a API S3, útil para on-premises ou testes locais.
-    \item Casos de uso típicos: backups, dados não estruturados (imagens, logs) e conteúdo estático (websites).
+    \item O modelo assenta em buckets e em objetos identificados por uma chave, com metadados associados.
+    \item O acesso faz-se por uma API HTTP, em vez de um protocolo de sistema de ficheiros ou de bloco.
+    \item A API S3 (Amazon Simple Storage Service) tornou-se a referência de facto do setor.
+    \item O MinIO é uma alternativa open source compatível com a API S3, útil on-premises ou em testes locais.
+    \item Usa-se em backups, dados não estruturados como imagens e logs, e conteúdo estático.
 \end{itemize}
 \end{frame}
+
+\figframe{Buckets, Objetos e API S3}{a11-object-storage}
 
 \begin{frame}
 \frametitle{Consistência em Sistemas Distribuídos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Consistência forte}: todas as leituras devolvem sempre o valor mais recente escrito, em qualquer réplica.
-    \item \textbf{Consistência eventual}: após uma escrita, as réplicas convergem para o mesmo valor, mas não de imediato.
-    \item Teorema \textbf{CAP}: um sistema distribuído não pode garantir simultaneamente Consistency, Availability e Partition tolerance.
-    \item Na prática, partições de rede acontecem, pelo que a escolha real é entre privilegiar consistência ou disponibilidade.
+    \item Na consistência forte, todas as leituras devolvem o valor escrito mais recente, em qualquer replica.
+    \item Na consistência eventual, depois de uma escrita as replicas convergem para o mesmo valor, mas não de imediato.
+    \item O teorema CAP diz que um sistema distribuído não garante em simultâneo Consistency, Availability e Partition tolerance.
+    \item As partições de rede acontecem, e por isso a escolha real é entre privilegiar a consistência ou a disponibilidade durante uma partição.
 \end{itemize}
 \end{frame}
 
+\figframe{Consistência Forte e Eventual}{a11-consistencia}
+
 \begin{frame}
-\frametitle{Para Além do CAP: o Modelo PACELC}
+\frametitle{Para Além do CAP, o Modelo PACELC}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O teorema CAP só descreve o comportamento \emph{durante} uma partição de rede -- uma situação relativamente rara.
-    \item O modelo \textbf{PACELC} completa o quadro: se houver \textbf{P}artição, escolher entre \textbf{A}vailability e \textbf{C}onsistency; \textbf{E}m caso contrário (\emph{else}), escolher entre \textbf{L}atência e \textbf{C}onsistência.
-    \item Ou seja: mesmo em funcionamento normal, garantir consistência forte entre réplicas implica esperar por confirmações -- e isso custa latência.
-    \item Muitos sistemas de larga escala optam por consistência eventual precisamente por esta razão, não apenas por causa de partições.
-    \item É um compromisso de desenho, não uma limitação técnica a ultrapassar.
+    \setlength\itemsep{0.35cm}
+    \item O CAP descreve apenas o comportamento durante uma partição de rede, uma situação relativamente rara.
+    \item O PACELC completa o quadro. Havendo Partição, escolhe-se entre Availability e Consistency, e em caso contrário (Else) escolhe-se entre Latência e Consistência.
+    \item Mesmo em funcionamento normal, garantir consistência forte entre replicas exige esperar por confirmações, e isso custa latência.
+    \item Muitos sistemas de larga escala optam pela consistência eventual também por esta razão.
+    \item É um compromisso de desenho, e não uma limitação técnica a ultrapassar.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{CAP e PACELC}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a11-cap-pacelc.png}
-\end{center}
-\vfill
-\end{frame}
-
+\figframe{CAP e PACELC}{a11-cap-pacelc}
 
 \begin{frame}
 \frametitle{Replicação e Sharding}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Replicação}: mantém cópias dos mesmos dados em vários nós, aumentando a disponibilidade e a tolerância a falhas.
-    \item \textbf{Sharding} (particionamento): divide os dados em partes distintas, distribuídas por vários nós, para aumentar a escala.
-    \item As duas técnicas são complementares: sharding aumenta a capacidade total, replicação protege cada partição.
-    \item Ambas introduzem desafios de consistência, geridos consoante o modelo escolhido (forte ou eventual).
+    \item A replicação mantém cópias dos mesmos dados em vários nós, o que aumenta a disponibilidade e a tolerância a falhas.
+    \item O sharding (particionamento) divide os dados em partes distintas, distribuídas por vários nós, para ganhar escala.
+    \item As duas técnicas são complementares, pois o sharding aumenta a capacidade total e a replicação protege cada partição.
+    \item Ambas trazem desafios de consistência, geridos consoante o modelo escolhido.
 \end{itemize}
 \end{frame}
 
+\figframe{Shards e Replicas}{a11-replicacao-sharding}
+
 \begin{frame}
-\frametitle{Erasure Coding vs Replicação}
+\frametitle{Erasure Coding e Replicação}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Replicação}: guardar $n$ cópias completas. Simples e rápido a recuperar, mas dispendioso -- 3 réplicas consomem 3 vezes o espaço.
-    \item \textbf{Erasure coding}: dividir o dado em fragmentos e calcular fragmentos de paridade adicionais, distribuídos por vários nós.
-    \item É a generalização do princípio do RAID 5/6 (Aula 10) para um sistema distribuído por muitas máquinas.
-    \item Vantagem: tolerância a falhas equivalente com muito menos espaço ocupado.
-    \item Custo: mais processamento e maior latência na recuperação, por ser necessário recalcular os dados em falta.
-    \item Uso típico: replicação para dados quentes e frequentemente acedidos; erasure coding para arquivo e dados frios.
+    \setlength\itemsep{0.3cm}
+    \item A replicação guarda n cópias completas. É simples e rápida de recuperar, mas dispendiosa, porque 3 replicas ocupam 3 vezes o espaço.
+    \item O erasure coding divide o dado em fragmentos e calcula fragmentos de paridade, distribuídos por vários nós.
+    \item É a generalização do princípio do RAID 5 e 6 (Aula 10) a um sistema distribuído.
+    \item Dá tolerância a falhas equivalente com muito menos espaço. Um esquema 4 + 2 usa 1,5 vezes o espaço e tolera a perda de 2 fragmentos.
+    \item O custo é mais processamento e maior latência na recuperação, porque é preciso recalcular os dados em falta.
+    \item Usa-se replicação para dados quentes, e erasure coding para arquivo e dados frios.
 \end{itemize}
 \end{frame}
 
+\figframe{Replicação e Erasure Coding}{a11-erasure-coding}
+
 \begin{frame}
-\frametitle{Armazenamento Distribuído no Proxmox e no Kubernetes}
+\frametitle{Armazenamento Distribuído no Proxmox}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O Proxmox integra suporte nativo para \textbf{NFS}, \textbf{iSCSI} e \textbf{Ceph} como tipos de storage.
-    \item Armazenamento partilhado entre nós é o que torna possível a \emph{migração ao vivo} de VMs (Aula 03): o disco não precisa de ser copiado.
-    \item No Kubernetes, os \textbf{PersistentVolumes} (Aula 05) assentam nestes mesmos sistemas, através de drivers \textbf{CSI} (Container Storage Interface).
-    \item \textbf{Modos de acesso}: \texttt{ReadWriteOnce} (um nó), \texttt{ReadOnlyMany} e \texttt{ReadWriteMany} (vários nós em escrita).
-    \item Só armazenamento ao nível de ficheiro (ex.\ NFS, CephFS) suporta \texttt{ReadWriteMany} -- um volume de bloco não pode ser escrito por vários nós, pela razão vista nos slides sobre iSCSI.
+    \item O Proxmox integra suporte nativo para NFS, iSCSI e Ceph como tipos de storage.
+    \item O armazenamento partilhado entre nós permite a migração ao vivo de VMs (Aula 03) sem copiar o disco.
+    \item Só a memória e o estado da VM passam de um nó para o outro.
+    \item Dá também a base para a alta disponibilidade, porque outro nó pode arrancar a VM a partir do mesmo disco.
 \end{itemize}
 \end{frame}
+
+\figframe{Migração ao Vivo com Storage Partilhado}{a11-proxmox-partilhado}
+
+\begin{frame}
+\frametitle{Armazenamento Distribuído no Kubernetes}
+\begin{itemize}
+    \setlength\itemsep{0.3cm}
+    \item Os PersistentVolumes (Aula 05) assentam nestes sistemas através de drivers CSI (Container Storage Interface).
+    \item Um Pod pede armazenamento com um PersistentVolumeClaim, que o Kubernetes liga a um PersistentVolume.
+    \item O modo ReadWriteOnce permite escrita a partir de um nó, o ReadOnlyMany permite leitura em vários nós e o ReadWriteMany permite escrita em vários nós.
+    \item Tipicamente só o armazenamento de ficheiros, como NFS e CephFS, suporta ReadWriteMany, e um volume de bloco não pode ser escrito por vários nós, pela razão vista no iSCSI.
+\end{itemize}
+\end{frame}
+
+\figframe{PVC, PV e Driver CSI}{a11-k8s-storage}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item NAS (ficheiro, NFS/SMB) e SAN (bloco, iSCSI/Fibre Channel) são as duas formas clássicas de armazenamento em rede.
-    \item Sistemas de ficheiros distribuídos (HDFS, Ceph, GlusterFS) escalam o armazenamento além de uma única máquina.
-    \item Object storage (S3, MinIO) organiza dados em buckets e objetos, acedidos via API HTTP.
+    \item O NAS (ficheiro, NFS e SMB) e a SAN (bloco, iSCSI e Fibre Channel) são as duas formas clássicas de armazenamento em rede.
+    \item Os sistemas distribuídos (HDFS, Ceph, GlusterFS) escalam o armazenamento além de uma máquina.
+    \item O object storage (S3, MinIO) organiza dados em buckets e objetos, acedidos por uma API HTTP.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O CAP obriga a escolher entre consistência e disponibilidade numa partição, e o PACELC lembra o compromisso entre latência e consistência sem partição.
+    \item A replicação dá disponibilidade, o sharding dá escala e o erasure coding dá tolerância a falhas com menos espaço.
+    \item O Ceph distribui dados sem controlador central, com o algoritmo CRUSH.
+    \item Estes sistemas sustentam o storage partilhado do Proxmox e os PersistentVolumes do Kubernetes por CSI.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Leituras}
+\begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O teorema CAP obriga a escolher entre consistência e disponibilidade em caso de partição; o PACELC lembra que, mesmo sem partição, há um compromisso entre latência e consistência.
-    \item Replicação garante disponibilidade; sharding garante escala; erasure coding oferece tolerância a falhas com menos espaço.
-    \item O Ceph distribui dados sem controlador central (algoritmo CRUSH), evitando um single point of failure.
-    \item Estes sistemas sustentam o storage partilhado do Proxmox (e a migração ao vivo) e os PersistentVolumes do Kubernetes via CSI.
+    \item Documentação do Ceph sobre a arquitetura, rados e CRUSH, docs.ceph.com.
+    \item Documentação do Kubernetes sobre volumes persistentes e modos de acesso, kubernetes.io.
+    \item Abadi, D. Consistency Tradeoffs in Modern Distributed Database System Design, IEEE Computer, 2012, que propõe o PACELC.
+    \item Gilbert, S. e Lynch, N. Brewer's Conjecture and the Feasibility of Consistent, Available, Partition-Tolerant Web Services, SIGACT News, 2002.
 \end{itemize}
 \end{frame}
 

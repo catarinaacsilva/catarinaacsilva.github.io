@@ -10,14 +10,23 @@
 ## Prática / laboratório
 - Guiao 11 - NFS, iSCSI e Object Storage com MinIO.tex
 
-## Manual técnico
-- Manual 11 - NFS iSCSI e Object Storage.tex
+## Sebenta
+- Sebenta 11 - Armazenamento Remoto e Distribuido.tex (um slide por página, com texto de estudo aprofundado)
 
 ## Diagramas
 Fonte editável (`.drawio`) e PNG em `Diagramas/`:
-- a11-cap-pacelc
 - a11-nas-vs-san
-- m11-concorrencia
+- a11-nfs
+- a11-iscsi
+- a11-ceph
+- a11-object-storage
+- a11-consistencia
+- a11-cap-pacelc
+- a11-replicacao-sharding
+- a11-erasure-coding
+- a11-proxmox-partilhado
+- a11-k8s-storage
+- m11-concorrencia (sem uso atual)
 
 ## Notas para o docente
 Esta aula assenta diretamente nos conceitos de armazenamento local da Aula 10, pelo que vale a pena começar com uma revisão rápida de block vs. file vs. object storage antes de introduzir NAS/SAN.
