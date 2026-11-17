@@ -1,0 +1,282 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+\setlength{\emergencystretch}{3em}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{09}{Redundância e Desacoplamento de Serviços}{Aula 09}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 09. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada, com algum aprofundamento para além do que a apresentação permite mostrar. A aula prolonga a Aula 08. Aí viu-se como escalar um serviço e mantê-lo disponível, nomeadamente com load balancers e health checks, e aqui estuda-se como evitar que uma única falha o derrube e como reduzir a dependência entre os seus componentes.
+
+A leitura sequencial é a mais proveitosa. A aula começa pela redundância, pelos pontos únicos de falha e pelas métricas que quantificam a recuperação, o RTO e o RPO. Passa depois ao desacoplamento e à diferença entre comunicação síncrona e assíncrona, e aprofunda a mensageria com o RabbitMQ e o protocolo AMQP, as garantias de entrega e a idempotência. Trata em seguida dos padrões de resiliência, das dead letter queues e da contrapressão, compara brokers com event streaming e termina com a redundância no Kubernetes. A aula tem componente prática, o guião com o RabbitMQ, que concretiza os conceitos aqui apresentados.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+Na Aula 08, a disponibilidade foi tratada sobretudo do ponto de vista da capacidade, com mais instâncias e mais balanceamento. Esta aula acrescenta duas ideias complementares. A primeira é a redundância deliberada de componentes críticos, para que a falha de um deles não interrompa o serviço. A segunda é o desacoplamento, que limita o alcance de uma falha e a faz deixar de se propagar pelos restantes serviços.
+
+Os dois temas respondem à mesma pergunta de desenho: o que acontece ao sistema quando uma parte dele deixa de funcionar. Um sistema bem desenhado não evita todas as falhas, que são inevitáveis, mas controla o seu efeito.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira metade da agenda trata da resiliência na sua formulação mais geral. A redundância ativa-ativa e ativa-passiva são dois modelos para manter componentes de reserva. Os single points of failure identificam onde essa redundância é necessária, e o RTO e o RPO exprimem em números o que significa recuperar de uma falha.
+
+Seguem-se o desacoplamento entre serviços e a distinção entre comunicação síncrona e assíncrona, que prepara a introdução das filas de mensagens.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda metade da agenda desenvolve a mensageria. Apresenta o RabbitMQ e o AMQP, os componentes de encaminhamento (exchanges, bindings e filas), as garantias de entrega e a idempotência, e os padrões de mensageria e de resiliência.
+
+Inclui as dead letter queues e a contrapressão, que tratam das mensagens que não conseguem ser processadas e dos consumidores que não acompanham os produtores. Compara os brokers com o event streaming e termina com as ferramentas de redundância do Kubernetes.
+}
+
+\pagina{slides/slide-04.png}{
+Redundância significa manter mais de uma instância de um componente crítico, de modo que a falha de uma não interrompa o serviço. Há dois modelos principais, que diferem na forma como as instâncias de reserva são usadas.
+
+Na redundância ativa-ativa, todas as replicas processam pedidos em simultâneo, normalmente atrás de um load balancer, como se viu na Aula 08. Os recursos são aproveitados na totalidade e a perda de uma replica apenas reduz a capacidade, sem período de recuperação. O desafio está no estado. Se as replicas partilham dados, é preciso mantê-los coerentes, o que é fácil para componentes sem estado e difícil quando várias replicas aceitam escritas, sobretudo entre regiões, onde podem surgir conflitos.
+
+Na redundância ativa-passiva, uma replica processa os pedidos e as outras ficam em standby, prontas a assumir. Quando a ativa falha, a troca chama-se failover. É mais simples de manter consistente, porque só uma replica escreve, mas exige um mecanismo de deteção da falha, por exemplo uma verificação periódica de estado (heartbeat), e tem um tempo de failover durante o qual o serviço pode estar indisponível. O standby pode estar frio (desligado), morno (ligado mas sem carga) ou quente (a receber os dados em contínuo), e quanto mais quente, menor o tempo de recuperação e maior o custo. Um risco clássico é o split-brain, em que as duas replicas se julgam ativas ao mesmo tempo, o que obriga a mecanismos de eleição ou de quórum.
+
+Em resumo, a ativa-ativa aproveita melhor os recursos e recupera mais depressa, e a ativa-passiva é mais simples de raciocinar e de manter consistente. A escolha depende do componente e do custo da inconsistência.
+}
+
+\pagina{slides/slide-05.png}{
+O diagrama contrasta os dois modelos. À esquerda, o load balancer reparte os pedidos pelas replicas A e B, que estão ambas ativas, e a perda de uma reduz a capacidade a metade sem interromper o serviço. À direita, os clientes falam apenas com a replica ativa, que replica o estado para a replica passiva em standby. A passiva fica parada até ser promovida.
+
+A legenda do lado direito resume o preço da ativa-passiva, que é o tempo de deteção e de failover e o facto de a replica passiva representar recursos pagos sem produzir trabalho até haver uma falha. A replicação do estado é também um ponto crítico, porque se for assíncrona a replica passiva pode estar ligeiramente atrasada no momento da falha, o que se liga ao RPO tratado adiante.
+}
+
+\pagina{slides/slide-06.png}{
+Um single point of failure (SPOF) é qualquer componente cuja falha isolada derruba todo o serviço. Pode ser um servidor, um load balancer, uma base de dados ou um único link de rede, e também componentes menos óbvios, como um servidor DNS, um certificado que expira, uma fonte de alimentação, um único datacenter ou até uma pessoa que é a única a saber operar um sistema.
+
+A estratégia é sistemática. Percorre-se o caminho de um pedido, do cliente à base de dados, e para cada componente pergunta-se o que acontece se falhar. Os componentes cuja falha interrompe o serviço são SPOFs e devem ser tornados redundantes. A frase final do slide chama a atenção para um erro comum. Replicar o servidor de aplicação mas manter uma única base de dados, ou um único load balancer, dá uma falsa sensação de segurança, porque a disponibilidade do conjunto continua limitada pelo elo mais fraco.
+
+Convém lembrar o resultado da Aula 08. Componentes em série multiplicam as suas disponibilidades, pelo que a redundância tem de existir em cada camada, e as replicas devem estar em domínios de falha independentes.
+}
+
+\pagina{slides/slide-07.png}{
+A linha de cima do diagrama mostra uma arquitetura com SPOFs. Os clientes chegam a um único load balancer, que encaminha para um único servidor aplicacional, que usa uma única base de dados. Cada bloco a vermelho derruba o serviço inteiro se falhar, e a arquitetura é tão fraca como o seu componente menos fiável.
+
+A linha de baixo mostra a versão redundante. Há dois load balancers, três servidores aplicacionais em zonas diferentes e uma base de dados com uma replica. O texto lembra que a lista de SPOFs possíveis vai além do software, e inclui o DNS, os links de rede, a alimentação e a própria zona de disponibilidade. Os números de instâncias são exemplos, e o que importa é que nenhuma camada fica com um único elemento.
+}
+
+\pagina{slides/slide-08.png}{
+Duas métricas quantificam os objetivos de recuperação. O RTO (Recovery Time Objective) é o tempo máximo de indisponibilidade que se aceita antes de o impacto ser inaceitável. O RPO (Recovery Point Objective) é a quantidade de dados que se aceita perder, medida como o tempo entre o último ponto de recuperação e a falha.
+
+Os dois valores são independentes e respondem a perguntas diferentes. O RTO diz respeito ao tempo para voltar a operar, e o RPO diz respeito à frescura dos dados com que se volta. Um RPO de 15 minutos exige replicação ou backups com, no máximo, esse intervalo. Um RPO de zero exige replicação síncrona, em que uma escrita só é confirmada depois de chegar também à segunda cópia, o que tem custo em latência. Com replicação assíncrona, a cópia pode estar ligeiramente atrasada, e o RPO é igual a esse atraso no pior caso.
+
+Uma configuração ativa-ativa tende a dar um RTO próximo de zero, enquanto restaurar a partir de um backup dá um RTO de horas, porque é preciso provisionar, restaurar e validar. Estes objetivos são decisões de negócio, e não apenas técnicas. Quanto mais exigentes, mais cara é a infraestrutura, e por isso devem ser definidos por serviço, de acordo com o custo da indisponibilidade e da perda de dados. Também se relacionam com o SLA da Aula 02 e com o MTTR da Aula 08, pois reduzir o tempo de reparação é o que baixa o RTO.
+}
+
+\pagina{slides/slide-09.png}{
+A linha temporal ajuda a distinguir as duas métricas. À esquerda está o último ponto de recuperação, por exemplo o último backup. Segue-se a falha, e depois o instante em que o serviço é restaurado. O intervalo entre o último ponto de recuperação e a falha corresponde aos dados perdidos, e é medido pelo RPO. O intervalo entre a falha e a restauração corresponde à indisponibilidade, e é medido pelo RTO.
+
+A leitura prática é que o RPO se reduz aumentando a frequência dos pontos de recuperação, com backups mais frequentes ou replicação contínua, e o RTO reduz-se automatizando a deteção e a recuperação. As duas melhorias custam dinheiro, e o diagrama serve para perguntar a quem decide quanto tempo de dados e quanto tempo de serviço está disposto a perder.
+}
+
+\pagina{slides/slide-10.png}{
+Dois serviços estão fortemente acoplados quando o funcionamento de um depende, de forma direta e imediata, do funcionamento do outro. Nesse caso, uma falha ou uma lentidão propaga-se. Se um serviço fica lento, quem o chama fica à espera, acumula pedidos pendentes e fica também lento, e o efeito sobe por toda a cadeia. É a falha em cascata.
+
+O desacoplamento corta essa dependência direta. Cada serviço pode evoluir, ser atualizado e escalar de forma independente, e a falha de um serviço tem um alcance limitado. Há várias dimensões de acoplamento, como o tempo (ambos têm de estar ativos ao mesmo tempo), o espaço (um tem de conhecer o endereço do outro) e o contrato (as duas partes têm de mudar em conjunto). A mensageria reduz sobretudo o acoplamento temporal, e a indireção de um exchange ou de um nome de fila reduz o espacial. É a base de arquiteturas de microsserviços resilientes, embora o desacoplamento tenha o seu preço, porque o fluxo de execução passa a ser mais difícil de seguir e depurar.
+}
+
+\pagina{slides/slide-11.png}{
+Na comunicação síncrona, por exemplo uma chamada REST direta, o cliente envia o pedido e espera pela resposta antes de continuar. É simples de compreender e de depurar, e dá a resposta imediata de que muitas interações precisam, como consultar um saldo. O custo é ligar a disponibilidade do cliente à do serviço chamado. Se o serviço estiver em baixo ou lento, o cliente falha ou fica lento, e a latência total é a soma das latências de toda a cadeia.
+
+Na comunicação assíncrona, baseada em mensagens, o remetente entrega a mensagem a um intermediário e continua sem esperar resposta imediata. O trabalho é feito mais tarde, quando o recetor estiver disponível. Isto tolera melhor os picos de carga, porque a fila absorve o excesso, e as indisponibilidades temporárias do recetor, porque as mensagens esperam. O preço é a complexidade. A resposta deixa de ser imediata, é preciso tratar mensagens duplicadas ou fora de ordem e a consistência passa a ser eventual.
+
+Não é uma questão de escolher um modelo para todo o sistema. Interações que precisam de resposta imediata ao utilizador usam tipicamente a comunicação síncrona, e o trabalho que pode esperar, como enviar um email, gerar um relatório ou processar uma encomenda, é um bom candidato à assíncrona.
+}
+
+\pagina{slides/slide-12.png}{
+O diagrama mostra a diferença estrutural. À esquerda, o serviço A pede ao serviço B e fica à espera da resposta. Se B estiver em baixo ou lento, A falha ou fica lento também, como diz a caixa vermelha. À direita, o produtor publica numa fila e continua, e o consumidor tira as mensagens da fila quando puder.
+
+A fila é o elemento que desacopla. Se o consumidor cair, as mensagens esperam na fila e são processadas quando ele voltar, e o produtor nunca nota a falha. É esta propriedade, o desacoplamento temporal, que o guião da aula demonstra ao reduzir os workers a zero e verificar que o produtor continua sem erros enquanto a fila acumula.
+}
+
+\pagina{slides/slide-13.png}{
+Um broker de mensagens é o intermediário que recebe, guarda e entrega mensagens entre produtores e consumidores. Os produtores só conhecem o broker, os consumidores também, e nenhum conhece o outro. Como o broker guarda as mensagens, produtor e consumidor não precisam de estar ativos ao mesmo tempo, o que se designa desacoplamento temporal.
+
+O RabbitMQ é um broker muito usado, de código aberto, que implementa o protocolo AMQP (Advanced Message Queuing Protocol), na versão 0-9-1 que é a sua base, e suporta também outros protocolos. O AMQP define um modelo de encaminhamento com exchanges, filas e as regras que os ligam, apresentado no slide seguinte. Para além de desacoplar, um broker permite nivelar a carga, porque absorve picos que o consumidor processa ao seu ritmo, e escalar o consumo, porque se podem acrescentar consumidores sobre a mesma fila.
+}
+
+\pagina{slides/slide-14.png}{
+O modelo do AMQP tem três elementos. O produtor publica sempre num exchange, que recebe a mensagem e decide para que filas a encaminhar. As filas guardam as mensagens até serem consumidas. O binding é a regra que liga um exchange a uma fila, eventualmente com uma routing key que serve de critério de filtragem. Em RabbitMQ existe um exchange por omissão que encaminha pelo nome da fila, o que dá a impressão de publicar diretamente numa fila, mas o modelo continua a ser o mesmo.
+
+O tipo do exchange define como a chave é usada. No direct, a mensagem segue para as filas cuja chave de binding é exatamente igual à da mensagem. No fanout, a chave é ignorada e a mensagem vai para todas as filas ligadas, o que é a base do publish/subscribe. No topic, a chave é composta por palavras separadas por pontos e o binding usa padrões, em que o asterisco substitui exatamente uma palavra e o cardinal substitui zero ou mais, de modo que \texttt{logs.*.erro} apanha \texttt{logs.web.erro}. No headers, o encaminhamento usa os cabeçalhos da mensagem em vez da chave.
+
+Esta separação entre quem publica e quem consome é o que torna o sistema flexível. Acrescentar um novo consumidor com interesse num tipo de mensagem faz-se com uma nova fila e um novo binding, sem alterar o produtor.
+}
+
+\pagina{slides/slide-15.png}{
+O diagrama segue o caminho de uma mensagem. O produtor publica no exchange. O exchange consulta os bindings e coloca a mensagem nas filas que correspondem. Cada fila tem os seus consumidores, que a retiram e a processam.
+
+Convém reparar na ordem. A decisão de encaminhamento é tomada no exchange, e não no produtor nem nas filas. Se uma mensagem não corresponder a nenhum binding, o comportamento por omissão é ser descartada, a não ser que se configure outra coisa, o que é uma fonte frequente de mensagens perdidas por engano de configuração.
+}
+
+\pagina{slides/slide-16.png}{
+Os três painéis ilustram os tipos de exchange com exemplos concretos. No direct, uma mensagem com chave erro chega à fila cujo binding é erro e não à fila de avisos. No fanout, ambas as filas recebem a mensagem, independentemente da chave. No topic, uma mensagem com chave \texttt{logs.web.erro} chega à fila com binding \texttt{logs.*.erro} e não à fila com binding \texttt{logs.db.*}, porque a segunda palavra não coincide.
+
+A legenda recorda a regra dos padrões, o asterisco para uma palavra e o cardinal para zero ou mais palavras. Uma boa forma de estudar este slide é inventar uma chave nova e prever, para cada fila, se recebe a mensagem.
+}
+
+\pagina{slides/slide-17.png}{
+A garantia de entrega descreve quantas vezes uma mensagem pode ser processada. Com at-most-once, a mensagem pode perder-se mas nunca é processada duas vezes, o que serve quando perder um dado ocasional é aceitável. Com at-least-once, a mensagem não se perde mas pode ser entregue mais de uma vez, o que serve quando perder é inaceitável. Com exactly-once, a mensagem é processada exatamente uma vez, o que é difícil e dispendioso de garantir em sistemas distribuídos, porque é impossível distinguir de forma fiável entre uma mensagem que falhou e uma confirmação que se perdeu.
+
+Na prática, a solução comum é o at-least-once combinado com consumidores idempotentes. Uma operação é idempotente quando executá-la duas vezes tem o mesmo resultado que executá-la uma. Marcar uma encomenda como paga é idempotente, somar um valor a um saldo não é. Uma técnica habitual é guardar o identificador de cada mensagem processada e ignorar as repetições.
+
+O mecanismo que sustenta o at-least-once são os acknowledgements. O consumidor confirma (ACK) o processamento, e só então o broker remove a mensagem. Se o consumidor falhar antes de confirmar, o broker volta a entregar a mensagem. A durabilidade completa o quadro, porque filas marcadas como duráveis e mensagens persistentes sobrevivem ao reinício do broker, ao contrário das que existem apenas em memória. Os dois requisitos são independentes, e para não perder mensagens num reinício é preciso uma fila durável e mensagens persistentes.
+}
+
+\pagina{slides/slide-18.png}{
+O diagrama mostra os dois caminhos. No caminho normal, o broker entrega a mensagem, o consumidor processa, envia o ACK e o broker remove a mensagem. Cada passo tem o seu efeito, e o ACK é o ponto em que a responsabilidade passa do broker para o consumidor.
+
+No caminho de falha, o consumidor falha antes do ACK. O broker, sem confirmação, volta a entregar a mensagem, o que garante que não se perde, mas pode levar a que seja processada duas vezes se o consumidor tinha já feito parte do trabalho. A caixa final assinala o risco, e a resposta é a idempotência. O momento em que se envia o ACK é uma decisão de desenho. Confirmar antes de processar arrisca a perda, confirmar depois arrisca a duplicação, e a segunda é a escolha habitual.
+}
+
+\pagina{slides/slide-19.png}{
+Dois padrões de mensageria cobrem a maior parte dos usos. Numa work queue, várias tarefas são distribuídas por múltiplos consumidores que competem pela mesma fila, e cada mensagem é processada por um único deles. Serve para repartir trabalho pesado, como redimensionar imagens ou enviar emails, e escala simplesmente acrescentando workers. Em RabbitMQ, o prefetch limita quantas mensagens por confirmar cada consumidor recebe, o que dá uma distribuição mais justa quando as tarefas têm durações diferentes.
+
+No publish/subscribe, cada mensagem é difundida para todos os consumidores subscritos, cada um com a sua própria fila, tipicamente através de um exchange fanout. Serve quando vários serviços independentes precisam de reagir ao mesmo evento. Quando uma encomenda é criada, por exemplo, o serviço de faturação, o de stock e o de notificações recebem todos o evento, sem que o produtor os conheça.
+}
+
+\pagina{slides/slide-20.png}{
+À esquerda, a work queue tem uma fila única e dois workers. As mensagens 1 e 3 vão para o worker A e as 2 e 4 para o B, e cada mensagem chega a um só. A capacidade de processamento cresce com o número de workers.
+
+À direita, o exchange fanout entrega a mesma mensagem à fila de cada subscritor, e o subscritor A e o B recebem ambos a mensagem. A diferença decisiva está na fila. Na work queue, os consumidores partilham uma fila, no publish/subscribe cada um tem a sua. Os padrões combinam-se, e é comum um evento chegar a vários serviços por fanout e cada um ter, internamente, uma work queue com vários workers.
+}
+
+\pagina{slides/slide-21.png}{
+O desacoplamento por mensagens não elimina a necessidade de padrões de resiliência nas chamadas diretas, que continuam a existir. O circuit breaker, popularizado por Michael Nygard no livro Release It!, funciona como o disjuntor de uma instalação elétrica. Observa as chamadas a um serviço e, se as falhas passarem de um limiar, passa a falhar de imediato sem chamar o serviço, durante algum tempo. Evita sobrecarregar um serviço já em dificuldades e poupa ao cliente o tempo de esperar por timeouts.
+
+Os retries com backoff exponencial repetem uma operação falhada com intervalos cada vez maiores, por exemplo 1, 2, 4 e 8 segundos. Reduzem a pressão sobre um sistema em falha, em vez de o inundar com pedidos repetidos imediatos. Uma boa prática é acrescentar jitter, uma variação aleatória nos intervalos, para que muitos clientes não repitam todos no mesmo instante. Os retries só são seguros em operações idempotentes, o que liga este slide ao anterior.
+}
+
+\pagina{slides/slide-22.png}{
+O circuit breaker tem três estados. No estado fechado, os pedidos passam normalmente e as falhas são contadas. Quando as falhas ultrapassam o limiar, o disjuntor abre. No estado aberto, os pedidos falham logo, sem chamar o serviço, e o serviço tem tempo para recuperar.
+
+Terminado o tempo de espera, o estado passa a semi-aberto, em que alguns pedidos de teste são deixados passar. Se os testes têm sucesso, o disjuntor fecha e o funcionamento normal é retomado. Se falham, volta a abrir e o ciclo recomeça. O semi-aberto evita voltar a enviar toda a carga a um serviço que ainda não recuperou. A caixa final resume o benefício, que é proteger o serviço em dificuldades e poupar recursos ao cliente.
+}
+
+\pagina{slides/slide-23.png}{
+Uma dead letter queue (DLQ) recebe as mensagens que não puderam ser processadas com sucesso. Em RabbitMQ, uma mensagem é encaminhada para um dead letter exchange quando é rejeitada pelo consumidor sem ser reposta na fila, quando expira por TTL ou quando a fila atinge o seu limite de tamanho. A DLQ evita que uma poison message, uma mensagem que falha sempre, seja reentregue em ciclo e bloqueie as restantes. Fica guardada para análise, e depois de corrigido o problema pode ser reprocessada.
+
+A contrapressão (backpressure) surge quando os consumidores não acompanham o ritmo dos produtores. A fila cresce sem limite, a latência aumenta e, no limite, o broker esgota a memória ou o disco. A mitigação passa por limitar o tamanho das filas, por aplicar prefetch nos consumidores para controlar o que cada um tem em curso, por escalar o número de consumidores e, nos casos extremos, por fazer os produtores abrandar.
+
+O tamanho da fila é, por isso, uma excelente métrica de auto-scaling, como se referiu na Aula 08. Se a fila cresce, acrescentam-se consumidores, e se esvazia, retiram-se.
+}
+
+\pagina{slides/slide-24.png}{
+O diagrama junta as duas ideias. O produtor envia para a fila principal e o consumidor retira dela. Uma mensagem rejeitada, expirada ou que não cabe numa fila cheia é desviada para a dead letter queue, representada a vermelho, em vez de bloquear a fila principal ou se perder sem rasto.
+
+À direita, a caixa sobre backpressure recorda que, se os consumidores não acompanham os produtores, a fila cresce, e que as respostas são o limite de tamanho, o prefetch e mais consumidores. A legenda final liga os dois temas à operação, em que uma DLQ com mensagens é um sinal de alerta e a profundidade da fila é uma métrica a monitorizar.
+}
+
+\pagina{slides/slide-25.png}{
+Há dois modelos distintos de plataformas de mensagens. Num message broker como o RabbitMQ, a mensagem é removida da fila depois de consumida e confirmada. O modelo é orientado a tarefas, e cada mensagem representa trabalho a executar uma vez, tipicamente por um consumidor. Os brokers oferecem encaminhamento flexível e são adequados à distribuição de trabalho.
+
+No event streaming, como no Apache Kafka, os eventos são acrescentados a um registo ordenado e persistente, o log, e permanecem lá durante um período de retenção configurável, independentemente de terem sido lidos. Cada consumidor mantém o seu offset, a posição até onde leu, e lê ao seu ritmo. Vários consumidores leem o mesmo evento sem interferir uns com os outros, e um novo consumidor pode começar do início do histórico. O modelo é orientado a eventos, e adequado a análise, auditoria e reprocessamento histórico.
+
+A escolha depende do caso de uso. Para distribuir trabalho que se executa uma vez, o broker é a escolha natural. Para registar factos que várias aplicações vão ler e possivelmente reler, o event streaming é mais adequado. Na prática, as duas tecnologias coexistem em muitos sistemas.
+}
+
+\pagina{slides/slide-26.png}{
+À esquerda, o broker tem uma fila de mensagens, e as que já foram consumidas (a tracejado) deixam de existir. O consumidor lê da frente da fila, e a mensagem é removida depois de confirmada. É o modelo ideal para distribuir tarefas.
+
+À direita, o log guarda os eventos de e1 a e6 por ordem. O consumidor A tem o offset em e2 e o B em e5, e cada um avança ao seu ritmo sem afetar o outro. Os eventos não desaparecem quando são lidos, de modo que qualquer consumidor pode reler o histórico. A diferença essencial é o que acontece à mensagem depois de lida, removida no broker e mantida no log.
+}
+
+\pagina{slides/slide-27.png}{
+O Kubernetes oferece várias ferramentas para a redundância. Várias replicas de um Deployment atrás de um Service constituem redundância ativa-ativa, o modelo da Aula 08, com o Service a distribuir o tráfego pelos Pods prontos.
+
+O PodDisruptionBudget (PDB) define um número mínimo de replicas disponíveis, ou um máximo de indisponíveis, durante interrupções voluntárias, como o esvaziamento de um nó para manutenção (drain). Com um PDB de minAvailable igual a 2 e três replicas, o Kubernetes só despeja um Pod de cada vez e só se os outros estiverem prontos. O PDB não protege contra falhas súbitas, como a queda de um nó, apenas contra paragens planeadas.
+
+A anti-affinity de Pods expressa que as replicas não devem ser agendadas no mesmo nó, ou na mesma zona, para que a falha de um nó não as derrube todas. Existem também as topology spread constraints, que distribuem as replicas por domínios de falha de forma mais uniforme.
+
+Os serviços com estado, como um broker, implantam-se tipicamente com um StatefulSet, que dá a cada replica uma identidade estável e um volume persistente próprio. O RabbitMQ oferece quorum queues, replicadas entre nós do cluster, que são a forma recomendada de redundância das filas, tendo as antigas filas espelhadas sido descontinuadas. O desacoplamento por mensageria mantém-se igualmente válido dentro do cluster, com produtores e consumidores em Deployments independentes.
+}
+
+\pagina{slides/slide-28.png}{
+O diagrama mostra três nós, cada um com uma replica da aplicação, web-1, web-2 e web-3. A regra de anti-affinity garante uma replica por nó, e por isso a falha de qualquer nó deixa duas replicas ativas.
+
+A caixa inferior descreve o PodDisruptionBudget com minAvailable igual a 2. Num drain de um nó, o Kubernetes só despeja um Pod se continuarem a existir pelo menos dois prontos, o que protege a disponibilidade durante a manutenção. A nota final recorda o limite do PDB, que cobre interrupções voluntárias mas não falhas súbitas de um nó, para as quais servem as replicas em nós e zonas diferentes.
+}
+
+\pagina{slides/slide-29.png}{
+A primeira parte da síntese reúne a resiliência. A redundância, ativa-ativa ou ativa-passiva, ajuda a eliminar single points of failure, e o RTO e o RPO quantificam o tempo de recuperação e a perda de dados aceitáveis. O desacoplamento evita falhas em cascata e permite evolução independente, e a comunicação assíncrona, via filas, reduz o acoplamento temporal.
+
+Para estudar, convém ser capaz de identificar os SPOFs de uma arquitetura, de distinguir RTO de RPO com um exemplo e de explicar porque é que uma fila permite ao produtor continuar quando o consumidor falha.
+}
+
+\pagina{slides/slide-30.png}{
+A segunda parte da síntese cobre a mensageria e os padrões. No AMQP, os produtores publicam em exchanges (direct, fanout, topic e headers), que encaminham para filas através de bindings. As work queues distribuem tarefas e o publish/subscribe difunde eventos. Os ACKs e a durabilidade sustentam o at-least-once, com consumidores idempotentes.
+
+As DLQs isolam mensagens problemáticas, e o circuit breaker e os retries com backoff tornam os sistemas mais resilientes. Os brokers distribuem trabalho e o event streaming regista factos, e no Kubernetes usam-se replicas, anti-affinity e PodDisruptionBudget. A aula seguinte muda de tema para o armazenamento de dados, onde a replicação e o RPO voltam a ser centrais.
+}
+
+\pagina{slides/slide-31.png}{
+As leituras são quatro. A documentação do RabbitMQ cobre os conceitos de AMQP 0-9-1, os acknowledgements e os dead letter exchanges tratados na aula, e acompanha diretamente o guião. A documentação do Kubernetes sobre PodDisruptionBudget e anti-affinity define o comportamento descrito na parte final. O livro Release It! de Michael Nygard é a referência dos padrões de estabilidade, incluindo o circuit breaker. O livro Designing Data-Intensive Applications de Martin Kleppmann, de 2017, trata em profundidade da replicação, dos logs e do event streaming.
+
+Recomenda-se começar pela documentação do RabbitMQ, em simultâneo com a realização do guião.
+}
+
+\pagina{slides/slide-32.png}{
+Terminada a aula, as questões e os comentários são bem-vindos. Sugere-se rever o percurso, da redundância e do RTO e RPO até à mensageria e aos padrões de resiliência, e testar a compreensão explicando cada diagrama por palavras próprias.
+}
+
+\end{document}

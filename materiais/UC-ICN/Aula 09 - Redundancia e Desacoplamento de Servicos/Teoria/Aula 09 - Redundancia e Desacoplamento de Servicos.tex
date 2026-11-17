@@ -62,6 +62,16 @@
 \institute{ESTGA, Universidade de Aveiro}
 \date{2026}
 
+\newcommand{\figframe}[2]{%
+\begin{frame}
+\frametitle{#1}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/#2.png}
+\end{center}
+\vfill
+\end{frame}}
+
 \begin{document}
 
 \begin{frame}[plain]
@@ -72,11 +82,11 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Redundância ativa-ativa vs ativa-passiva.
+    \item Redundância ativa-ativa e ativa-passiva.
     \item Single points of failure.
-    \item Métricas de recuperação: RTO e RPO.
-    \item Motivação para o desacoplamento entre serviços.
-    \item Comunicação síncrona vs assíncrona.
+    \item Métricas de recuperação, RTO e RPO.
+    \item Desacoplamento entre serviços.
+    \item Comunicação síncrona e assíncrona.
 \end{itemize}
 \end{frame}
 
@@ -84,215 +94,224 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Filas de mensagens e brokers: RabbitMQ e AMQP.
-    \item Componentes AMQP: exchanges, bindings e filas.
+    \item Filas de mensagens e brokers, com RabbitMQ e AMQP.
+    \item Exchanges, bindings e filas.
     \item Garantias de entrega e idempotência.
     \item Padrões de mensageria e de resiliência.
-    \item Message brokers vs event streaming.
+    \item Dead letter queues e backpressure.
+    \item Message brokers e event streaming.
     \item Redundância e desacoplamento no Kubernetes.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Redundância Ativa-Ativa vs Ativa-Passiva}
+\frametitle{Redundância Ativa-Ativa e Ativa-Passiva}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Redundância: manter mais do que uma instância de um componente crítico.
-    \item \textbf{Ativa-ativa}: todas as réplicas processam pedidos em simultâneo.
-    \item \textbf{Ativa-passiva}: uma réplica processa pedidos, outra(s) ficam em espera (\emph{standby}) para assumir em caso de falha.
-    \item Ativa-ativa aproveita melhor os recursos; ativa-passiva é mais simples de garantir consistência.
+    \item Redundância é manter mais do que uma instância de um componente crítico.
+    \item Na ativa-ativa, todas as replicas processam pedidos em simultâneo.
+    \item Na ativa-passiva, uma replica processa e as outras ficam em standby para assumir em caso de falha (failover).
+    \item A ativa-ativa aproveita melhor os recursos, e a ativa-passiva torna mais simples garantir a consistência.
+    \item A ativa-ativa é o modelo do balanceamento de carga da Aula 08.
 \end{itemize}
 \end{frame}
+
+\figframe{Ativa-Ativa e Ativa-Passiva}{a09-ativa-passiva}
 
 \begin{frame}
 \frametitle{Single Points of Failure}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Single point of failure (SPOF)}: qualquer componente cuja falha isolada derruba todo o serviço.
+    \item Um single point of failure (SPOF) é qualquer componente cuja falha isolada derruba todo o serviço.
     \item Pode ser um servidor, um load balancer, uma base de dados ou até um único link de rede.
-    \item Estratégia: identificar SPOFs e introduzir redundância em cada um.
+    \item A estratégia é identificar os SPOFs e introduzir redundância em cada um.
     \item Redundância sem eliminar todos os SPOFs dá uma falsa sensação de segurança.
 \end{itemize}
 \end{frame}
 
+\figframe{Eliminar os Single Points of Failure}{a09-spof}
+
 \begin{frame}
-\frametitle{Métricas de Recuperação: RTO e RPO}
+\frametitle{Métricas de Recuperação, RTO e RPO}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{RTO} (Recovery Time Objective): quanto tempo o serviço pode estar indisponível antes de o impacto ser inaceitável.
-    \item \textbf{RPO} (Recovery Point Objective): quantos dados se pode perder, medido em tempo desde o último ponto de recuperação.
-    \item Um RPO de 15 minutos implica replicação ou backups com, no máximo, esse intervalo.
-    \item Uma configuração ativa-ativa tende a dar RTO próximo de zero; restaurar a partir de backup dá um RTO de horas.
-    \item Estes valores são decisões de negócio, com custo associado: quanto mais exigentes, mais cara a infraestrutura necessária.
+    \setlength\itemsep{0.35cm}
+    \item O RTO (Recovery Time Objective) é o tempo máximo de indisponibilidade antes de o impacto ser inaceitável.
+    \item O RPO (Recovery Point Objective) é a quantidade de dados que se aceita perder, medida em tempo desde o último ponto de recuperação.
+    \item Um RPO de 15 minutos exige replicação ou backups com, no máximo, esse intervalo.
+    \item A ativa-ativa tende a dar um RTO próximo de zero, e restaurar a partir de backup dá um RTO de horas.
+    \item São decisões de negócio com custo associado, e quanto mais exigentes, mais cara é a infraestrutura.
 \end{itemize}
 \end{frame}
+
+\figframe{RTO e RPO numa Linha Temporal}{a09-rto-rpo}
 
 \begin{frame}
 \frametitle{Porque Desacoplar Serviços}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Serviços fortemente acoplados propagam falhas em cascata: um lento, todos lentos.
-    \item Desacoplamento permite que cada serviço evolua, seja atualizado e escale de forma independente.
+    \item Serviços fortemente acoplados propagam falhas em cascata, e se um fica lento todos ficam lentos.
+    \item O desacoplamento permite que cada serviço evolua, seja atualizado e escale de forma independente.
     \item Reduz o impacto de uma falha isolada no sistema global.
-    \item Base para arquiteturas de microsserviços resilientes.
+    \item É a base de arquiteturas de microsserviços resilientes.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Comunicação Síncrona vs Assíncrona}
+\frametitle{Comunicação Síncrona e Assíncrona}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Síncrona} (ex.\ chamadas REST diretas): o cliente espera pela resposta antes de continuar.
-    \item Simples de entender, mas acopla a disponibilidade do cliente à do serviço chamado.
-    \item \textbf{Assíncrona} (baseada em mensagens): o remetente envia e continua, sem esperar resposta imediata.
-    \item Tolera melhor picos de carga e indisponibilidades temporárias do lado recetor.
+    \item Na comunicação síncrona (por exemplo chamadas REST diretas), o cliente espera pela resposta antes de continuar.
+    \item É simples de compreender, mas liga a disponibilidade do cliente à do serviço chamado.
+    \item Na comunicação assíncrona, baseada em mensagens, o remetente envia e continua sem esperar resposta imediata.
+    \item Tolera melhor picos de carga e indisponibilidades temporárias do recetor.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Acoplado vs Desacoplado}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a09-sinc-assinc.png}
-\end{center}
-\vfill
-\end{frame}
-
+\figframe{Acoplado e Desacoplado}{a09-sinc-assinc}
 
 \begin{frame}
 \frametitle{Filas de Mensagens e Brokers}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Um \textbf{broker de mensagens} recebe, guarda e entrega mensagens entre produtores e consumidores.
-    \item Produtor e consumidor não precisam de estar ativos ao mesmo tempo -- desacoplamento temporal.
-    \item \textbf{RabbitMQ}: broker de mensagens amplamente usado, baseado no protocolo \textbf{AMQP}.
-    \item AMQP define exchanges, filas e regras de encaminhamento entre eles.
+    \item Um broker de mensagens recebe, guarda e entrega mensagens entre produtores e consumidores.
+    \item Produtor e consumidor não precisam de estar ativos ao mesmo tempo, o que se chama desacoplamento temporal.
+    \item O RabbitMQ é um broker muito usado, baseado no protocolo AMQP.
+    \item O AMQP define exchanges, filas e as regras de encaminhamento entre eles.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Componentes do AMQP}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O produtor \emph{nunca} publica diretamente numa fila: publica sempre num \textbf{exchange}.
-    \item O \textbf{binding} liga um exchange a uma fila, eventualmente com uma \emph{routing key} que atua como critério de filtragem.
-    \item \textbf{Direct}: entrega às filas cuja routing key corresponde exatamente à da mensagem.
-    \item \textbf{Fanout}: ignora a routing key e entrega a todas as filas ligadas -- é a base do publish/subscribe.
-    \item \textbf{Topic}: correspondência por padrões com \textit{wildcards} (ex.\ \texttt{logs.*.erro}).
-    \item \textbf{Headers}: encaminha com base em cabeçalhos da mensagem, em vez da routing key.
+    \setlength\itemsep{0.2cm}
+    \item O produtor publica sempre num exchange, e é o exchange que encaminha para as filas.
+    \item O binding liga um exchange a uma fila, eventualmente com uma routing key que serve de critério de filtragem.
+    \item O exchange direct entrega às filas cuja chave coincide exatamente com a da mensagem.
+    \item O fanout ignora a chave e entrega a todas as filas ligadas, o que é a base do publish/subscribe.
+    \item O topic faz correspondência por padrões (por exemplo \texttt{logs.*.erro}).
+    \item O headers encaminha com base nos cabeçalhos da mensagem, em vez da routing key.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{O Caminho de uma Mensagem}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a09-amqp.png}
-\end{center}
-\vfill
-\end{frame}
+\figframe{O Caminho de uma Mensagem}{a09-amqp}
 
+\figframe{Tipos de Exchange}{a09-exchanges}
 
 \begin{frame}
 \frametitle{Garantias de Entrega}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{At-most-once}: a mensagem pode perder-se, mas nunca é processada duas vezes.
-    \item \textbf{At-least-once}: a mensagem nunca se perde, mas pode ser entregue mais do que uma vez.
-    \item \textbf{Exactly-once}: entregue exatamente uma vez -- difícil e dispendioso de garantir em sistemas distribuídos.
-    \item Na prática, a solução comum é \emph{at-least-once} com consumidores \textbf{idempotentes}: processar duas vezes a mesma mensagem não altera o resultado.
-    \item \textbf{Acknowledgements (ACK)}: o consumidor confirma o processamento; sem confirmação, o broker volta a entregar a mensagem.
-    \item \textbf{Durabilidade}: filas e mensagens marcadas como persistentes sobrevivem ao reinício do broker.
+    \setlength\itemsep{0.15cm}
+    \item At-most-once significa que a mensagem pode perder-se, mas nunca é processada duas vezes.
+    \item At-least-once significa que a mensagem não se perde, mas pode ser entregue mais de uma vez.
+    \item Exactly-once é difícil e dispendioso de garantir em sistemas distribuídos.
+    \item Na prática usa-se at-least-once com consumidores idempotentes, em que processar duas vezes a mesma mensagem não altera o resultado.
+    \item Com ACK, o consumidor confirma o processamento, e sem confirmação o broker volta a entregar.
+    \item Filas e mensagens persistentes sobrevivem ao reinício do broker.
 \end{itemize}
 \end{frame}
+
+\figframe{ACK e Entrega Repetida}{a09-entrega}
 
 \begin{frame}
 \frametitle{Padrões de Mensageria}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Work queues}: várias tarefas distribuídas por múltiplos consumidores, cada mensagem processada uma única vez.
-    \item Útil para distribuir trabalho pesado por vários workers em paralelo.
-    \item \textbf{Publish/subscribe}: uma mensagem é difundida para todos os consumidores subscritos.
-    \item Útil quando vários serviços independentes precisam de reagir ao mesmo evento.
+    \item Numa work queue, as tarefas são distribuídas por vários consumidores e cada mensagem é processada uma única vez.
+    \item É útil para repartir trabalho pesado por vários workers em paralelo.
+    \item No publish/subscribe, cada mensagem é difundida para todos os consumidores subscritos.
+    \item É útil quando vários serviços independentes precisam de reagir ao mesmo evento.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Work Queue vs Publish/Subscribe}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a09-padroes.png}
-\end{center}
-\vfill
-\end{frame}
-
+\figframe{Work Queue e Publish/Subscribe}{a09-padroes}
 
 \begin{frame}
 \frametitle{Padrões de Resiliência}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Circuit breaker}: deteta falhas repetidas numa chamada a um serviço e passa a bloquear novas tentativas temporariamente.
+    \item O circuit breaker deteta falhas repetidas numa chamada e passa a bloquear novas tentativas durante algum tempo.
     \item Evita sobrecarregar um serviço já em dificuldades e dá-lhe tempo para recuperar.
-    \item \textbf{Retries com backoff exponencial}: repetir uma operação falhada, aumentando o intervalo entre tentativas.
-    \item Reduz a pressão sobre o sistema em falha, em vez de o inundar com pedidos repetidos imediatos.
+    \item Os retries com backoff exponencial repetem a operação falhada com intervalos cada vez maiores.
+    \item Reduzem a pressão sobre o sistema em falha, em vez de o inundar com pedidos repetidos imediatos.
 \end{itemize}
 \end{frame}
 
+\figframe{Estados do Circuit Breaker}{a09-circuit-breaker}
+
 \begin{frame}
-\frametitle{Filas de Mensagens Mortas e Contrapressão}
+\frametitle{Dead Letter Queues e Contrapressão}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Dead letter queue (DLQ)}: fila para onde são desviadas mensagens que não puderam ser processadas com sucesso.
-    \item Evita que uma mensagem problemática bloqueie indefinidamente o processamento das restantes (\emph{poison message}).
-    \item \textbf{Backpressure}: quando os consumidores não acompanham o ritmo dos produtores, a fila cresce sem limite.
-    \item Mitigação: limitar o tamanho das filas, aplicar \textit{prefetch} nos consumidores, ou escalar o número de consumidores.
-    \item O tamanho da fila é, por isso, uma excelente métrica para auto-scaling -- como referido na Aula 08.
+    \setlength\itemsep{0.3cm}
+    \item Uma dead letter queue (DLQ) recebe as mensagens que não puderam ser processadas com sucesso.
+    \item Evita que uma poison message bloqueie indefinidamente o processamento das restantes.
+    \item Há backpressure quando os consumidores não acompanham o ritmo dos produtores e a fila cresce sem limite.
+    \item A mitigação passa por limitar o tamanho das filas, aplicar prefetch nos consumidores ou escalar o número de consumidores.
+    \item O tamanho da fila é, por isso, uma boa métrica de auto-scaling, como visto na Aula 08.
 \end{itemize}
 \end{frame}
 
+\figframe{Dead Letter Queue e Backpressure}{a09-dlq-backpressure}
+
 \begin{frame}
-\frametitle{Message Brokers vs Event Streaming}
+\frametitle{Message Brokers e Event Streaming}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Message broker} (ex.\ RabbitMQ): a mensagem é removida da fila após ser consumida e confirmada.
-    \item Orientado a \emph{tarefas}: cada mensagem representa trabalho a executar uma vez.
-    \item \textbf{Event streaming} (ex.\ Apache Kafka): os eventos são guardados num registo ordenado e persistente (\textit{log}).
-    \item Vários consumidores leem independentemente, cada um com o seu \textit{offset}; os eventos permanecem disponíveis para releitura.
-    \item Orientado a \emph{eventos}: adequado a análise, auditoria e reprocessamento histórico.
-    \item A escolha depende do caso de uso: distribuir trabalho (broker) ou registar factos (streaming).
+    \setlength\itemsep{0.3cm}
+    \item Num message broker (por exemplo o RabbitMQ), a mensagem é removida da fila depois de consumida e confirmada.
+    \item É orientado a tarefas, e cada mensagem representa trabalho a executar uma vez.
+    \item No event streaming (por exemplo o Apache Kafka), os eventos ficam num registo ordenado e persistente, o log.
+    \item Vários consumidores leem de forma independente, cada um com o seu offset, e os eventos ficam disponíveis para releitura.
+    \item É orientado a eventos, e adequado a análise, auditoria e reprocessamento histórico.
+    \item A escolha depende do caso de uso, distribuir trabalho ou registar factos.
 \end{itemize}
 \end{frame}
+
+\figframe{Fila de Tarefas e Log de Eventos}{a09-broker-streaming}
 
 \begin{frame}
 \frametitle{Redundância e Desacoplamento no Kubernetes}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Várias réplicas de um Deployment atrás de um Service constituem redundância \textbf{ativa-ativa} (Aula 08).
-    \item \textbf{PodDisruptionBudget}: garante um número mínimo de réplicas disponíveis durante operações de manutenção planeada.
-    \item \textbf{Anti-affinity}: distribui as réplicas por nós diferentes, evitando que a falha de um nó derrube todas.
-    \item Serviços com estado, como um broker de mensagens, implantam-se tipicamente com \textbf{StatefulSet} e armazenamento persistente.
-    \item O desacoplamento por mensageria mantém-se igualmente válido dentro do cluster: produtores e consumidores são Deployments independentes.
+    \setlength\itemsep{0.3cm}
+    \item Várias replicas de um Deployment atrás de um Service constituem redundância ativa-ativa (Aula 08).
+    \item Um PodDisruptionBudget garante um número mínimo de replicas disponíveis durante a manutenção planeada.
+    \item A anti-affinity distribui as replicas por nós diferentes, para que a falha de um nó não derrube todas.
+    \item Serviços com estado, como um broker, implantam-se tipicamente com StatefulSet e armazenamento persistente.
+    \item O desacoplamento por mensageria mantém-se válido dentro do cluster, com produtores e consumidores em Deployments independentes.
 \end{itemize}
 \end{frame}
+
+\figframe{Replicas Distribuídas e PodDisruptionBudget}{a09-k8s-redundancia}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Redundância ativa-ativa ou ativa-passiva ajuda a eliminar single points of failure.
+    \item A redundância ativa-ativa ou ativa-passiva ajuda a eliminar single points of failure.
+    \item RTO e RPO quantificam os objetivos de recuperação.
     \item Desacoplar serviços evita falhas em cascata e permite evolução independente.
-    \item Comunicação assíncrona, via filas de mensagens, reduz o acoplamento temporal entre serviços.
+    \item A comunicação assíncrona, via filas, reduz o acoplamento temporal.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
+    \setlength\itemsep{0.3cm}
     \item No AMQP, os produtores publicam em exchanges (direct, fanout, topic, headers), que encaminham para filas através de bindings.
-    \item Work queues distribuem tarefas; publish/subscribe difunde eventos. ACKs e durabilidade sustentam a entrega \emph{at-least-once} com consumidores idempotentes.
-    \item DLQs isolam mensagens problemáticas; o tamanho da fila é uma boa métrica de auto-scaling.
-    \item Circuit breaker e retries com backoff exponencial tornam os sistemas mais resilientes; RTO e RPO quantificam os objetivos de recuperação.
+    \item As work queues distribuem tarefas e o publish/subscribe difunde eventos.
+    \item ACKs e durabilidade sustentam o at-least-once, com consumidores idempotentes.
+    \item As DLQs isolam mensagens problemáticas, e o circuit breaker e os retries com backoff tornam os sistemas mais resilientes.
+    \item Brokers distribuem trabalho e event streaming regista factos, e no Kubernetes usam-se replicas, anti-affinity e PodDisruptionBudget.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Leituras}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Documentação do RabbitMQ, em particular os conceitos de AMQP 0-9-1, acknowledgements e dead letter exchanges, rabbitmq.com.
+    \item Documentação do Kubernetes sobre PodDisruptionBudget e pod anti-affinity, kubernetes.io.
+    \item Nygard, M. Release It!, Pragmatic Bookshelf, sobre circuit breaker e outros padrões de estabilidade.
+    \item Kleppmann, M. Designing Data-Intensive Applications, O'Reilly, 2017, sobre logs e event streaming.
 \end{itemize}
 \end{frame}
 
