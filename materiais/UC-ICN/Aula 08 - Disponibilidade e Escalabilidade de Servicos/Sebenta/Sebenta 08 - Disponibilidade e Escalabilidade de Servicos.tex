@@ -1,0 +1,306 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+\setlength{\emergencystretch}{3em}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{08}{Disponibilidade e Escalabilidade de Serviços}{Aula 08}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 08. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada, com algum aprofundamento para além do que a apresentação permite mostrar. A aula é expositiva e apoia-se em duas anteriores: os SLAs e os Tiers de datacenter da Aula 02, que fixam os compromissos de disponibilidade, e os objetos do Kubernetes da Aula 05, em particular os Deployments e os Services.
+
+A leitura sequencial é a mais proveitosa. A aula começa por definir disponibilidade e escalabilidade e por quantificar a primeira. Segue para as formas de crescer um serviço, o escalamento vertical e o horizontal, e para a condição que torna o segundo simples, a ausência de estado local. Trata depois do auto-scaling e do balanceamento de carga, desde os algoritmos até ao nível global com DNS. Continua com os health checks e as estratégias de implantação sem downtime, passa pelo caching e pelas CDNs, estabelece o limite teórico da escalabilidade com a lei de Amdahl e termina com o Kubernetes, onde quase todos estes conceitos têm uma concretização.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+Um serviço na nuvem só cumpre o seu propósito se estiver acessível quando é preciso e se continuar a responder bem quando o número de utilizadores cresce. Estas duas propriedades, a disponibilidade e a escalabilidade, são atributos de qualidade do sistema. Não se acrescentam no fim do desenvolvimento como uma funcionalidade, resultam de decisões de arquitetura tomadas desde o início.
+
+A aula percorre os mecanismos que as concretizam. Cada mecanismo resolve um problema específico, e a compreensão de qual problema resolve é mais importante do que a memorização do nome da ferramenta que o implementa.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira metade da agenda trata dos fundamentos. Começa pela definição dos dois atributos e pela quantificação da disponibilidade, que dá um significado numérico às percentagens dos SLAs. Segue para as duas formas de crescer um serviço e para a distinção entre serviços com e sem estado, que condiciona qual das duas formas é praticável.
+
+Inclui ainda o auto-scaling, isto é, a decisão automática de quando acrescentar ou retirar capacidade, e o balanceamento de carga, que distribui o trabalho pela capacidade existente, tanto nos algoritmos como nas camadas 4 e 7 do modelo de rede.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda metade da agenda passa do desenho à operação. O balanceamento global com DNS e edge locations resolve a questão de a que região ou datacenter deve chegar cada utilizador. Os health checks e as estratégias de implantação sem downtime respondem a duas perguntas de operação, como detetar instâncias avariadas e como atualizar o software sem interromper o serviço.
+
+O caching e as CDNs reduzem o trabalho a fazer, a lei de Amdahl mostra porque é que acrescentar instâncias não resolve tudo, e o Kubernetes serve de exemplo onde os mecanismos se encontram reunidos numa mesma plataforma.
+}
+
+\pagina{slides/slide-04.png}{
+Na Aula 02, o SLA foi apresentado como o compromisso contratual de disponibilidade, por exemplo 99,9\%, e os Tiers classificaram a resiliência da infraestrutura física do datacenter. A disponibilidade de um serviço depende dessa base física, mas depende igualmente do software e da arquitetura que corre por cima dela. Um datacenter Tier elevado não protege um serviço que corre numa única instância sem redundância.
+
+Define-se disponibilidade como a capacidade de o serviço responder corretamente num dado momento, mesmo quando alguns componentes falham. A escalabilidade é a capacidade de manter o desempenho aceitável quando a procura aumenta, acrescentando recursos sem reescrever a aplicação. Os dois atributos relacionam-se, porque um serviço que não escala falha por sobrecarga e passa, na prática, a estar indisponível.
+
+A frase final do slide sintetiza a ideia central. Hardware mais potente atrasa o problema, mas não o resolve. A resposta duradoura passa por uma arquitetura que tolere falhas parciais e que cresça por adição de componentes equivalentes.
+}
+
+\pagina{slides/slide-05.png}{
+A disponibilidade mede-se como a fração do tempo em que o serviço está operacional. Uma forma habitual de a exprimir relaciona o tempo médio entre falhas (MTBF) com o tempo médio de reparação (MTTR), de modo que a disponibilidade é MTBF a dividir por MTBF mais MTTR. A fórmula mostra que há dois caminhos para a melhorar, falhar menos vezes ou reparar mais depressa. Em nuvem, o segundo caminho costuma ser o mais eficaz, porque a substituição automática de instâncias reduz o MTTR a segundos.
+
+Um SLA traduz-se num orçamento de downtime. Num ano de 8760 horas, 99\% permitem cerca de 3,65 dias de indisponibilidade, 99,9\% permitem 8,76 horas, 99,99\% permitem cerca de 52,6 minutos e 99,999\% permitem cerca de 5,26 minutos. Cada nove adicional divide o orçamento por dez, mas o custo e a complexidade para o atingir crescem muito mais depressa do que isso, e a partir de certo ponto o orçamento é menor do que o tempo de uma intervenção humana, o que obriga à automatização completa da deteção e da recuperação.
+
+O slide introduz ainda a composição de componentes. Quando os componentes estão em série, isto é, quando o serviço precisa de todos eles, a disponibilidade do conjunto é o produto das disponibilidades individuais e fica pior do que a de qualquer parte. Quando estão em paralelo e são redundantes, o conjunto só falha se todos falharem, o que justifica a replicação.
+}
+
+\pagina{slides/slide-06.png}{
+O diagrama concretiza as duas composições com números. Dois componentes em série, cada um com 99,9\%, dão 0,999 vezes 0,999, ou seja, cerca de 99,8\%. Uma cadeia de cinco componentes com a mesma disponibilidade individual desce para cerca de 99,5\%. É por isso que a disponibilidade de um serviço complexo, com load balancer, aplicação, cache e base de dados em série, é inferior à de cada peça.
+
+Em paralelo, a indisponibilidade combinada de dois componentes independentes é o produto das indisponibilidades, 0,001 vezes 0,001, de onde resulta 99,9999\%. A fórmula geral para n replicas é um menos a indisponibilidade elevada a n.
+
+O resultado depende de uma hipótese forte, a independência das falhas. Duas instâncias no mesmo servidor físico, no mesmo rack ou na mesma Zona de Disponibilidade partilham causas de falha, e uma implantação defeituosa afeta todas as instâncias de uma vez. Por isso, a redundância deve ser distribuída por domínios de falha distintos, como as zonas e as regiões da Aula 02, e o próprio componente que distribui o tráfego tem de ser redundante, sob pena de se tornar o ponto único de falha que a redundância devia ter eliminado.
+}
+
+\pagina{slides/slide-07.png}{
+Há duas formas de dar mais capacidade a um serviço. O scale-up, ou escalamento vertical, aumenta os recursos de uma única instância, com mais CPU, mais memória ou discos mais rápidos. É a opção mais simples, porque não exige alterações à aplicação, mas esbarra em limites. O maior servidor disponível impõe um teto físico, o preço por unidade de capacidade tende a subir nos modelos de topo e a instância continua a ser um ponto único de falha. Em muitos casos, redimensionar uma instância obriga ainda a reiniciá-la, o que gera downtime.
+
+O scale-out, ou escalamento horizontal, acrescenta instâncias equivalentes que correm em paralelo, com um load balancer a distribuir o trabalho. Não tem um teto prático à partida, usa hardware corrente e dá redundância como efeito secundário, porque a perda de uma instância reduz a capacidade em vez de interromper o serviço. O preço é a complexidade. A aplicação tem de funcionar com várias instâncias em simultâneo, o que levanta as questões de estado, de coordenação e de consistência tratadas nos slides seguintes.
+
+Na prática combinam-se as duas formas. Escolhe-se um tamanho de instância razoável e escala-se na horizontal, reservando o escalamento vertical para componentes difíceis de replicar, como uma base de dados relacional de instância única.
+}
+
+\pagina{slides/slide-08.png}{
+O diagrama contrasta as duas abordagens. À esquerda, a mesma máquina cresce de um para dois e depois para quatro vCPU, com a memória a acompanhar. A caixa maior aumenta a capacidade, mas continua a ser uma só unidade, e é essa unicidade que mantém o ponto único de falha. À direita, a capacidade cresce com a adição de instâncias idênticas, cada uma com o mesmo tamanho.
+
+Convém reparar numa assimetria que o slide sugere. O escalamento vertical é limitado pelo tamanho máximo da máquina, enquanto o horizontal é limitado pela arquitetura da aplicação. É por isso que a pergunta relevante para o desenho de um serviço raramente é quanto hardware é necessário, e quase sempre se a aplicação suporta ser replicada.
+}
+
+\pagina{slides/slide-09.png}{
+Um serviço é stateless quando cada pedido contém tudo o que é necessário para ser tratado, e a instância não guarda memória do cliente entre pedidos. Qualquer instância pode, então, responder a qualquer pedido, e acrescentar ou retirar instâncias não exige coordenação. É a propriedade que torna o scale-out simples e que a metodologia dos twelve-factor apps recomenda para os processos de uma aplicação.
+
+Um serviço é stateful quando a instância guarda estado relativo ao cliente, como uma sessão de autenticação em memória ou um carrinho de compras. Os pedidos seguintes têm de chegar à mesma instância, e se ela falhar o estado perde-se. Nesse caso, o load balancer já não pode distribuir livremente, e o escalamento fica condicionado.
+
+Há duas respostas habituais. A mais robusta é externalizar o estado para um armazenamento partilhado, uma base de dados ou uma cache distribuída como o Redis, de modo que as instâncias da aplicação ficam sem estado e o estado passa a ser um problema de um sistema concebido para o gerir. Em autenticação, uma variante frequente é guardar a identidade num token assinado enviado pelo cliente a cada pedido, o que dispensa a sessão no servidor. A segunda resposta é a session affinity, também chamada sticky sessions, em que o load balancer envia sempre o mesmo cliente para a mesma instância, geralmente com um cookie ou com um hash do IP. É mais simples de adotar, mas distribui mal a carga, porque alguns clientes são muito mais ativos do que outros, e não protege contra a falha da instância, que leva consigo as sessões que albergava.
+}
+
+\pagina{slides/slide-10.png}{
+O auto-scaling ajusta o número de instâncias à procura sem intervenção humana, o que evita tanto o desperdício de capacidade parada como a falta dela nos picos. A decisão assenta em métricas recolhidas continuamente.
+
+As métricas mais comuns são a utilização de CPU e de memória, simples de obter mas nem sempre representativas da experiência do utilizador, a latência das respostas, que mede diretamente o que o utilizador sente, e o tamanho das filas de pedidos ou de mensagens, adequado a processamento assíncrono. Uma boa métrica varia de forma proporcional à carga e reage ao acrescentar instâncias. Uma métrica que não baixa quando se acrescenta capacidade, como a latência determinada por uma base de dados saturada, leva o auto-scaling a crescer sem benefício.
+
+Uma política compara a métrica com um valor alvo e decide acrescentar ou remover instâncias. Um conceito importante é o período de estabilização, em que o sistema aguarda antes de nova decisão. Sem ele, o sistema oscila, acrescentando instâncias num instante e retirando-as logo a seguir. A redução é tipicamente mais conservadora do que o crescimento, porque retirar capacidade cedo demais é mais arriscado do que mantê-la um pouco mais.
+}
+
+\pagina{slides/slide-11.png}{
+O diagrama mostra o auto-scaling como um ciclo de controlo realimentado. As métricas alimentam a política, a política decide uma ação de scale out ou de scale in, a ação altera o número de instâncias e a monitorização volta a medir o efeito, fechando o ciclo.
+
+O exemplo reativo do slide, CPU média acima de 70\% durante um período definido, ilustra dois pontos. O primeiro é que o limiar combina-se com uma duração, para que um pico momentâneo não dispare uma ação. O segundo é o atraso inerente ao ciclo. Entre a subida da carga, a deteção, a decisão e o arranque de uma nova instância passa um tempo que pode ir de segundos a vários minutos, e durante ele o serviço opera sobrecarregado. É este atraso que motiva as políticas preditivas e a prática de manter alguma margem de capacidade.
+}
+
+\pagina{slides/slide-12.png}{
+As políticas reativas atuam depois de a métrica ultrapassar um limiar. Têm a vantagem da simplicidade e de não precisarem de prever o futuro, e a desvantagem de reagirem sempre com atraso. Uma variante comum é o target tracking, em que se define o valor desejado da métrica, por exemplo uma utilização média de CPU de 60\%, e o sistema calcula o número de instâncias necessário para a manter.
+
+As políticas preditivas usam padrões históricos, como o pico diário das nove da manhã ou a sazonalidade semanal, para acrescentar capacidade antes de a carga chegar. Compensam o tempo de arranque das instâncias, mas exigem histórico fiável e falham perante picos inesperados. Uma forma mais simples e frequente é o escalamento agendado, em que as janelas conhecidas de maior procura são configuradas à mão. Na prática, as políticas combinam-se, com uma base preditiva ou agendada e uma camada reativa a absorver o imprevisto.
+}
+
+\pagina{slides/slide-13.png}{
+Um load balancer recebe os pedidos num ponto único e distribui-os por um conjunto de instâncias equivalentes. A distribuição melhora o desempenho e a disponibilidade, e permite acrescentar ou retirar instâncias sem que os clientes o notem.
+
+O round-robin envia o primeiro pedido à primeira instância, o segundo à segunda e assim sucessivamente, recomeçando no fim da lista. É simples e justo quando os pedidos têm custo semelhante e as instâncias têm a mesma capacidade. Existe uma variante com pesos para instâncias de capacidades diferentes. O least connections envia cada pedido novo à instância com menos ligações ativas, o que se adapta melhor quando a duração dos pedidos varia muito, porque uma instância ocupada com pedidos longos deixa de receber mais trabalho. O hashing aplica uma função de hash a uma chave do pedido, por exemplo o IP do cliente, e escolhe a instância a partir do resultado, de modo que o mesmo cliente chega sempre ao mesmo destino sem partilha de estado.
+
+O hashing consistente refina esta ideia. Num hash simples sobre o módulo do número de instâncias, acrescentar ou retirar uma instância altera o destino da maior parte das chaves. No hashing consistente, instâncias e chaves são colocadas num mesmo anel, e cada chave segue para a instância seguinte no anel, de modo que a entrada ou saída de uma instância só desloca uma fração das chaves, aproximadamente uma em n. É por isso que é muito usado em caches distribuídas e em load balancers que precisam de afinidade estável.
+}
+
+\pagina{slides/slide-14.png}{
+O diagrama pôs lado a lado os três algoritmos com o mesmo conjunto de três instâncias. No round-robin, seis pedidos distribuem-se igualmente, dois por instância, independentemente do que cada instância esteja a fazer. No least connections, os números de ligações ativas diferem, 12, 3 e 9, e o próximo pedido segue para a instância com 3. No hashing, a chave identifica o cliente, e os clientes 1 e 4 ficam sempre na instância A, os clientes 2 e 5 na B e os clientes 3 e 6 na C.
+
+Os valores são ilustrativos. O que o diagrama pretende fixar é o critério de decisão de cada algoritmo, que é a sequência, o estado atual de carga ou a identidade do cliente. A escolha deve partir do padrão de carga. Pedidos homogéneos e curtos servem-se bem do round-robin, pedidos de duração muito variável beneficiam do least connections e a necessidade de afinidade aponta para o hashing.
+}
+
+\pagina{slides/slide-15.png}{
+Os load balancers classificam-se pela camada do modelo de rede em que decidem. Na camada 4, a do transporte, vêem apenas endereços IP e portas TCP ou UDP e encaminham pacotes ou ligações sem interpretar o conteúdo. Por isso são rápidos, consomem poucos recursos e suportam volumes muito elevados de tráfego, mas só podem decidir com base nessa informação limitada.
+
+Na camada 7, a da aplicação, terminam a ligação e leem o pedido HTTP. Podem decidir pelo URL, pelos cabeçalhos ou pelos cookies, o que permite encaminhar \texttt{/api} para um conjunto de instâncias e \texttt{/imagens} para outro, fazer terminação de TLS, reescrever pedidos, aplicar limites de taxa ou manter afinidade por cookie. O custo é um processamento maior por pedido e uma capacidade máxima inferior à de um L4.
+
+As duas camadas não competem entre si. A camada 4 é a escolha quando se pretende máximo desempenho e distribuição simples, e a camada 7 quando o encaminhamento depende do conteúdo. À escala, combinam-se, como mostra o slide seguinte.
+}
+
+\pagina{slides/slide-16.png}{
+Um único load balancer também tem um limite de capacidade e é, por si só, um ponto único de falha. A resposta é repetir o padrão, pondo vários load balancers lado a lado e outro nível à frente deles. O L4 distribui pacotes e os L7 decidem por conteúdo, e cada nível resolve o limite do anterior.
+
+O slide apoia-se num caso real, documentado pela Meta quando publicou o Katran em 2018, que descreve o nível L4. Um router ou switch anuncia o endereço virtual do serviço e reparte os pacotes pelos vários L4 através de ECMP (Equal-Cost Multi-Path), um mecanismo que distribui o tráfego por caminhos de igual custo. Cada L4 escolhe o servidor de destino com um hash consistente sobre o 5-tuple da ligação, isto é, endereço e porta de origem, endereço e porta de destino e protocolo. Como todos os L4 calculam o mesmo resultado para a mesma ligação, não precisam de sincronizar estado entre si, e a saída ou entrada de um servidor perturba o mínimo de ligações existentes.
+
+O artigo descreve duas gerações. A primeira usava o módulo IPVS do kernel Linux para o encaminhamento, com os L4 e os servidores de destino em máquinas separadas. A segunda, o Katran, usa XDP e eBPF para correr o load balancer no mesmo conjunto de máquinas que os servidores de aplicação, aumentando a capacidade disponível. O artigo trata o nível L4. A existência de um nível L7 por trás é um padrão habitual na indústria, que o diagrama do slide seguinte representa de forma genérica.
+}
+
+\pagina{slides/slide-17.png}{
+O diagrama mostra a cascata. Os clientes chegam a um router com ECMP, que reparte as ligações por três L4. Cada L4 encaminha para um L7, que inspeciona o pedido e escolhe uma de duas instâncias de aplicação. O texto à direita lembra que o hash consistente no L4 mantém cada ligação sempre no mesmo destino.
+
+Há três pontos de leitura. A capacidade cresce por nível, porque se acrescentam L4 sem tocar nos L7 e vice-versa. A disponibilidade melhora, pois a falha de um L4 ou de um L7 é absorvida pelos restantes. E cada nível usa o critério adequado ao seu custo, informação simples e rápida à frente, inspeção de conteúdo mais atrás, onde o volume já foi repartido. Os números de blocos são apenas ilustrativos.
+}
+
+\pagina{slides/slide-18.png}{
+Antes de o cliente chegar a qualquer L4 ou L7, resolve um nome DNS. O servidor DNS pode responder de forma diferente consoante quem pergunta, e esse é o primeiro e mais grosseiro nível de balanceamento. Com um DNS por geografia ou por latência, o cliente recebe o endereço da região ou do edge mais adequado.
+
+Há subtilezas relevantes. O DNS vê, em regra, o endereço do resolver do cliente e não o do próprio cliente, pelo que a decisão é uma aproximação. O mais próximo em latência medida nem sempre coincide com o mais próximo no mapa, porque as rotas de rede não seguem a geografia. As respostas DNS são guardadas em cache durante o seu TTL, de modo que uma alteração, por exemplo para retirar uma região avariada, demora a propagar-se. Existe uma alternativa, o anycast, em que o mesmo endereço IP é anunciado por vários locais e o encaminhamento da rede leva cada cliente ao mais próximo segundo o BGP, o que evita a dependência do TTL.
+
+Aproximar o ponto de entrada do utilizador reduz a latência, porque cada ida e volta na rede custa tempo e a comunicação segura envolve várias. É o mesmo raciocínio das Regiões e Zonas de Disponibilidade da Aula 02. Este nível global é também o que torna as CDNs eficazes, como se verá mais adiante.
+}
+
+\pagina{slides/slide-19.png}{
+No diagrama, um cliente em Lisboa e outro em Tóquio perguntam ao mesmo DNS pelo mesmo nome. O DNS, que decide por geografia ou latência, devolve ao primeiro o endereço da região Europa e ao segundo o da região Ásia. Cada região tem o seu edge e o seu datacenter, e é dentro dela que passam a atuar os load balancers L4 e L7.
+
+O esquema mostra a hierarquia completa do balanceamento. Primeiro escolhe-se a região, depois o L4 distribui as ligações, depois o L7 decide por conteúdo e, por fim, a instância responde. Uma vantagem adicional desta estrutura é a tolerância a falhas regionais, porque se uma região ficar indisponível o DNS deixa de a anunciar e o tráfego é redirecionado, sujeito ao atraso do TTL.
+}
+
+\pagina{slides/slide-20.png}{
+O balanceamento só é útil se enviar tráfego a instâncias que funcionam. O load balancer verifica periodicamente cada instância, tipicamente com um pedido HTTP a um endpoint como \texttt{/health}, e retira do conjunto as que falham. Quando voltam a responder, são reintegradas sem intervenção manual. É este mecanismo que transforma a redundância em disponibilidade efetiva, porque a falha de uma instância deixa de ser vista pelo utilizador.
+
+Alguns parâmetros definem o comportamento. O intervalo entre verificações e o número de falhas consecutivas necessário para considerar uma instância avariada equilibram a rapidez da deteção contra o risco de falsos positivos. Existe também a deteção passiva, em que o load balancer observa os erros dos pedidos reais em vez de enviar sondas próprias.
+
+O desenho do endpoint importa. Uma verificação superficial confirma apenas que o processo responde. Uma verificação profunda testa dependências como a base de dados. A segunda é mais informativa, mas tem um risco, porque se a dependência falhar todas as instâncias passam a parecer avariadas e são retiradas ao mesmo tempo, transformando uma degradação parcial numa indisponibilidade total.
+}
+
+\pagina{slides/slide-21.png}{
+O Kubernetes distingue dois tipos de sonda com consequências diferentes. A readiness probe responde à pergunta de saber se o Pod está pronto para receber tráfego. Quando falha, o Pod deixa de constar dos endpoints do Service e não recebe pedidos, mas não é reiniciado. É o comportamento adequado para um arranque lento ou para uma indisponibilidade temporária, e é a razão de o Pod C do diagrama, com 0/1 pronto, ficar fora do balanceamento.
+
+A liveness probe responde à pergunta de saber se o container está vivo. Quando falha, o kubelet reinicia o container, o que resolve situações como um bloqueio interno. Há ainda a startup probe, que protege aplicações de arranque demorado para que a liveness não as reinicie antes de estarem prontas.
+
+Uma regra prática é não fazer depender a liveness de serviços externos. Se a base de dados falhar e a liveness a testar, todos os Pods serão reiniciados em cascata sem qualquer benefício. O diagrama mostra o resultado, o serviço mantém-se disponível enquanto existirem Pods prontos.
+}
+
+\pagina{slides/slide-22.png}{
+Atualizar software sem interromper o serviço exige uma estratégia de implantação. No rolling update, as instâncias são substituídas gradualmente, algumas de cada vez, e o serviço mantém sempre capacidade. No blue-green, existem dois ambientes completos, o atual (blue) e o novo (green), e o tráfego passa de um para o outro numa única comutação, o que permite reverter com rapidez. No canary, uma pequena fração do tráfego segue para a nova versão, que vai aumentando se as métricas se mantiverem saudáveis.
+
+As três estratégias partilham a dependência de health checks fiáveis, porque é através deles que se deteta uma versão defeituosa antes de afetar todos os utilizadores. Partilham também uma exigência sobre os dados. Durante a transição, versões antigas e novas coexistem, por isso as alterações ao esquema da base de dados têm de ser compatíveis com ambas, tipicamente acrescentando primeiro e removendo só depois de a versão antiga desaparecer.
+
+O Kubernetes usa o rolling update por omissão nos Deployments, como visto na Aula 05, com os parâmetros maxSurge e maxUnavailable a controlar quantos Pods extra podem existir e quantos podem estar indisponíveis durante a substituição, cujo valor por omissão é de 25\% para cada um.
+}
+
+\pagina{slides/slide-23.png}{
+O diagrama acompanha um Deployment de três replicas a passar da versão v1 para a v2. No início há três Pods em v1. Na substituição gradual, um Pod v2 é criado e só depois de passar a readiness probe passa a receber tráfego, e então um Pod v1 é retirado. A meio, dois Pods estão em v2 e um em v1, e no fim todos estão em v2.
+
+A legenda explica porque é que o cliente nunca vê erro. O Pod novo só recebe tráfego depois de passar a readiness probe, e só então o antigo é removido. O diagrama simplifica ao mostrar um Pod de cada vez, quando na realidade os parâmetros maxSurge e maxUnavailable podem substituir vários em simultâneo. A ligação com o slide dos health checks é direta, porque sem readiness probe o Kubernetes enviaria tráfego a Pods ainda a arrancar e o rolling update deixaria de ser seguro.
+}
+
+\pagina{slides/slide-24.png}{
+O blue-green mantém dois ambientes completos. O tráfego segue a 100\% para o blue, que corre a versão v1, enquanto o green, com a v2, é testado sem receber utilizadores. Quando a v2 está validada, o load balancer comuta o tráfego para o green numa só operação, e a reversão é tão simples como devolver o tráfego ao blue. O custo é manter dois ambientes em paralelo durante a transição, e a dificuldade principal está nos dados, porque ambos os ambientes costumam partilhar a mesma base de dados.
+
+No canary, a nova versão recebe inicialmente uma fração pequena do tráfego, no diagrama 5\%, e a versão anterior mantém o resto. Se as métricas de erro e de latência se mantiverem normais, a fração sobe por patamares até 100\%. Se pioram, o tráfego volta atrás, tendo apenas uma pequena parte dos utilizadores sido afetada. O canary exige boa observabilidade para decidir com base em dados, e as percentagens do slide são exemplos.
+
+Em termos de escolha, o rolling update é o mais económico, o blue-green dá a reversão mais rápida e o canary dá a maior segurança estatística à custa de mais tempo e de instrumentação.
+}
+
+\pagina{slides/slide-25.png}{
+Escalar nem sempre significa acrescentar instâncias. Muitas vezes o mais eficaz é evitar trabalho repetido, e é isso que o caching faz. Uma cache em memória, como o Redis ou o Memcached, guarda o resultado de operações caras, por exemplo uma consulta à base de dados, e serve-o diretamente nos pedidos seguintes. O padrão mais comum é o cache-aside, em que a aplicação consulta primeiro a cache e, em caso de falha (miss), vai à base de dados e guarda lá o resultado.
+
+Uma CDN (Content Delivery Network) aplica a mesma ideia à escala geográfica. Replica conteúdo estático, como imagens, scripts e vídeos, por servidores de edge próximos dos utilizadores. O pedido é respondido no edge se o conteúdo lá estiver (hit) e só vai à origem se não estiver (miss). Os benefícios são menor latência para o utilizador e menor carga na infraestrutura de origem, que pode ser dimensionada para uma fração do tráfego total.
+
+O custo é a invalidação. Conteúdo guardado pode ficar desatualizado, e é preciso decidir por quanto tempo é válido, através de um TTL, ou invalidá-lo explicitamente quando a fonte muda. Há ainda o risco do cache stampede, em que a expiração de uma entrada muito pedida leva muitos pedidos simultâneos a recalculá-la na origem. A taxa de acertos (hit ratio) é a métrica que mede a eficácia da cache.
+}
+
+\pagina{slides/slide-26.png}{
+O diagrama mostra os dois casos. À esquerda, o utilizador pede conteúdo ao edge da CDN. Se o conteúdo está lá, o edge responde de imediato (hit). Se não está, o edge pede-o à origem (miss) e guarda a cópia para os pedidos seguintes. Nota-se que a carga na origem só ocorre nos misses.
+
+À direita, a aplicação lê primeiro da cache e, apenas em caso de miss, consulta a base de dados. O texto sublinha que, assim, a base de dados deixa de ser o bottleneck imediato. Esta função da cache liga-se ao slide de Amdahl, porque a base de dados partilhada é, muitas vezes, a parte que não escala com as instâncias, e reduzir o número de acessos a ela adia o limite.
+}
+
+\pagina{slides/slide-27.png}{
+Acrescentar instâncias não aumenta o desempenho de forma linear e ilimitada. A lei de Amdahl, formulada por Gene Amdahl em 1967, quantifica o limite. Se p for a fração do trabalho que pode ser paralelizada e n o número de instâncias, o ganho máximo é S(n) igual a 1 a dividir por (1 menos p) mais p a dividir por n. A parte sequencial, 1 menos p, não melhora com mais instâncias, e domina à medida que n cresce.
+
+Quando n tende para infinito, o ganho tende para 1 a dividir por (1 menos p). Se 10\% do trabalho for sequencial, p é 0,9 e o limite é 10, por muitas instâncias que se acrescentem. Com 10 instâncias o ganho é de cerca de 5,3 e com 100 é de cerca de 9,2, pelo que as últimas dezenas de instâncias trazem pouquíssimo.
+
+Em sistemas distribuídos, a parte sequencial é muitas vezes um recurso partilhado, tipicamente a base de dados, um bloqueio global ou um serviço central. A conclusão prática é que o primeiro passo para escalar é encontrar e reduzir o bottleneck comum, com cache, partição dos dados ou remoção de contenção. A lei de Amdahl é otimista, pois ignora o custo de coordenação entre instâncias, que em sistemas reais pode até fazer o desempenho descer a partir de certo ponto, como modela a Universal Scalability Law.
+}
+
+\pagina{slides/slide-28.png}{
+O gráfico traça a fórmula para três valores de p. Com p igual a 0,5, a curva achata em 2 logo nas primeiras instâncias, e um serviço em que metade do trabalho é sequencial nunca dobra o desempenho. Com p igual a 0,9 aproxima-se de 10, e com p igual a 0,95 aproxima-se de 20. O eixo horizontal é logarítmico, cada marca duplica o número de instâncias.
+
+A leitura relevante é a forma das curvas. Todas sobem depressa no início e depois achatam, e quanto menor for a fração sequencial mais alto é o patamar. O gráfico é uma boa ferramenta de raciocínio sobre retornos decrescentes, mas os valores de p de um sistema concreto têm de ser medidos, não assumidos.
+}
+
+\pagina{slides/slide-29.png}{
+O Kubernetes reúne vários dos mecanismos da aula. O escalamento manual altera o número de replicas de um Deployment, por exemplo com \texttt{kubectl scale}, como na Aula 05. O Horizontal Pod Autoscaler (HPA) automatiza essa alteração, ajustando o número de Pods com base em métricas como a utilização de CPU. Obtém essas métricas do metrics-server, que tem de estar instalado no cluster, e a utilização é calculada relativamente aos requests de recursos declarados nos Pods, pelo que a sua ausência impede o cálculo.
+
+O HPA aplica uma regra proporcional, replicas desejadas igual ao teto de replicas atuais vezes a razão entre a métrica atual e a métrica alvo. Por exemplo, com 4 replicas a 90\% de CPU e um alvo de 60\%, o resultado é o teto de 4 vezes 1,5, ou seja, 6 replicas. O controlador usa uma tolerância para evitar alterações por variações pequenas e uma janela de estabilização na redução, por omissão de 300 segundos, que corresponde ao período de estabilização visto nos slides de auto-scaling.
+
+O Vertical Pod Autoscaler (VPA) atua noutra dimensão, ajustando os requests e limits de cada Pod em vez do número de replicas, e é instalado à parte do núcleo do Kubernetes. O Cluster Autoscaler atua sobre os nós, acrescentando-os quando há Pods que não conseguem ser agendados por falta de recursos e removendo os que ficam subutilizados. O Service faz de load balancer interno, distribuindo o tráfego pelos Pods prontos, ligando este slide aos health checks.
+}
+
+\pagina{slides/slide-30.png}{
+O diagrama ordena os três mecanismos por aquilo em que atuam. O HPA e o VPA atuam sobre os Pods, o primeiro no número e o segundo no tamanho. O Cluster Autoscaler atua sobre os nós, a camada de capacidade onde os Pods correm.
+
+Os três encadeiam-se numa situação de carga crescente. O HPA acrescenta Pods, se não houver espaço nos nós os novos Pods ficam pendentes, e o Cluster Autoscaler acrescenta um nó para os acolher. Na descida, o processo inverte-se. Compreender esta sequência explica porque é que o escalamento de um cluster tem duas latências, a do arranque dos Pods e, quando é preciso um novo nó, a do arranque da máquina.
+}
+
+\pagina{slides/slide-31.png}{
+A primeira parte da síntese reúne os fundamentos. Disponibilidade e escalabilidade são atributos de qualidade ligados aos SLAs e aos Tiers da Aula 02. Componentes em série reduzem a disponibilidade do conjunto e a redundância em paralelo aumenta-a, desde que as falhas sejam independentes. O escalamento vertical tem limites, e o horizontal exige uma arquitetura adequada, em particular serviços sem estado local. O auto-scaling decide com base em métricas como CPU, latência e filas, usando políticas reativas, preditivas ou agendadas.
+
+Para estudar, convém ser capaz de calcular o downtime de um SLA, de dizer porque é que um serviço com estado em memória não escala por simples adição de instâncias e de explicar a diferença entre uma política reativa e uma preditiva.
+}
+
+\pagina{slides/slide-32.png}{
+A segunda parte da síntese cobre a distribuição e a operação. O balanceamento distribui pedidos com round-robin, least connections ou hashing consistente, e as camadas 4 e 7 combinam-se em cascata à escala. O primeiro nível é o DNS, que escolhe a região ou o edge. Os health checks garantem que só instâncias saudáveis recebem tráfego e sustentam o rolling update, o blue-green e o canary.
+
+O caching e as CDNs evitam trabalho repetido, e a lei de Amdahl impõe o limite determinado pela parte não paralelizável. No Kubernetes, o HPA, o VPA e o Cluster Autoscaler escalam Pods e nós, e o Service balanceia o tráfego. Os temas da aula seguinte, redundância e desacoplamento, prolongam esta base, porque a escalabilidade e a tolerância a falhas dependem de reduzir o acoplamento entre os componentes.
+}
+
+\pagina{slides/slide-33.png}{
+As leituras são três. O artigo da Meta sobre o Katran, de Shirokov e Dasineni (2018), descreve com detalhe técnico um load balancer de camada 4 em produção e é a fonte do caso do slide sobre balanceamento em camadas. A documentação do Kubernetes sobre Horizontal Pod Autoscaling define o algoritmo, os parâmetros e o comportamento de redução apresentados na aula. O artigo de Amdahl, de 1967, é a origem da lei com o mesmo nome.
+
+Recomenda-se começar pela documentação do Kubernetes, que acompanha diretamente a parte prática, e ler o artigo do Katran com atenção à descrição das duas gerações de L4, porque ilustra como as limitações de uma solução motivam a seguinte.
+}
+
+\pagina{slides/slide-34.png}{
+Terminada a aula, as questões e os comentários são bem-vindos. Sugere-se rever o percurso completo, do cálculo do downtime à cascata de load balancers, dos health checks ao autoscaling no Kubernetes, e testar a compreensão explicando cada diagrama por palavras próprias.
+}
+
+\end{document}

@@ -62,6 +62,16 @@
 \institute{ESTGA, Universidade de Aveiro}
 \date{2026}
 
+\newcommand{\figframe}[2]{%
+\begin{frame}
+\frametitle{#1}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/#2.png}
+\end{center}
+\vfill
+\end{frame}}
+
 \begin{document}
 
 \begin{frame}[plain]
@@ -73,10 +83,11 @@
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Disponibilidade e escalabilidade como atributos de qualidade.
-    \item Escalabilidade vertical vs horizontal.
-    \item Serviços com e sem estado (\textit{stateless} vs \textit{stateful}).
-    \item Auto-scaling: métricas e políticas.
-    \item Balanceamento de carga: algoritmos.
+    \item Disponibilidade em números, com componentes em série e em paralelo.
+    \item Escalabilidade vertical e horizontal.
+    \item Serviços \textit{stateless} e \textit{stateful}.
+    \item Auto-scaling, métricas e políticas.
+    \item Balanceamento de carga, algoritmos e camadas 4 e 7.
 \end{itemize}
 \end{frame}
 
@@ -84,12 +95,11 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Load balancing de camada 4 vs camada 7, e como se combinam à escala.
-    \item Balanceamento global: DNS e edge locations.
+    \item Balanceamento global com DNS e edge locations.
     \item Health checks e remoção automática de instâncias.
     \item Estratégias de implantação sem downtime.
     \item Caching e CDNs.
-    \item Limites da escalabilidade: a lei de Amdahl.
+    \item Limites da escalabilidade e lei de Amdahl.
     \item Escalabilidade e auto-scaling no Kubernetes.
 \end{itemize}
 \end{frame}
@@ -98,221 +108,237 @@
 \frametitle{Disponibilidade e Escalabilidade como Atributos de Qualidade}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Retomando a Aula 02: SLAs definem compromissos de disponibilidade (ex.\ 99,9\%) associados a Tiers de datacenter.
-    \item Disponibilidade: capacidade de o serviço responder corretamente, mesmo com falhas parciais.
-    \item Escalabilidade: capacidade de o serviço acompanhar o crescimento da procura sem degradar o desempenho.
-    \item Ambos os atributos dependem de arquitetura, não apenas de hardware mais potente.
+    \item Na Aula 02, os SLAs fixaram compromissos de disponibilidade (por exemplo 99,9\%) associados aos Tiers de datacenter.
+    \item Disponibilidade é a capacidade de o serviço responder corretamente, mesmo com falhas parciais.
+    \item Escalabilidade é a capacidade de acompanhar o crescimento da procura sem degradar o desempenho.
+    \item Ambos dependem sobretudo da arquitetura, e não apenas de hardware mais potente.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Escalabilidade Vertical vs Horizontal}
+\frametitle{Disponibilidade em Números}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Scale-up (vertical)}: aumentar os recursos de uma única instância (mais CPU, mais RAM).
-    \item Limite físico e custo crescente; ponto único de falha mantém-se.
-    \item \textbf{Scale-out (horizontal)}: acrescentar mais instâncias a correr em paralelo.
-    \item Requer aplicações preparadas para correr em múltiplas instâncias (sem estado local crítico).
+    \item A disponibilidade é a fração do tempo em que o serviço está operacional, e o SLA traduz-se num downtime anual máximo.
+    \item Passar de 99,9\% para 99,99\% reduz o downtime permitido de 8,76 horas para cerca de 52,6 minutos por ano.
+    \item Componentes em série multiplicam as suas disponibilidades, pelo que o conjunto é pior do que cada parte.
+    \item Componentes redundantes em paralelo só falham quando todos falham, o que justifica a replicação.
 \end{itemize}
 \end{frame}
 
+\figframe{Do SLA ao Downtime, e Combinação de Componentes}{a08-disponibilidade}
+
 \begin{frame}
-\frametitle{Crescer para Cima ou para o Lado}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a08-scale.png}
-\end{center}
-\vfill
+\frametitle{Escalabilidade Vertical e Horizontal}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O scale-up (vertical) aumenta os recursos de uma única instância, com mais CPU e mais RAM.
+    \item Tem um limite físico, o custo cresce depressa e o ponto único de falha mantém-se.
+    \item O scale-out (horizontal) acrescenta instâncias que correm em paralelo.
+    \item Exige aplicações preparadas para várias instâncias, sem estado local crítico.
+\end{itemize}
 \end{frame}
 
+\figframe{Crescer para Cima ou para o Lado}{a08-scale}
 
 \begin{frame}
 \frametitle{Serviços Sem Estado e Com Estado}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Stateless}: cada pedido é independente; qualquer instância pode responder a qualquer pedido.
-    \item É esta propriedade que torna a escalabilidade horizontal simples -- acrescentar instâncias não exige coordenação.
-    \item \textbf{Stateful}: a instância guarda estado relativo ao cliente (ex.\ sessão em memória), pelo que os pedidos seguintes têm de voltar à mesma.
-    \item Estratégia habitual: externalizar o estado para um armazenamento partilhado (base de dados, cache distribuída como Redis).
-    \item \textbf{Session affinity} (ou \emph{sticky sessions}): alternativa em que o balanceador envia sempre o mesmo cliente para a mesma instância -- mais simples, mas prejudica a distribuição de carga e a tolerância a falhas.
+    \setlength\itemsep{0.15cm}
+    \small
+    \item Num serviço \textit{stateless}, cada pedido é independente e qualquer instância pode responder.
+    \item Esta propriedade simplifica o scale-out, porque acrescentar instâncias não exige coordenação.
+    \item Num serviço \textit{stateful}, a instância guarda estado do cliente (por exemplo a sessão em memória), e os pedidos seguintes têm de voltar a ela.
+    \item A estratégia habitual é externalizar o estado para um armazenamento partilhado, como uma base de dados ou o Redis.
+    \item A alternativa é a \textit{session affinity} (\textit{sticky sessions}), em que o load balancer envia sempre o mesmo cliente para a mesma instância.
+    \item É mais simples, mas prejudica a distribuição da carga e a tolerância a falhas.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Auto-Scaling: Métricas}
+\frametitle{Auto-Scaling, Métricas e Decisão}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Decisão de escalar (para cima ou para baixo) baseada em métricas monitorizadas continuamente.
-    \item Utilização de \textbf{CPU} e de memória das instâncias existentes.
-    \item \textbf{Latência} das respostas ao utilizador final.
-    \item Tamanho de \textbf{filas} de pedidos ou de mensagens pendentes.
+    \item A decisão de escalar para cima ou para baixo baseia-se em métricas monitorizadas continuamente.
+    \item As métricas habituais são a utilização de CPU e de memória, a latência das respostas e o tamanho das filas de pedidos ou mensagens.
+    \item Uma política compara a métrica com um objetivo e decide acrescentar ou remover instâncias.
+    \item Um período de estabilização evita oscilações, isto é, criar e remover instâncias em ciclo.
+\end{itemize}
+\end{frame}
+
+\figframe{Ciclo de Auto-Scaling}{a08-autoscaling-ciclo}
+
+\begin{frame}
+\frametitle{Auto-Scaling, Políticas Reativas e Preditivas}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item As políticas reativas escalam quando uma métrica ultrapassa um limiar (por exemplo CPU acima de 70\%).
+    \item São simples de implementar, mas reagem depois de o problema já ter começado.
+    \item As políticas preditivas antecipam a procura com base em padrões históricos, como a hora de ponta diária.
+    \item Reduzem o impacto do tempo de arranque de novas instâncias, mas exigem modelos e histórico de dados.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Auto-Scaling: Políticas Reativas vs Preditivas}
+\frametitle{Balanceamento de Carga, Algoritmos}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Reativas}: escalar quando uma métrica ultrapassa um limiar (ex.\ CPU $>$ 70\%).
-    \item Simples de implementar, mas reagem depois do problema já estar a acontecer.
-    \item \textbf{Preditivas}: antecipam a procura com base em padrões históricos (ex.\ hora de ponta diária).
-    \item Reduzem o atraso de arranque de novas instâncias, mas exigem modelos e histórico de dados.
+    \item Um load balancer distribui pedidos por um conjunto de instâncias equivalentes.
+    \item O round-robin envia os pedidos sequencialmente, um a um, para cada instância.
+    \item O least connections envia o próximo pedido para a instância com menos ligações ativas.
+    \item O hashing consistente aplica uma função de hash a uma chave (por exemplo o IP do cliente) e mantém a afinidade sem partilha de estado.
+    \item A escolha depende do padrão de carga e da necessidade de afinidade.
+\end{itemize}
+\end{frame}
+
+\figframe{Três Algoritmos de Distribuição}{a08-lb-algoritmos}
+
+\begin{frame}
+\frametitle{Load Balancing de Camada 4 e de Camada 7}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item A camada 4 (transporte, TCP e UDP) decide com base em IP e porta, sem olhar ao conteúdo.
+    \item É mais rápida e simples, mas dispõe de pouca informação sobre a aplicação.
+    \item A camada 7 (aplicação, HTTP) decide com base no conteúdo, como o URL, os cabeçalhos e os cookies.
+    \item Permite routing mais fino, por exemplo por caminho do pedido, ao custo de mais processamento.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Balanceamento de Carga: Algoritmos \textcolor{NudeTaupe}{\small(1/2)}}
+\frametitle{Balanceamento em Camadas à Escala}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Um \textbf{load balancer} distribui pedidos por um conjunto de instâncias equivalentes.
-    \item \textbf{Round-robin}: distribui pedidos sequencialmente, um a um, por cada instância.
-    \item \textbf{Least connections}: envia o próximo pedido para a instância com menos ligações ativas.
+    \setlength\itemsep{0.15cm}
+    \small
+    \item À escala, a camada 4 e a camada 7 combinam-se em cascata, em vez de serem alternativas.
+    \item O L4 distribui pacotes e o L7 decide por conteúdo, e cada nível resolve o limite do anterior.
+    \item O caso do Katran, documentado pela Meta (2018), mostra o nível L4.
+    \item Um router distribui os pacotes pelos L4 load balancers com ECMP (Equal-Cost Multi-Path).
+    \item Cada L4 escolhe o destino com um hash consistente sobre o 5-tuple da ligação, sem partilhar estado com os outros L4.
+    \item A primeira geração usava o módulo IPVS do kernel Linux, e o Katran usa XDP e eBPF.
 \end{itemize}
 \end{frame}
 
+\figframe{Cascata de Load Balancers}{a08-lb-cascata}
+
 \begin{frame}
-\frametitle{Balanceamento de Carga: Algoritmos \textcolor{NudeTaupe}{\small(2/2)}}
+\frametitle{Balanceamento Global com DNS e Edge Locations}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Hashing consistente}: usa uma função de hash (ex.\ sobre o IP do cliente) para mapear pedidos sempre à mesma instância.
-    \item Útil para manter afinidade de sessão sem necessitar de partilha de estado entre instâncias.
-    \item A escolha do algoritmo depende do padrão de carga e da necessidade (ou não) de afinidade.
+    \item Antes de qualquer L4 ou L7, o cliente resolve um nome DNS, e esse é o primeiro nível de balanceamento.
+    \item Um DNS por geografia ou por latência responde com o IP da região ou do edge mais adequado ao cliente.
+    \item O mais próximo na latência medida nem sempre coincide com o mais próximo no mapa.
+    \item Aproximar o ponto de entrada reduz a latência, o mesmo raciocínio das Regiões e Zonas de Disponibilidade da Aula 02.
+    \item Este nível global é também o que torna as CDNs eficazes.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Load Balancing: Camada 4 vs Camada 7}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Camada 4} (transporte, TCP/UDP): decide o encaminhamento com base em IP e porta, sem olhar ao conteúdo.
-    \item Mais rápido e simples, mas com pouca informação sobre a aplicação.
-    \item \textbf{Camada 7} (aplicação, HTTP): decide com base em conteúdo -- URL, cabeçalhos, cookies.
-    \item Permite routing mais inteligente (ex.\ por caminho do pedido), ao custo de mais processamento.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Balanceamento em Camadas: um Caso Real}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item À escala, camada 4 e camada 7 não são alternativas -- combinam-se em cascata. Exemplo documentado publicamente pela Facebook (Engineering, 2015):
-    \item Um único servidor aplicacional satura depressa $\rightarrow$ acrescenta-se um balanceador \textbf{L7} (decide por conteúdo, ex.\ proxygen) à frente de várias instâncias.
-    \item O L7LB também satura $\rightarrow$ acrescenta-se um balanceador \textbf{L4} (ex.\ IPVS) à frente de vários L7LBs, distribuído por \textbf{ECMP} (Equal-Cost Multi-Path) ao nível do router.
-    \item O mesmo padrão repete-se: dezenas de servidores por cluster, dezenas de clusters por datacenter, múltiplos datacenters -- cada nível resolve um gargalo do nível anterior, não o problema todo de uma vez.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Balanceamento Global: DNS e Edge Locations}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Antes de qualquer balanceador L4/L7 ser contactado, o cliente resolve um nome DNS -- esse é o primeiro (e mais grosseiro) nível de balanceamento.
-    \item \textbf{DNS geográfico/por latência}: o servidor DNS responde com o IP do \textit{edge} ou datacenter mais próximo do cliente, não sempre o mesmo IP para todos.
-    \item ``Mais próximo'' não é só distância geográfica: sistemas como o Cartographer (Facebook) medem latência real entre resolvers de ISPs e cada \textit{edge}, porque a rota mais curta no mapa nem sempre é a mais rápida.
-    \item Impacto concreto: um pedido HTTPS Seul-Oregon direto pode demorar $\sim$600\,ms só no \textit{handshake}; passando por um edge em Tóquio mais próximo, cai para $\sim$240\,ms -- o mesmo raciocínio das Regiões e Zonas de Disponibilidade da Aula 02.
-    \item Este nível global é o que torna as CDNs (adiante) eficazes: aproxima o ponto de entrada do utilizador antes de qualquer balanceamento interno acontecer.
-\end{itemize}
-\end{frame}
+\figframe{Balanceamento Global com DNS}{a08-dns-global}
 
 \begin{frame}
 \frametitle{Health Checks}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O load balancer verifica periodicamente se cada instância está saudável (ex.\ pedido HTTP a \texttt{/health}).
-    \item Instâncias que falham os health checks são removidas automaticamente do conjunto de balanceamento.
+    \item O load balancer verifica periodicamente se cada instância está saudável, por exemplo com um pedido HTTP a \texttt{/health}.
+    \item As instâncias que falham são removidas automaticamente do conjunto de balanceamento.
     \item Quando voltam a responder corretamente, são reintegradas sem intervenção manual.
-    \item Mecanismo essencial para disponibilidade: falhas parciais não afetam o utilizador final.
+    \item É um mecanismo essencial para a disponibilidade, porque falhas parciais não chegam ao utilizador.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Readiness vs Liveness}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a08-health-checks.png}
-\end{center}
-\vfill
-\end{frame}
-
+\figframe{Readiness e Liveness no Kubernetes}{a08-health-checks}
 
 \begin{frame}
 \frametitle{Estratégias de Implantação Sem Downtime}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Rolling update}: substituem-se as instâncias gradualmente, algumas de cada vez, mantendo o serviço disponível.
-    \item \textbf{Blue-green}: mantêm-se dois ambientes completos; o tráfego é comutado de uma vez do antigo para o novo, permitindo reverter depressa.
-    \item \textbf{Canary}: encaminha-se uma pequena fração do tráfego para a nova versão, aumentando-a progressivamente se não houver erros.
+    \setlength\itemsep{0.2cm}
+    \item No rolling update, as instâncias são substituídas gradualmente, algumas de cada vez, e o serviço mantém-se disponível.
+    \item No blue-green existem dois ambientes completos, e o tráfego passa de uma só vez do antigo para o novo, o que permite reverter depressa.
+    \item No canary, uma pequena fração do tráfego segue para a nova versão e aumenta se não houver erros.
     \item Todas dependem de health checks fiáveis para detetar problemas antes de afetarem todos os utilizadores.
-    \item O Kubernetes implementa o rolling update por omissão nos Deployments (Aula 05).
+    \item O Kubernetes usa o rolling update por omissão nos Deployments (Aula 05).
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Rolling Update, Passo a Passo}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a08-rolling-update.png}
-\end{center}
-\vfill
-\end{frame}
+\figframe{Rolling Update, Passo a Passo}{a08-rolling-update}
 
+\figframe{Blue-Green e Canary}{a08-bluegreen-canary}
 
 \begin{frame}
 \frametitle{Caching e Redes de Distribuição de Conteúdo}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Escalar nem sempre significa acrescentar instâncias: evitar trabalho repetido é frequentemente mais eficaz.
-    \item \textbf{Cache} em memória (ex.\ Redis, Memcached): guarda resultados de operações dispendiosas, reduzindo a carga sobre a base de dados.
-    \item \textbf{CDN} (Content Delivery Network): replica conteúdo estático por servidores geograficamente distribuídos, próximos dos utilizadores.
-    \item Benefícios: menor latência para o utilizador e menor carga sobre a infraestrutura de origem.
-    \item Custo: gerir a \emph{invalidação} da cache -- garantir que conteúdo desatualizado não é servido indefinidamente.
+    \item Escalar nem sempre significa acrescentar instâncias, e evitar trabalho repetido é muitas vezes mais eficaz.
+    \item Uma cache em memória (Redis, Memcached) guarda resultados de operações caras e reduz a carga sobre a base de dados.
+    \item Uma CDN (Content Delivery Network) replica conteúdo estático por servidores próximos dos utilizadores.
+    \item Os benefícios são menor latência para o utilizador e menor carga na origem.
+    \item O custo é gerir a invalidação da cache, para que conteúdo desatualizado não seja servido indefinidamente.
 \end{itemize}
 \end{frame}
 
+\figframe{Cache e CDN}{a08-cache-cdn}
+
 \begin{frame}
-\frametitle{Limites da Escalabilidade: a Lei de Amdahl}
+\frametitle{Limites da Escalabilidade e Lei de Amdahl}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Nem todos os sistemas escalam linearmente com o número de instâncias acrescentadas.
-    \item A \textbf{lei de Amdahl} estabelece que o ganho máximo é limitado pela fração do trabalho que \emph{não} pode ser paralelizada.
-    \item Se 10\% do trabalho for inerentemente sequencial, o ganho máximo teórico fica limitado a cerca de 10 vezes, por muitas instâncias que se acrescentem.
-    \item Em sistemas distribuídos, o gargalo é muitas vezes um recurso partilhado -- tipicamente a base de dados.
-    \item Implicação prática: acrescentar instâncias sem eliminar o estrangulamento comum traz retornos rapidamente decrescentes.
+    \setlength\itemsep{0.2cm}
+    \item Nem todos os sistemas escalam linearmente com o número de instâncias.
+    \item A lei de Amdahl limita o ganho pela fração do trabalho que não pode ser paralelizada.
+    \item Com p a fração paralelizável e n o número de instâncias, o ganho é $S(n) = 1 / ((1-p) + p/n)$.
+    \item Se 10\% do trabalho for sequencial (p = 0,9), o ganho máximo teórico é 10, por muitas instâncias que se acrescentem.
+    \item Com 10 instâncias o ganho é de cerca de 5,3, e com 100 é de cerca de 9,2.
+    \item Em sistemas distribuídos, o bottleneck é muitas vezes um recurso partilhado, tipicamente a base de dados.
 \end{itemize}
 \end{frame}
+
+\figframe{Ganho Máximo em Função do Número de Instâncias}{a08-amdahl}
 
 \begin{frame}
 \frametitle{Escalabilidade no Kubernetes}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Escalamento manual}: alterar o número de réplicas de um Deployment (\texttt{kubectl scale}), como fizemos na Aula 05.
-    \item \textbf{HPA} (Horizontal Pod Autoscaler): ajusta automaticamente o número de Pods com base em métricas como a utilização de CPU.
-    \item O HPA depende do \textbf{metrics-server} estar instalado no cluster para obter essas métricas.
-    \item \textbf{VPA} (Vertical Pod Autoscaler): ajusta os \emph{requests} e \emph{limits} de cada Pod, em vez do número de réplicas.
-    \item \textbf{Cluster Autoscaler}: acrescenta ou remove \emph{nós} ao cluster quando os existentes ficam sem capacidade.
-    \item O Service faz o papel de balanceador interno, distribuindo tráfego pelos Pods saudáveis.
+    \setlength\itemsep{0.15cm}
+    \small
+    \item O escalamento manual altera o número de replicas de um Deployment com \texttt{kubectl scale}, como na Aula 05.
+    \item O HPA (Horizontal Pod Autoscaler) ajusta o número de Pods com base em métricas como a utilização de CPU.
+    \item O HPA obtém essas métricas do metrics-server, que tem de estar instalado no cluster.
+    \item Calcula as replicas como \texttt{ceil(replicas atuais $\times$ métrica atual / métrica alvo)}.
+    \item O VPA (Vertical Pod Autoscaler) ajusta os requests e limits de cada Pod, em vez do número de replicas.
+    \item O Cluster Autoscaler acrescenta ou remove nós quando os existentes ficam sem capacidade.
+    \item O Service faz de load balancer interno e distribui o tráfego pelos Pods prontos.
 \end{itemize}
 \end{frame}
+
+\figframe{Os Três Níveis de Autoscaling}{a08-k8s-autoscaling}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Disponibilidade e escalabilidade são atributos de qualidade ligados a SLAs e Tiers.
-    \item Escalar verticalmente tem limites; escalar horizontalmente exige arquitetura adequada.
-    \item Auto-scaling usa métricas (CPU, latência, filas) e políticas reativas ou preditivas.
+    \item Componentes em série reduzem a disponibilidade, e a redundância em paralelo aumenta-a.
+    \item Escalar verticalmente tem limites, e escalar horizontalmente exige uma arquitetura adequada.
+    \item O auto-scaling usa métricas (CPU, latência, filas) e políticas reativas ou preditivas.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O balanceamento distribui pedidos (round-robin, least connections, hashing consistente), e o L4 e o L7 combinam-se em cascata.
+    \item O primeiro nível de balanceamento é o DNS, que escolhe a região ou o edge.
+    \item Os health checks garantem que só instâncias saudáveis recebem tráfego e sustentam o rolling, o blue-green e o canary.
+    \item Caching e CDNs evitam trabalho repetido, e a lei de Amdahl impõe o limite da parte não paralelizável.
+    \item No Kubernetes, o HPA, o VPA e o Cluster Autoscaler escalam Pods e nós, e o Service balanceia o tráfego.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Leituras}
+\begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Balanceamento de carga distribui pedidos: round-robin, least connections, hashing consistente. Camada 4 é mais rápida; camada 7 decide pelo conteúdo -- e, à escala, combinam-se em cascata (L4 à frente de L7).
-    \item O primeiro nível de balanceamento é o DNS: resolve o cliente para o datacenter/edge mais próximo em latência real, não apenas em distância no mapa.
-    \item Health checks garantem que só instâncias saudáveis recebem tráfego, e sustentam as estratégias de implantação sem downtime (rolling, blue-green, canary).
-    \item Caching e CDNs escalam evitando trabalho repetido; a lei de Amdahl lembra que há sempre um limite imposto pela parte não paralelizável.
-    \item No Kubernetes, o HPA automatiza o escalamento horizontal e o Service faz o balanceamento interno.
+    \item Shirokov e Dasineni, Open-sourcing Katran, a scalable network load balancer, Meta Engineering, 2018.
+    \item Kubernetes, documentação sobre Horizontal Pod Autoscaling, kubernetes.io.
+    \item Amdahl, G. Validity of the single processor approach to achieving large scale computing capabilities, AFIPS 1967.
 \end{itemize}
 \end{frame}
 
