@@ -62,6 +62,16 @@
 \institute{ESTGA, Universidade de Aveiro}
 \date{2026}
 
+\newcommand{\figframe}[2]{%
+\begin{frame}
+\frametitle{#1}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/#2.png}
+\end{center}
+\vfill
+\end{frame}}
+
 \begin{document}
 
 \begin{frame}[plain]
@@ -72,11 +82,11 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Limitações do modelo SNMP e motivação para alternativas mais ricas.
+    \item Limitações do SNMP e motivação para alternativas mais ricas.
     \item WBEM e o Common Information Model (CIM).
-    \item O esquema CIM: classes, associações e herança.
+    \item O esquema CIM, com classes, herança e associações.
     \item Operações WBEM e transporte.
-    \item WS-Management: gestão baseada em standards web (SOAP).
+    \item WS-Management, a gestão baseada em standards web.
 \end{itemize}
 \end{frame}
 
@@ -84,11 +94,11 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Comparação SNMP vs WBEM vs WS-Management.
-    \item Gestão fora-de-banda: IPMI e Redfish.
-    \item A tendência atual: APIs REST e modelos declarativos.
-    \item Revisão geral do semestre, bloco a bloco (C1-C6).
-    \item Preparação para o teste escrito e para o miniprojeto.
+    \item Comparação entre SNMP, WBEM e WS-Management.
+    \item Gestão fora-de-banda, com IPMI e Redfish.
+    \item A tendência atual, APIs REST e modelos declarativos.
+    \item Revisão geral do semestre, bloco a bloco, de C1 a C6.
+    \item Preparação para a avaliação.
 \end{itemize}
 \end{frame}
 
@@ -96,236 +106,254 @@
 \frametitle{Para Além do SNMP}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Retomando a Aula 12: o SNMP baseia-se numa MIB simples, uma árvore plana de OIDs sem relações explícitas entre objetos.
-    \item Adequado para contadores e estados simples, mas limitado para modelar sistemas complexos (ex.\ relação entre um servidor, os seus discos, sistemas de ficheiros e serviços).
-    \item Nos anos 1990/2000 surgem standards orientados a objetos, capazes de representar essas relações: WBEM/CIM.
-    \item Mais tarde, a gestão baseada em web services dá origem ao WS-Management.
+    \item O SNMP, visto na Aula 12, assenta numa MIB simples, uma árvore de OIDs sem relações explícitas entre objetos.
+    \item É adequado a contadores e estados simples, mas limitado para modelar sistemas complexos, como a relação entre um servidor, os seus discos, sistemas de ficheiros e serviços.
+    \item Nos anos 1990 e 2000 surgem standards orientados a objetos, capazes de representar essas relações, o WBEM e o CIM.
+    \item Mais tarde, a gestão por web services dá origem ao WS-Management.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{WBEM: Arquitetura}
+\frametitle{WBEM, Arquitetura}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{WBEM} (Web-Based Enterprise Management): iniciativa da DMTF para unificar a gestão de sistemas heterogéneos.
-    \item \textbf{CIMOM} (CIM Object Manager): servidor central que recebe pedidos de clientes e comunica com \textbf{providers}.
-    \item \textbf{Providers}: módulos que traduzem entre o modelo CIM e o recurso real (disco, processo, serviço de rede).
-    \item \textbf{Clientes}: aplicações de gestão que consultam o CIMOM (ex.\ \texttt{wbemcli}, \texttt{pywbem}).
+    \item O WBEM (Web-Based Enterprise Management) é uma iniciativa da DMTF para unificar a gestão de sistemas heterogéneos.
+    \item O CIMOM (CIM Object Manager) é o servidor que recebe os pedidos dos clientes e comunica com os providers.
+    \item Os providers são módulos que traduzem entre o modelo CIM e o recurso real, como um disco, um processo ou um serviço de rede.
+    \item Os clientes são aplicações de gestão que consultam o CIMOM, como o \texttt{wbemcli} e o \texttt{pywbem}.
+\end{itemize}
+\end{frame}
+
+\figframe{Cliente, CIMOM e Providers}{a13-wbem-arquitetura}
+
+\begin{frame}
+\frametitle{CIM, Common Information Model}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item O CIM define um esquema orientado a objetos com classes, propriedades, métodos e associações.
+    \item Ao contrário da MIB do SNMP, o CIM modela explicitamente as relações, como a de um \texttt{CIM\_LogicalDisk} com um \texttt{CIM\_ComputerSystem}.
+    \item Permite navegar do geral, o sistema, para o específico, o disco, o processo ou o serviço, sem conhecer OIDs de memória.
+    \item O transporte histórico é o CIM-XML sobre HTTP.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{CIM: Common Information Model}
+\frametitle{O Esquema CIM, Classes e Herança}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O CIM define um esquema orientado a objetos: \textbf{classes}, \textbf{propriedades}, \textbf{métodos} e \textbf{associações}.
-    \item Ao contrário da MIB do SNMP (árvore plana), o CIM modela explicitamente relações -- ex.\ \texttt{CIM\_LogicalDisk} associado a \texttt{CIM\_ComputerSystem}.
-    \item Permite navegar do geral (sistema) para o específico (disco, processo, serviço), sem conhecer OIDs de memória.
-    \item Transporte histórico: \textbf{CIM-XML sobre HTTP}.
+    \setlength\itemsep{0.3cm}
+    \item O CIM organiza-se em três camadas, o modelo core com os conceitos base, os modelos comuns de sistemas, redes e dispositivos, e as extensões de fabricante.
+    \item Suporta herança, e o \texttt{CIM\_LogicalDisk} deriva de classes mais gerais, de que herda propriedades comuns.
+    \item Cada instância é identificada por uma chave, formada pelas propriedades marcadas como \texttt{Key}.
+    \item As classes têm métodos, e é possível invocar ações, como desmontar um volume, e não apenas ler e escrever valores.
+    \item É uma diferença estrutural face ao SNMP, que só tem operações genéricas de leitura e escrita de variáveis.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{O Esquema CIM: Classes e Herança}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O CIM organiza-se em três camadas: modelo \textbf{core} (conceitos base), modelos \textbf{comuns} (sistemas, redes, dispositivos) e extensões \textbf{de fabricante}.
-    \item Suporta \textbf{herança}: \texttt{CIM\_LogicalDisk} deriva de classes mais gerais, herdando propriedades comuns a qualquer dispositivo de armazenamento.
-    \item Cada instância é identificada por uma \textbf{chave} composta pelas propriedades marcadas como \texttt{Key}.
-    \item As classes têm \textbf{métodos}, não apenas propriedades: é possível \emph{invocar ações} (ex.\ desmontar um volume), e não só ler e escrever valores.
-    \item Esta é uma diferença estrutural face ao SNMP, onde só existem operações genéricas de leitura e escrita sobre variáveis.
-\end{itemize}
-\end{frame}
+\figframe{Herança de Classes no CIM}{a13-cim-heranca}
 
 \begin{frame}
-\frametitle{Associações: o que Distingue o CIM}
+\frametitle{Associações, o que Distingue o CIM}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Uma \textbf{associação} é ela própria uma classe, que relaciona duas outras classes.
-    \item Exemplo: uma associação liga um \texttt{CIM\_ComputerSystem} aos \texttt{CIM\_LogicalDisk} que lhe pertencem.
-    \item Isto permite \emph{navegar} o modelo: partindo de um sistema, descobrir os seus discos; partindo de um disco, descobrir a que sistema pertence.
-    \item Na MIB do SNMP, uma relação destas teria de ser inferida por convenção de índices -- não está explicitamente representada.
+    \item Uma associação é ela própria uma classe, que relaciona duas outras.
+    \item Por exemplo, uma associação liga um \texttt{CIM\_ComputerSystem} aos \texttt{CIM\_LogicalDisk} que lhe pertencem.
+    \item Permite navegar o modelo. De um sistema descobrem-se os seus discos, e de um disco descobre-se o sistema a que pertence.
+    \item Na MIB do SNMP, uma relação destas teria de ser inferida por convenção de índices, porque não está explícita.
     \item É esta capacidade de modelar relações que justifica a maior complexidade do CIM.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{MIB Plana vs Modelo CIM}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a13-mib-vs-cim.png}
-\end{center}
-\vfill
-\end{frame}
+\figframe{Associações entre Objetos}{a13-cim-associacoes}
 
+\figframe{MIB Plana e Modelo CIM}{a13-mib-vs-cim}
 
 \begin{frame}
 \frametitle{Operações WBEM e Transporte}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{EnumerateClassNames} / \textbf{EnumerateInstances}: descobrir que classes existem e que instâncias delas estão presentes.
-    \item \textbf{GetInstance} e \textbf{ModifyInstance}: ler e alterar uma instância concreta.
-    \item \textbf{Associators} e \textbf{References}: percorrer as associações a partir de um objeto.
-    \item \textbf{InvokeMethod}: executar um método definido numa classe.
-    \item Transporte clássico: \textbf{CIM-XML} sobre HTTP(S), tipicamente no porto 5989 quando cifrado.
-    \item \textbf{WBEM Indications}: mecanismo de notificação assíncrona, equivalente conceptual às traps do SNMP.
+    \setlength\itemsep{0.3cm}
+    \item O \texttt{EnumerateClassNames} e o \texttt{EnumerateInstances} descobrem que classes existem e que instâncias estão presentes.
+    \item O \texttt{GetInstance} e o \texttt{ModifyInstance} leem e alteram uma instância concreta.
+    \item O \texttt{Associators} e o \texttt{References} percorrem as associações a partir de um objeto.
+    \item O \texttt{InvokeMethod} executa um método definido numa classe.
+    \item O transporte clássico é o CIM-XML sobre HTTP ou HTTPS, tipicamente na porta 5989 quando cifrado.
+    \item As indications são a notificação assíncrona do WBEM, equivalentes conceptuais das traps do SNMP.
 \end{itemize}
 \end{frame}
+
+\figframe{Operações WBEM}{a13-operacoes-wbem}
 
 \begin{frame}
 \frametitle{WS-Management}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{WS-Management}: standard DMTF que expõe recursos geríveis através de \textbf{SOAP} sobre HTTP/HTTPS.
-    \item Reutiliza a pilha de standards \textbf{WS-*} (WS-Addressing, WS-Transfer, WS-Eventing) já usada noutros web services empresariais.
-    \item Implementação de referência da Microsoft: \textbf{WinRM} (Windows Remote Management), usada para gestão remota de servidores Windows.
-    \item Vantagem sobre CIM-XML clássico: maior interoperabilidade com ferramentas e firewalls já preparadas para SOAP/HTTP(S).
+    \item O WS-Management é um standard da DMTF que expõe recursos geríveis por SOAP sobre HTTP ou HTTPS.
+    \item Reutiliza a pilha de standards WS-*, como o WS-Addressing, o WS-Transfer e o WS-Eventing, já usada noutros web services empresariais.
+    \item A implementação de referência da Microsoft é o WinRM (Windows Remote Management), usado na gestão remota de servidores Windows.
+    \item A vantagem sobre o CIM-XML clássico é a maior interoperabilidade com ferramentas e firewalls já preparadas para SOAP e HTTP(S).
 \end{itemize}
 \end{frame}
 
+\figframe{WS-Management sobre SOAP}{a13-wsman}
+
 \begin{frame}
-\frametitle{SNMP vs WBEM vs WS-Management}
+\frametitle{SNMP, WBEM e WS-Management}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{SNMP}: modelo simples (MIB plana), leve, ubíquo em equipamentos de rede; fraco em modelar relações complexas.
-    \item \textbf{WBEM/CIM}: modelo rico orientado a objetos, adequado a sistemas complexos; maior peso de implementação.
-    \item \textbf{WS-Management}: mesma riqueza de modelo, mas transporte baseado em standards web amplamente suportados.
-    \item Na prática, estas tecnologias coexistem: SNMP mantém-se em equipamentos de rede, WBEM/WS-Man em servidores e infraestrutura de gestão empresarial.
+    \item O SNMP tem um modelo simples, a MIB, é leve e ubíquo em equipamento de rede, mas é fraco a modelar relações complexas.
+    \item O WBEM e o CIM têm um modelo rico, orientado a objetos, adequado a sistemas complexos, com maior peso de implementação.
+    \item O WS-Management tem a mesma riqueza de modelo, com transporte baseado em standards web amplamente suportados.
+    \item Na prática coexistem. O SNMP mantém-se em equipamento de rede, e o WBEM e o WS-Management em servidores e gestão empresarial.
 \end{itemize}
 \end{frame}
 
+\figframe{Comparação das Três Tecnologias}{a13-comparacao}
+
 \begin{frame}
-\frametitle{Gestão Fora-de-Banda: IPMI e Redfish}
+\frametitle{Gestão Fora-de-Banda, IPMI e Redfish}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Todas as tecnologias vistas até agora exigem que o sistema operativo esteja a funcionar -- e é precisamente quando \emph{não} está que a gestão remota mais faz falta.
-    \item \textbf{Gestão fora-de-banda} (\textit{out-of-band}): um controlador dedicado no próprio servidor, alimentado e ligado à rede independentemente do sistema operativo.
-    \item \textbf{BMC} (Baseboard Management Controller): esse processador auxiliar, conhecido comercialmente como iDRAC (Dell), iLO (HP) ou IMM (IBM/Lenovo).
-    \item \textbf{IPMI}: protocolo clássico para estas funções -- ligar e desligar o servidor, consultar sensores, aceder à consola remota.
-    \item \textbf{Redfish}: sucessor moderno definido pela DMTF, baseado em API REST com JSON, em substituição do IPMI.
+    \setlength\itemsep{0.1cm}
+    \small
+    \item Todas as tecnologias anteriores exigem que o sistema operativo esteja a funcionar, e é quando não está que a gestão remota mais faz falta.
+    \item A gestão fora-de-banda (out-of-band) usa um controlador dedicado no servidor, alimentado e ligado à rede independentemente do sistema operativo.
+    \item Esse processador auxiliar é o BMC (Baseboard Management Controller), conhecido comercialmente como iDRAC (Dell), iLO (HP) ou IMM (IBM e Lenovo).
+    \item O IPMI é o protocolo clássico para ligar e desligar o servidor, consultar sensores e aceder à consola remota.
+    \item O Redfish é o sucessor moderno, definido pela DMTF, com uma API REST e JSON.
     \item Permite reinstalar ou reparar um servidor remotamente, mesmo com o sistema operativo inoperacional.
 \end{itemize}
 \end{frame}
 
+\figframe{Gestão Fora-de-Banda com o BMC}{a13-fora-de-banda}
+
 \begin{frame}
-\frametitle{A Tendência Atual: REST e Modelos Declarativos}
+\frametitle{A Tendência Atual, REST e Modelos Declarativos}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O SOAP e o XML do WS-Management deram progressivamente lugar a \textbf{APIs REST com JSON}, mais simples de consumir.
-    \item Exemplos vistos nesta UC: a API do Proxmox (usada pelo Terraform na Aula 07) e a API do Kubernetes (usada pelo \texttt{kubectl}).
-    \item Mudança de paradigma: em vez de executar operações de gestão uma a uma, \emph{declara-se} o estado pretendido e o sistema reconcilia-se (Aula 05).
-    \item \textbf{Telemetria por streaming}: em vez de o manager consultar periodicamente (polling), os dispositivos publicam métricas continuamente.
-    \item O problema de fundo mantém-se o mesmo desde os anos 1980: gerir muitos sistemas heterogéneos de forma uniforme. Só as ferramentas mudaram.
+    \setlength\itemsep{0.3cm}
+    \item O SOAP e o XML do WS-Management deram progressivamente lugar a APIs REST com JSON, mais simples de consumir.
+    \item Os exemplos desta UC são a API do Proxmox, usada pelo Terraform na Aula 07, e a API do Kubernetes, usada pelo \texttt{kubectl}.
+    \item Mudou também o paradigma. Em vez de executar operações de gestão uma a uma, declara-se o estado pretendido e o sistema reconcilia-se (Aula 05).
+    \item Na telemetria por streaming, os dispositivos publicam métricas continuamente, em vez de o manager as consultar por polling.
+    \item O problema de fundo é o mesmo desde os anos 1980, gerir muitos sistemas heterogéneos de forma uniforme. Só as ferramentas mudaram.
+\end{itemize}
+\end{frame}
+
+\figframe{Os Três Paradigmas de Gestão}{a13-paradigmas}
+
+\begin{frame}
+\frametitle{Revisão Geral, C1 Datacenters}
+\begin{itemize}
+    \setlength\itemsep{0.12cm}
+    \small
+    \item A definição NIST de cloud e as cinco características essenciais, e os modelos IaaS, PaaS e SaaS e de implantação (Aula 01).
+    \item Os componentes físicos, os requisitos de operação (energia, arrefecimento, rede, segurança) e as métricas de eficiência (PUE, DCiE).
+    \item Os Tiers do Uptime Institute e os níveis de redundância N, N+1 e 2N (Aula 02).
+    \item O cálculo de disponibilidade, em que componentes em série multiplicam as disponibilidades e em paralelo vale $1-\prod(1-A_i)$.
+    \item As topologias three-tier e leaf-spine, e o tráfego norte-sul e este-oeste.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Os Três Paradigmas de Gestão}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a13-paradigmas.png}
-\end{center}
-\vfill
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Revisão Geral: C1 -- Datacenters}
+\frametitle{Revisão Geral, C2 Recursos Computacionais}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Definição NIST de cloud e as cinco características essenciais; modelos IaaS/PaaS/SaaS e de implantação (Aula 01).
-    \item Componentes físicos, requisitos de operação (energia, arrefecimento, rede, segurança) e métricas de eficiência (PUE, DCiE).
-    \item Tiers do Uptime Institute e níveis de redundância N, N+1, 2N (Aula 02).
-    \item Cálculo de disponibilidade: componentes em série multiplicam-se; em paralelo, $1-\prod(1-A_i)$.
-    \item Topologias three-tier e leaf-spine; tráfego norte-sul vs este-oeste.
+    \setlength\itemsep{0.12cm}
+    \small
+    \item Hipervisores tipo 1 (bare-metal) e tipo 2 (hosted), e os requisitos de Popek e Goldberg (Aula 03).
+    \item Virtualização completa, paravirtualização e assistida por hardware (VT-x e AMD-V), e o virtio.
+    \item Formatos de disco, thin provisioning, snapshots, clones e templates, e migração ao vivo.
+    \item Containers, em que os namespaces isolam o que se vê e os cgroups limitam o que se consome (Aula 04).
+    \item Imagens em camadas (OverlayFS), arquitetura Docker (dockerd, containerd, runc) e o standard OCI.
+    \item Containers de aplicação (Docker) e de sistema (LXC), com a mesma tecnologia e usos distintos.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Revisão Geral: C2 -- Recursos Computacionais}
+\frametitle{Revisão Geral, C3 Administração de Recursos}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Hipervisores tipo 1 (bare-metal) vs tipo 2 (hosted); requisitos de Popek e Goldberg (Aula 03).
-    \item Virtualização completa, paravirtualização e assistida por hardware (VT-x/AMD-V); virtio.
-    \item Formatos de disco, thin provisioning, snapshots, clones e templates; migração ao vivo.
-    \item Containers: namespaces isolam o que se \emph{vê}; cgroups limitam o que se \emph{consome} (Aula 04).
-    \item Imagens em camadas (OverlayFS), arquitetura Docker (dockerd/containerd/runc) e o standard OCI.
-    \item Containers de aplicação (Docker) vs de sistema (LXC): mesma tecnologia, usos distintos.
+    \setlength\itemsep{0.12cm}
+    \small
+    \item Kubernetes, com control plane (API server, etcd, scheduler, controller manager) e worker nodes (kubelet, kube-proxy, runtime) (Aula 05).
+    \item Os objetos centrais e o ciclo de reconciliação entre estado desejado e observado, que dá o self-healing.
+    \item SDN, com separação entre plano de controlo e plano de dados, OpenFlow e tabelas match-action (Aula 06).
+    \item Redes overlay (VXLAN) sobre underlay físico, NFV e microssegmentação.
+    \item IaC, com idempotência, gestão de configuração (Ansible) e provisionamento (Terraform, com state file) (Aula 07).
+    \item Infraestrutura mutável e imutável, CI/CD e GitOps.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Revisão Geral: C3 -- Administração de Recursos}
+\frametitle{Revisão Geral, C4 Fornecimento de Serviços}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Kubernetes: control plane (API server, etcd, scheduler, controller manager) e worker nodes (kubelet, kube-proxy, runtime) (Aula 05).
-    \item Objetos centrais e o ciclo de reconciliação entre estado desejado e observado -- a origem do self-healing.
-    \item SDN: separação entre plano de controlo e plano de dados; OpenFlow e tabelas match-action (Aula 06).
-    \item Redes overlay (VXLAN) sobre underlay físico; NFV e microssegmentação.
-    \item IaC: idempotência, gestão de configuração (Ansible) vs provisionamento (Terraform, com state file) (Aula 07).
-    \item Infraestrutura mutável vs imutável; CI/CD e GitOps.
+    \setlength\itemsep{0.12cm}
+    \small
+    \item Escalabilidade vertical (scale-up) e horizontal (scale-out), e serviços stateless e stateful (Aula 08).
+    \item Auto-scaling, com métricas e políticas reativas e preditivas, e o HPA no Kubernetes.
+    \item Balanceamento com round-robin, least connections e hashing consistente, e camada 4 e camada 7, em cascata à escala.
+    \item Health checks (liveness e readiness), implantação sem downtime (rolling, blue-green, canary) e a lei de Amdahl.
+    \item Redundância ativa-ativa e ativa-passiva, SPOFs, RTO e RPO (Aula 09).
+    \item Desacoplamento por mensageria, com exchanges, filas, garantias de entrega, idempotência, DLQs e circuit breaker.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Revisão Geral: C4 -- Fornecimento de Serviços}
+\frametitle{Revisão Geral, C5 Armazenamento}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Escalabilidade vertical (scale-up) vs horizontal (scale-out); serviços stateless vs stateful (Aula 08).
-    \item Auto-scaling: métricas, políticas reativas vs preditivas; HPA no Kubernetes.
-    \item Balanceamento: round-robin, least connections, hashing consistente; camada 4 vs camada 7.
-    \item Health checks (liveness vs readiness) e implantação sem downtime (rolling, blue-green, canary).
-    \item Redundância ativa-ativa vs ativa-passiva; SPOFs; RTO e RPO (Aula 09).
-    \item Desacoplamento por mensageria: exchanges e filas, garantias de entrega, idempotência, DLQs.
+    \setlength\itemsep{0.12cm}
+    \small
+    \item As três abstrações, bloco, ficheiro e objeto, com granularidades e casos de uso diferentes (Aula 10).
+    \item IOPS, débito e latência, os níveis de RAID e o risco do período de reconstrução.
+    \item LVM (PV, VG, LV), thin provisioning e snapshots copy-on-write, e RAID não é backup (regra 3-2-1).
+    \item NAS (ficheiro, NFS e SMB) e SAN (bloco, iSCSI e Fibre Channel), e quem gere o sistema de ficheiros em cada caso (Aula 11).
+    \item Ceph e o algoritmo CRUSH, object storage e a API S3.
+    \item O teorema CAP e o modelo PACELC, a replicação, o sharding e o erasure coding.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Revisão Geral: C5 -- Armazenamento}
+\frametitle{Revisão Geral, C6 Administração de Sistemas}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item As três abstrações: bloco, ficheiro e objeto -- diferentes níveis de granularidade e casos de uso (Aula 10).
-    \item Métricas (IOPS, débito, latência); níveis de RAID e o risco do período de reconstrução.
-    \item LVM (PV/VG/LV), thin provisioning e snapshots copy-on-write; RAID não é backup (regra 3-2-1).
-    \item NAS (ficheiro, NFS/SMB) vs SAN (bloco, iSCSI/FC): quem gere o sistema de ficheiros em cada caso (Aula 11).
-    \item Ceph e o algoritmo CRUSH; object storage e a API S3.
-    \item Teorema CAP e modelo PACELC; replicação, sharding e erasure coding.
+    \setlength\itemsep{0.12cm}
+    \small
+    \item SNMP, com manager, agente, MIB e OIDs, e a MIB-II como base normalizada (Aula 12).
+    \item Os tipos de dados Counter e Gauge, e o cálculo de taxas a partir de contadores.
+    \item As versões, com v1 e v2c e community strings em texto simples, e v3 com USM (autenticação e cifra) e VACM.
+    \item Polling (GET) e push (TRAP e INFORM), limiares, histerese e fadiga de alertas.
+    \item WBEM e CIM, com um modelo orientado a objetos de classes, métodos e associações explícitas (esta aula).
+    \item WS-Management sobre SOAP, gestão fora-de-banda (IPMI e Redfish) e a tendência para APIs REST.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Revisão Geral: C6 -- Administração de Sistemas}
-\begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item SNMP: manager, agente, MIB e OIDs; a MIB-II como base normalizada (Aula 12).
-    \item Tipos de dados (Counter vs Gauge) e o cálculo de taxas a partir de contadores.
-    \item Versões: v1/v2c com community strings em texto simples; v3 com USM (autenticação e cifra) e VACM.
-    \item Polling (GET) vs push (TRAP/INFORM); limiares, histerese e fadiga de alertas.
-    \item WBEM/CIM: modelo orientado a objetos com classes, métodos e associações explícitas (esta aula).
-    \item WS-Management sobre SOAP; gestão fora-de-banda (IPMI, Redfish); tendência atual para APIs REST.
-\end{itemize}
-\end{frame}
+\figframe{O Fio Condutor do Semestre}{a13-revisao}
 
 \begin{frame}
 \frametitle{Temas Transversais do Semestre}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Abstração em camadas}: container sobre VM sobre hypervisor sobre hardware -- cada camada esconde a de baixo e cobra algum overhead.
-    \item \textbf{Declarar em vez de mandar fazer}: Kubernetes, Terraform e Ansible partilham o mesmo modelo de estado desejado e reconciliação.
-    \item \textbf{Eliminar pontos únicos de falha}: redundância de energia (C1), de instâncias (C4), de discos e de nós (C5).
-    \item \textbf{Compromissos, não soluções perfeitas}: CAP/PACELC, custo vs disponibilidade, isolamento vs desempenho.
-    \item \textbf{Automatizar porque a escala obriga}: o fio condutor que liga SNMP nos anos 1980 ao GitOps de hoje.
+    \setlength\itemsep{0.35cm}
+    \item A abstração em camadas, com container sobre VM sobre hipervisor sobre hardware, em que cada camada esconde a de baixo e cobra algum overhead.
+    \item Declarar em vez de mandar fazer, que Kubernetes, Terraform e Ansible partilham com o modelo de estado desejado e reconciliação.
+    \item Eliminar pontos únicos de falha, com redundância de energia (C1), de instâncias (C4), de discos e de nós (C5).
+    \item Compromissos em vez de soluções perfeitas, como o CAP e o PACELC, o custo e a disponibilidade, o isolamento e o desempenho.
+    \item Automatizar porque a escala obriga, o fio condutor que liga o SNMP dos anos 1980 ao GitOps de hoje.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Preparação para o Teste Escrito}
+\frametitle{Preparação para a Avaliação}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item O teste incide sobre a totalidade dos blocos C1-C6, com peso de 40\% na avaliação discreta.
-    \item Rever, para cada bloco, os conceitos centrais e o vocabulário técnico introduzido (nomes de protocolos, camadas, algoritmos).
-    \item Prestar atenção às ligações entre aulas destacadas ao longo do semestre (ex.\ SLA $\rightarrow$ disponibilidade, containers $\rightarrow$ Kubernetes $\rightarrow$ SDN).
-    \item Rever os enunciados dos guiões práticos: várias questões de verificação exploram a mesma matéria de forma aplicada.
+    \item A 2.ª Avaliação Prática vale 30\% e consiste na apresentação do Projeto Final, o Mini Projeto 1 e o Mini Projeto 2, a 22 de dezembro de 2026.
+    \item O Teste Teórico vale 50\% e realiza-se na época de exames, e incide sobre os blocos C1 a C6.
+    \item Para o teste, rever os conceitos centrais e o vocabulário técnico de cada bloco, como nomes de protocolos, camadas e algoritmos.
+    \item Prestar atenção às ligações entre aulas, por exemplo SLA, disponibilidade e redundância, ou containers, Kubernetes e SDN.
+    \item Rever os guiões práticos, porque várias questões de verificação exploram a mesma matéria de forma aplicada.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Leituras}
+\begin{itemize}
+    \setlength\itemsep{0.4cm}
+    \item Especificações do DMTF para o CIM, o WBEM e o WS-Management, em dmtf.org.
+    \item Especificação do Redfish, em dmtf.org.
+    \item Documentação do SFCB e do pywbem.
 \end{itemize}
 \end{frame}
 
@@ -336,7 +364,7 @@
     \vspace{0.5cm}
     {\color{NudeTaupe}\rule{2cm}{0.5pt}}\par
     \vspace{0.5cm}
-    \Large\textcolor{TextEspresso}{\itshape Bom trabalho para o teste e para o miniprojeto}
+    \Large\textcolor{TextEspresso}{\itshape Bom trabalho para o projeto final e para o teste}
   \end{center}
 \end{frame}
 

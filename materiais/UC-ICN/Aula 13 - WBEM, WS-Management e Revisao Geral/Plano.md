@@ -10,13 +10,21 @@
 ## Prática / laboratório
 - Guiao 13 - WBEM com SFCB e Revisao do Semestre.tex
 
-## Manual técnico
-- Manual 13 - WBEM com SFCB e Revisao.tex
+## Sebenta
+- Sebenta 13 - WBEM, WS-Management e Revisao Geral.tex (um slide por página, com texto de estudo aprofundado)
 
 ## Diagramas
 Fonte editável (`.drawio`) e PNG em `Diagramas/`:
 - a13-mib-vs-cim
+- a13-wbem-arquitetura
+- a13-cim-heranca
+- a13-cim-associacoes
+- a13-operacoes-wbem
+- a13-wsman
+- a13-comparacao
+- a13-fora-de-banda
 - a13-paradigmas
+- a13-revisao
 
 ## Notas para o docente
 Última aula do semestre. Retomar explicitamente o SNMP da Aula 12 para justificar a motivação do CIM (modelo orientado a objetos vs árvore plana de OIDs).

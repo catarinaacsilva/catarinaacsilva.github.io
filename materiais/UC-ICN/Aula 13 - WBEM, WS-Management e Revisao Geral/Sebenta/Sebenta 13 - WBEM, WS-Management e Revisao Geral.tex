@@ -1,0 +1,292 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+\setlength{\emergencystretch}{3em}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{13}{WBEM, WS-Management e Revisão Geral}{Aula 13}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 13, a última do semestre. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada, com algum aprofundamento para além do que a apresentação permite mostrar. A aula tem duas partes. A primeira completa o bloco de administração de sistemas iniciado na Aula 12, com alternativas mais ricas ao SNMP, o WBEM e o CIM, o WS-Management, a gestão fora-de-banda e a tendência atual para APIs REST. A segunda é uma revisão geral dos seis blocos da unidade curricular.
+
+A leitura sequencial é a mais proveitosa. A primeira parte parte das limitações do SNMP para justificar o modelo orientado a objetos do CIM, apresenta a sua arquitetura e operações, e compara as três tecnologias. A revisão percorre os blocos C1 a C6 com remissões para as aulas onde cada matéria foi tratada, e termina com os temas transversais e com a preparação para a avaliação. A aula tem componente prática, o guião com o SFCB e o roteiro de revisão.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+A Aula 12 mostrou que o SNMP resolve bem o problema de consultar contadores e estados simples em muitos equipamentos. Esta aula começa por perguntar o que acontece quando a informação a gerir tem estrutura, relações e ações, e apresenta as tecnologias que surgiram para responder a isso.
+
+Na segunda parte, a aula olha para trás. O semestre percorreu seis blocos, do datacenter físico à administração de sistemas, e a revisão procura mostrar que formam uma única narrativa e não temas soltos.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira metade da agenda trata das alternativas ao SNMP. Começa pelas suas limitações, apresenta o WBEM e o modelo CIM, com as suas classes, a herança e as associações, e descreve as operações e o transporte. Segue para o WS-Management, a gestão assente em standards web.
+
+O percurso permite perceber que as três tecnologias respondem ao mesmo problema, gerir muitos equipamentos heterogéneos de forma uniforme, com compromissos diferentes entre simplicidade e riqueza de modelo.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda metade da agenda compara as três tecnologias e acrescenta dois temas que as ultrapassam. A gestão fora-de-banda resolve o caso em que o sistema operativo não está a funcionar, e a tendência atual, as APIs REST e os modelos declarativos, mostra para onde evoluiu a gestão de infraestrutura.
+
+Termina com a revisão geral do semestre, bloco a bloco, e com a preparação para a avaliação.
+}
+
+\pagina{slides/slide-04.png}{
+O SNMP assenta numa MIB simples, uma árvore de OIDs em que cada variável é um valor isolado. Essa simplicidade é a sua força, porque torna o protocolo leve e fácil de implementar em qualquer equipamento. É também a sua limitação. A MIB não representa de forma explícita as relações entre objetos, e para modelar um sistema complexo, em que um servidor tem discos, os discos têm sistemas de ficheiros e estes alojam serviços, é preciso recorrer a convenções de índices e a conhecimento externo.
+
+Nos anos 1990 e 2000 surgiram standards orientados a objetos, capazes de representar essas relações. O WBEM e o CIM são o resultado dessa linha, e mais tarde a gestão por web services deu origem ao WS-Management. Em todos os casos a motivação é a mesma, gerir sistemas cada vez mais complexos com um modelo mais expressivo do que uma lista de variáveis.
+}
+
+\pagina{slides/slide-05.png}{
+O WBEM (Web-Based Enterprise Management) é uma iniciativa da DMTF (Distributed Management Task Force) para unificar a gestão de sistemas heterogéneos. Define uma arquitetura com três elementos. O CIMOM (CIM Object Manager) é o servidor que recebe os pedidos dos clientes. Os providers são módulos que traduzem entre o modelo CIM e o recurso real, como um disco, um processo ou um serviço de rede. Os clientes são as aplicações de gestão, como o \texttt{wbemcli}, de linha de comandos, ou a biblioteca \texttt{pywbem}, para programas em Python.
+
+A separação entre o CIMOM e os providers é o que torna o modelo extensível. O CIMOM apresenta ao cliente uma visão uniforme, e cada provider sabe como obter ou alterar os dados de um tipo de recurso. Acrescentar suporte a um novo recurso é acrescentar um provider. Uma implementação do CIMOM em software livre é o SFCB (Small Footprint CIM Broker), usado no guião.
+}
+
+\pagina{slides/slide-06.png}{
+O diagrama mostra o percurso de um pedido. O cliente, por exemplo o \texttt{wbemcli}, envia um pedido em CIM-XML por HTTPS para a porta 5989 do CIMOM, o SFCB. O CIMOM encaminha o pedido para o provider adequado, de discos, de processos ou de rede, e cada provider obtém a informação do recurso real, os discos, os processos ou as interfaces.
+
+A legenda recorda que o CIMOM recebe os pedidos e delega nos providers, que traduzem entre o modelo CIM e o recurso real. A resposta faz o caminho inverso, e o cliente recebe objetos CIM e não valores soltos.
+}
+
+\pagina{slides/slide-07.png}{
+O CIM (Common Information Model) define um esquema orientado a objetos com classes, propriedades, métodos e associações. Uma classe descreve um tipo de recurso gerível, como um sistema, um disco ou um serviço, as propriedades são os seus atributos e os métodos são as ações que se podem executar.
+
+Ao contrário da MIB do SNMP, o CIM modela explicitamente as relações. Um \texttt{CIM\_LogicalDisk} está relacionado com o \texttt{CIM\_ComputerSystem} a que pertence, e essa relação faz parte do modelo, e não de uma convenção. Isto permite navegar do geral, o sistema, para o específico, o disco, o processo ou o serviço, sem conhecer OIDs de memória. O transporte histórico é o CIM-XML sobre HTTP, em que os pedidos e as respostas são documentos XML.
+}
+
+\pagina{slides/slide-08.png}{
+O esquema CIM organiza-se em três camadas. O modelo core contém os conceitos base, a que todas as classes se reportam. Os modelos comuns descrevem áreas gerais, como sistemas, redes e dispositivos, de forma independente do fabricante. As extensões de fabricante acrescentam o que é específico de cada produto.
+
+O CIM suporta herança. O \texttt{CIM\_LogicalDisk} deriva de classes mais gerais, e herda propriedades e métodos comuns a qualquer dispositivo, o que evita repetir a descrição do que é comum. Cada instância é identificada por uma chave, formada pelas propriedades marcadas como \texttt{Key}, o equivalente da chave primária de uma tabela.
+
+Uma diferença estrutural face ao SNMP é que as classes têm métodos. É possível invocar ações, como desmontar um volume ou reiniciar um serviço, e não apenas ler e escrever valores. No SNMP só existem as operações genéricas de leitura e escrita de variáveis, e qualquer ação tem de ser disfarçada de escrita num valor.
+}
+
+\pagina{slides/slide-09.png}{
+O diagrama mostra uma cadeia de herança simplificada, de \texttt{CIM\_ManagedElement}, no topo, até \texttt{CIM\_LogicalDisk}, passando por \texttt{CIM\_ManagedSystemElement}, \texttt{CIM\_LogicalElement} e \texttt{CIM\_LogicalDevice}. Cada classe herda propriedades e métodos da que está acima, e acrescenta os seus.
+
+As caixas laterais sublinham três pontos. No topo ficam os conceitos base do modelo core e em baixo as classes específicas. A cadeia está simplificada, porque a especificação do CIM tem classes intermédias e os fabricantes acrescentam extensões. E cada instância é identificada pelas propriedades chave, e as classes têm métodos que se podem invocar.
+}
+
+\pagina{slides/slide-10.png}{
+Uma associação é, no CIM, ela própria uma classe, que relaciona duas ou mais outras. Por exemplo, a associação \texttt{CIM\_SystemDevice} liga um \texttt{CIM\_ComputerSystem} aos dispositivos lógicos que lhe pertencem, como os \texttt{CIM\_LogicalDisk}.
+
+Isto permite navegar o modelo. Partindo de um sistema, descobrem-se os seus discos. Partindo de um disco, descobre-se o sistema a que pertence. Na MIB do SNMP, uma relação destas teria de ser inferida por convenção de índices, por exemplo assumindo que o índice 1 de uma tabela corresponde ao índice 1 de outra, e não está explicitamente representada.
+
+É esta capacidade de modelar relações que distingue o CIM, e que justifica a sua maior complexidade. É também a razão pela qual o exercício central do guião é a navegação por associações, a única operação sem equivalente no SNMP.
+}
+
+\pagina{slides/slide-11.png}{
+O diagrama mostra o sistema \texttt{servidor1}, uma instância de \texttt{CIM\_ComputerSystem}, ligado, através da associação \texttt{CIM\_SystemDevice}, a três discos lógicos, \texttt{sda1}, \texttt{sda2} e \texttt{sda3}. A caixa da associação lembra que esta é, ela própria, uma classe.
+
+A legenda recorda as duas operações de navegação, \texttt{AssociatorNames} e \texttt{ReferenceNames}, que percorrem as associações nos dois sentidos, do sistema para os discos e de um disco para o sistema a que pertence.
+}
+
+\pagina{slides/slide-12.png}{
+O diagrama contrasta os dois modelos. À esquerda, a MIB do SNMP, com OIDs como \texttt{1.3.6.1.2.1.1.3.0} (\texttt{sysUpTime}), \texttt{1.3.6.1.2.1.\allowbreak 2.2.1.10.1} (\texttt{ifInOctets.1}) e \texttt{1.3.6.1.2.1.\allowbreak 25.2.3.1.5.1} (\texttt{hrStorageSize.1}). São variáveis isoladas, endereçadas por números, e a relação entre um disco e o seu sistema fica implícita nos índices.
+
+À direita, o modelo CIM, com um \texttt{CIM\_ComputerSystem} ligado por associações a um \texttt{CIM\_LogicalDisk} e a um \texttt{CIM\_NetworkPort}. A legenda lembra que as associações são classes que ligam objetos, e que permitem navegar do sistema para os seus discos e portas. A nota final resume o compromisso, o CIM ganha em expressividade e perde em simplicidade, porque o modelo e a implementação são mais pesados.
+}
+
+\pagina{slides/slide-13.png}{
+O WBEM define um conjunto de operações. O \texttt{EnumerateClassNames} e o \texttt{EnumerateInstances} servem para descobrir que classes existem e que instâncias delas estão presentes. O \texttt{GetInstance} e o \texttt{ModifyInstance} leem e alteram uma instância concreta. O \texttt{Associators} e o \texttt{References} percorrem as associações a partir de um objeto, e têm as variantes \texttt{AssociatorNames} e \texttt{ReferenceNames}, que devolvem apenas os nomes. O \texttt{InvokeMethod} executa um método definido numa classe.
+
+O transporte clássico é o CIM-XML sobre HTTP ou HTTPS, tipicamente na porta 5989 quando cifrado, e a autenticação é feita ao nível do CIMOM. As indications são o mecanismo de notificação assíncrona do WBEM, equivalente conceptual às traps do SNMP. Um cliente subscreve um tipo de evento, e o CIMOM envia-lhe a notificação quando ele ocorre.
+}
+
+\pagina{slides/slide-14.png}{
+O diagrama agrupa as operações por finalidade. Descobrir, com \texttt{EnumerateClassNames} e \texttt{EnumerateInstances}. Ler e alterar, com \texttt{GetInstance} e \texttt{ModifyInstance}. Navegar, com \texttt{Associators} e \texttt{References}. Agir, com \texttt{InvokeMethod}. Notificar, com as indications.
+
+A nota lateral lembra o transporte, CIM-XML sobre HTTP ou HTTPS, com a porta 5989 quando cifrado, e a equivalência das indications com as traps do SNMP. A categoria Agir é a que mais separa o WBEM do SNMP, porque permite invocar ações e não apenas ler ou escrever variáveis.
+}
+
+\pagina{slides/slide-15.png}{
+O WS-Management é um standard da DMTF que expõe recursos geríveis através de SOAP sobre HTTP ou HTTPS. Reutiliza a pilha de standards WS-*, como o WS-Addressing, para endereçar os recursos, o WS-Transfer, para ler e alterar, e o WS-Eventing, para subscrever notificações, que eram já usados noutros web services empresariais.
+
+A implementação de referência da Microsoft é o WinRM (Windows Remote Management), usado para a gestão remota de servidores Windows, e que por omissão escuta nas portas 5985 (HTTP) e 5986 (HTTPS). A vantagem sobre o CIM-XML clássico é a maior interoperabilidade, porque as ferramentas e as firewalls já estão preparadas para SOAP e HTTP(S), e o modelo de informação pode ser o mesmo, o CIM.
+}
+
+\pagina{slides/slide-16.png}{
+O diagrama mostra um cliente de gestão a falar com um serviço WS-Management, o WinRM no Windows, por SOAP sobre HTTP(S), e o serviço a dar acesso aos recursos geríveis. A caixa inferior resume os pontos principais, a pilha WS-*, as portas por omissão 5985 e 5986 do WinRM e a maior interoperabilidade com ferramentas e firewalls preparadas para SOAP.
+
+O ponto a reter é a separação entre o modelo e o transporte. O WBEM e o WS-Management partilham o modelo de informação, o CIM, e diferem na forma de transportar os pedidos.
+}
+
+\pagina{slides/slide-17.png}{
+O slide compara as três tecnologias. O SNMP tem um modelo simples, a MIB, é leve e ubíquo em equipamento de rede, mas é fraco a modelar relações complexas. O WBEM e o CIM têm um modelo rico, orientado a objetos, adequado a sistemas complexos, com maior peso de implementação. O WS-Management tem a mesma riqueza de modelo, mas o transporte baseia-se em standards web amplamente suportados.
+
+Na prática, as tecnologias coexistem. O SNMP mantém-se em equipamento de rede, onde a leveza e a presença universal pesam mais, e o WBEM e o WS-Management são mais usados em servidores e em ferramentas de gestão empresarial. A escolha depende do equipamento a gerir e da riqueza de modelo de que se precisa.
+}
+
+\pagina{slides/slide-18.png}{
+O diagrama organiza a comparação numa tabela. As linhas são o modelo, o transporte, o peso e o uso típico, e as colunas são o SNMP, o WBEM com CIM e o WS-Management. O SNMP usa uma MIB em árvore de OIDs, UDP nas portas 161 e 162, é leve e é típico em equipamento de rede. O WBEM usa objetos, classes e associações, CIM-XML sobre HTTP(S), é mais pesado e é típico em servidores e gestão empresarial. O WS-Management usa o mesmo modelo de objetos, SOAP sobre HTTP(S), e é típico em servidores Windows com WinRM.
+
+A nota final recorda que as três tecnologias coexistem, cada uma no seu nicho.
+}
+
+\pagina{slides/slide-19.png}{
+Todas as tecnologias anteriores exigem que o sistema operativo esteja a funcionar, mas é precisamente quando não está que a gestão remota mais faz falta, por exemplo quando o servidor não arranca ou está bloqueado. A gestão fora-de-banda (out-of-band) resolve este problema com um controlador dedicado no próprio servidor, alimentado e ligado à rede independentemente do sistema operativo.
+
+Esse processador auxiliar é o BMC (Baseboard Management Controller), conhecido comercialmente como iDRAC, nos servidores Dell, iLO, nos da HP, ou IMM, nos da IBM e da Lenovo. O protocolo clássico para estas funções é o IPMI, que permite ligar e desligar o servidor, consultar sensores e aceder à consola remota. O Redfish é o sucessor moderno, definido pela DMTF, baseado numa API REST com JSON em vez do protocolo binário do IPMI.
+
+Com o BMC é possível reinstalar ou reparar um servidor remotamente, mesmo com o sistema operativo inoperacional. Por ter acesso tão profundo, o BMC deve ficar numa rede de gestão isolada e com credenciais fortes, porque um BMC comprometido dá controlo total sobre o servidor.
+}
+
+\pagina{slides/slide-20.png}{
+O diagrama mostra um servidor com duas partes, o sistema operativo com as aplicações, e o BMC, um controlador dedicado que é alimentado e ligado à rede independentemente do sistema operativo. O administrador liga-se ao BMC pela rede de gestão, com IPMI ou Redfish.
+
+A nota lateral lista o que o BMC faz, ligar e desligar o servidor, ler sensores e dar acesso à consola, mesmo com o sistema operativo inoperacional. A legenda inferior acrescenta os nomes comerciais do BMC, a porta UDP 623 do IPMI e a natureza do Redfish, uma API REST com JSON sobre HTTPS.
+}
+
+\pagina{slides/slide-21.png}{
+O SOAP e o XML do WS-Management deram progressivamente lugar a APIs REST com JSON, mais simples de consumir com as ferramentas habituais, de um \texttt{curl} a uma biblioteca de programação. Os exemplos desta unidade curricular são a API do Proxmox, usada pelo Terraform na Aula 07, e a API do Kubernetes, usada pelo \texttt{kubectl}. O Redfish segue o mesmo caminho para o hardware.
+
+Mudou também o paradigma. Em vez de executar operações de gestão uma a uma, de forma imperativa, declara-se o estado pretendido e o sistema reconcilia-se com ele, como no Kubernetes (Aula 05) e no Terraform. A telemetria por streaming complementa o polling, e os dispositivos publicam métricas continuamente, em vez de esperarem que o manager as peça.
+
+O problema de fundo é o mesmo desde os anos 1980, gerir muitos sistemas heterogéneos de forma uniforme. Só as ferramentas mudaram, do SNMP para as APIs e para os modelos declarativos.
+}
+
+\pagina{slides/slide-22.png}{
+O diagrama apresenta três paradigmas de gestão lado a lado. No SNMP, uma variável numérica endereçada por um OID. No WBEM e no CIM, um objeto com métodos, como o \texttt{CIM\_ComputerSystem}. Na API REST, um recurso acessível por URL, por exemplo \texttt{GET /api2/json/nodes}, que é o caminho da API do Proxmox para listar os nós.
+
+Por baixo, a oposição entre o estilo imperativo e o declarativo. No primeiro, executam-se operações de gestão uma a uma, por ordem. No segundo, declara-se o estado pretendido e deixa-se o sistema reconciliar-se. A caixa central resume a evolução, da variável isolada, ao objeto com relações, ao recurso acessível por URL.
+}
+
+\pagina{slides/slide-23.png}{
+O bloco C1 trata do datacenter como base física e organizacional da cloud. A definição do NIST caracteriza a cloud por cinco características essenciais e organiza os serviços nos modelos IaaS, PaaS e SaaS, a que se juntam os modelos de implantação (Aula 01). O estudo dos componentes físicos, dos requisitos de operação, que são a energia, o arrefecimento, a rede e a segurança, e das métricas de eficiência, o PUE e o DCiE, mostra o custo de operar a infraestrutura.
+
+A Aula 02 trouxe os Tiers do Uptime Institute, que classificam a resiliência de um datacenter, e os níveis de redundância N, N+1 e 2N. Daí decorre o cálculo de disponibilidade, que a Aula 08 retomou com números. Componentes em série multiplicam as suas disponibilidades, e componentes redundantes em paralelo combinam-se por $1-\prod(1-A_i)$, com a ressalva de que as falhas devem ser independentes. A topologia de rede tem duas formas clássicas, three-tier e leaf-spine, e o tráfego distingue-se em norte-sul, entre o datacenter e o exterior, e este-oeste, entre servidores do mesmo datacenter.
+
+Para estudar este bloco, convém saber calcular a disponibilidade de uma arquitetura simples, distinguir os Tiers e explicar porque é que o tráfego este-oeste motivou a topologia leaf-spine.
+}
+
+\pagina{slides/slide-24.png}{
+O bloco C2 trata da virtualização dos recursos computacionais. Os hipervisores dividem-se em tipo 1, que correm diretamente sobre o hardware (bare-metal), e tipo 2, que correm sobre um sistema operativo (hosted), e os requisitos de Popek e Goldberg definem o que uma arquitetura deve permitir para ser virtualizável de forma eficiente (Aula 03). A virtualização pode ser completa, paravirtualizada ou assistida por hardware, com extensões como o VT-x e o AMD-V, e o virtio é o padrão de dispositivos paravirtualizados.
+
+A gestão do ciclo de vida das VMs usa formatos de disco, thin provisioning, snapshots, clones e templates, e a migração ao vivo, que na Aula 11 se viu depender de armazenamento partilhado. A Aula 04 passou para os containers, em que os namespaces isolam o que um processo vê e os cgroups limitam o que consome. As imagens são organizadas em camadas (OverlayFS), a arquitetura do Docker reparte-se por dockerd, containerd e runc, e o standard OCI define o formato e o runtime. Os containers de aplicação, como os do Docker, e os de sistema, como os do LXC, usam a mesma tecnologia com objetivos distintos.
+
+Convém ser capaz de explicar a diferença de isolamento entre uma VM e um container e a razão do menor overhead destes últimos.
+}
+
+\pagina{slides/slide-25.png}{
+O bloco C3 trata da administração de recursos à escala. O Kubernetes tem um control plane, com o API server, o etcd, o scheduler e o controller manager, e nós de trabalho com o kubelet, o kube-proxy e o runtime de containers (Aula 05). O seu princípio central é o ciclo de reconciliação, em que controladores comparam o estado desejado com o observado e corrigem as diferenças, e que é a origem do self-healing.
+
+A Aula 06 tratou da rede definida por software. A SDN separa o plano de controlo do plano de dados, e o OpenFlow instala tabelas match-action nos comutadores. As redes overlay, como a VXLAN, constroem redes lógicas sobre o underlay físico, e a NFV e a microssegmentação aplicam funções de rede e isolamento fino por software.
+
+A Aula 07 tratou da infraestrutura como código. A idempotência garante que aplicar a mesma configuração várias vezes dá o mesmo resultado. O Ansible faz gestão de configuração e o Terraform faz provisionamento, com um state file que regista o que existe. A infraestrutura pode ser mutável ou imutável, e o CI/CD e o GitOps aplicam o fluxo de desenvolvimento à infraestrutura.
+
+O fio comum é o modelo declarativo, que reaparece no Kubernetes, no Terraform e na tendência para APIs desta aula.
+}
+
+\pagina{slides/slide-26.png}{
+O bloco C4 trata de fornecer serviços disponíveis e escaláveis. A Aula 08 distinguiu a escalabilidade vertical da horizontal e os serviços stateless dos stateful, e viu o auto-scaling, com métricas e políticas reativas e preditivas, e o HPA no Kubernetes. O balanceamento de carga usa algoritmos como o round-robin, o least connections e o hashing consistente, opera na camada 4 ou na 7 e combina-se em cascata à escala. Os health checks, com a distinção entre liveness e readiness, sustentam a implantação sem downtime, em rolling, blue-green ou canary. A lei de Amdahl lembra que a parte sequencial limita o ganho.
+
+A Aula 09 acrescentou a redundância, ativa-ativa ou ativa-passiva, os SPOFs e as métricas RTO e RPO, e o desacoplamento por mensageria, com exchanges e filas, garantias de entrega, idempotência e dead letter queues. O circuit breaker e os retries com backoff exponencial protegem as chamadas diretas.
+
+Para estudar, convém saber justificar, para um cenário, a estratégia de escala, o algoritmo de balanceamento e a estratégia de implantação, e dizer o que acontece ao serviço quando um componente falha.
+}
+
+\pagina{slides/slide-27.png}{
+O bloco C5 trata do armazenamento. A Aula 10 apresentou as três abstrações, bloco, ficheiro e objeto, as métricas IOPS, débito e latência, os níveis de RAID e o risco do período de reconstrução. O LVM, com PV, VG e LV, dá flexibilidade, o thin provisioning troca eficiência por risco, e os snapshots usam copy-on-write. A regra de ouro é que o RAID não é backup, e a regra 3-2-1 orienta a proteção dos dados.
+
+A Aula 11 levou o armazenamento à rede. O NAS serve ficheiros com NFS e SMB, e a SAN serve blocos com iSCSI e Fibre Channel, e a pergunta decisiva é quem gere o sistema de ficheiros. O Ceph distribui dados sem controlador central, com o algoritmo CRUSH, e o object storage expõe-se pela API S3. A consistência distribuída é regida pelo teorema CAP e pelo modelo PACELC, e a replicação, o sharding e o erasure coding dão disponibilidade, escala e eficiência de espaço.
+
+Para estudar, convém saber calcular a capacidade e a tolerância de cada nível de RAID, explicar porque é que um volume iSCSI não pode ser montado por dois clientes com ext4 e comparar replicação com erasure coding.
+}
+
+\pagina{slides/slide-28.png}{
+O bloco C6 trata da administração de sistemas. A Aula 12 apresentou o SNMP, com managers, agentes, MIB e OIDs, e a MIB-II como base normalizada. Os tipos Counter e Gauge exigem leituras diferentes, e a taxa de um contador obtém-se pela variação entre leituras. As versões v1 e v2c usam community strings em texto simples, e a v3 acrescenta o USM, com autenticação e cifra, e o VACM, com controlo de acesso. O polling usa GET e o push usa TRAP e INFORM, e os limiares, a histerese e a fadiga de alertas determinam a qualidade da alarmística.
+
+Nesta aula, o WBEM e o CIM acrescentaram um modelo orientado a objetos, com classes, métodos e associações explícitas. O WS-Management transporta o mesmo tipo de gestão sobre SOAP, a gestão fora-de-banda, com IPMI e Redfish, trata do caso em que o sistema operativo não responde, e a tendência atual é a das APIs REST e dos modelos declarativos.
+
+Convém ser capaz de decompor um OID, de justificar a escolha entre SNMP e WBEM para um cenário e de explicar porque é que a gestão fora-de-banda é necessária.
+}
+
+\pagina{slides/slide-29.png}{
+O diagrama resume o fio condutor do semestre. Seis caixas, de C1 a C6, ligadas por setas, cada uma com os conceitos principais, Tiers, PUE e disponibilidade em C1, hipervisores e containers em C2, Kubernetes, SDN e IaC em C3, escala e redundância em C4, RAID, LVM, Ceph e CAP em C5, e SNMP, WBEM e REST em C6.
+
+O texto inferior conta a narrativa. Um datacenter é caro e finito, por isso virtualiza-se. Com muitas máquinas é preciso orquestrar, ligar em rede e automatizar. Os serviços têm de escalar e sobreviver a falhas, o que exige armazenamento e dados distribuídos. E tudo isto tem de ser observado e gerido de forma uniforme. Ver os blocos como respostas encadeadas ao problema anterior ajuda a memorizá-los e a perceber que problema cada tecnologia resolve.
+}
+
+\pagina{slides/slide-30.png}{
+Cinco temas atravessam o semestre. O primeiro é a abstração em camadas, com o container sobre a VM, sobre o hipervisor, sobre o hardware, em que cada camada esconde a de baixo e cobra algum overhead. O mesmo princípio aparece no armazenamento, com o sistema de ficheiros sobre o LVM, sobre o RAID, sobre os discos.
+
+O segundo é declarar em vez de mandar fazer. O Kubernetes, o Terraform e o Ansible partilham o modelo de estado desejado e de reconciliação. O terceiro é eliminar pontos únicos de falha, com redundância de energia (C1), de instâncias (C4), e de discos e de nós (C5). O quarto é que o desenho de sistemas é feito de compromissos e não de soluções perfeitas, como o CAP e o PACELC, o custo e a disponibilidade, o isolamento e o desempenho. O quinto é automatizar porque a escala obriga, o fio condutor que liga o SNMP dos anos 1980 ao GitOps de hoje.
+
+Ao rever um tema qualquer, vale a pena perguntar qual destes cinco princípios está em causa, porque muitas questões de aplicação se resolvem identificando-o.
+}
+
+\pagina{slides/slide-31.png}{
+A avaliação da unidade curricular tem três componentes. A 1.ª Avaliação Prática, de 2 de novembro de 2026, vale 20\% e corresponde à apresentação e discussão do Mini Projeto 1. A 2.ª Avaliação Prática vale 30\% e consiste na apresentação do Projeto Final, que reúne o Mini Projeto 1 e o Mini Projeto 2, a 22 de dezembro de 2026. O Teste Teórico vale 50\% e realiza-se na época de exames.
+
+Para o teste, que incide sobre os blocos C1 a C6, convém rever os conceitos centrais e o vocabulário técnico de cada bloco, como nomes de protocolos, camadas e algoritmos. Convém prestar atenção às ligações entre aulas, por exemplo do SLA à disponibilidade e à redundância, ou dos containers ao Kubernetes e à SDN, que foram destacadas ao longo do semestre. E convém rever os guiões práticos, porque várias questões de verificação exploram a mesma matéria de forma aplicada.
+
+Uma boa estratégia é fazer o exercício do roteiro de revisão do guião, em que se escolhe um cenário de infraestrutura e se descrevem as tecnologias de cada bloco que seriam relevantes para o desenhar e operar.
+}
+
+\pagina{slides/slide-32.png}{
+As leituras desta aula são as especificações da DMTF para o CIM, o WBEM e o WS-Management, a especificação do Redfish e a documentação do SFCB e do \texttt{pywbem}, que são as ferramentas usadas no guião. A DMTF mantém todas estas especificações em dmtf.org.
+
+Para a revisão geral, as melhores leituras são as sebentas e os slides das aulas anteriores, que reúnem a matéria de cada bloco e as ligações entre eles.
+}
+
+\pagina{slides/slide-33.png}{
+Terminada a última aula do semestre, as questões e os comentários são bem-vindos. Sugere-se rever o percurso completo, dos Tiers do datacenter ao WBEM, e testar a compreensão explicando cada diagrama por palavras próprias. Bom trabalho para o projeto final e para o teste.
+}
+
+\end{document}
