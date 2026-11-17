@@ -10,14 +10,23 @@
 ## Prática / laboratório
 - Guiao 12 - Monitorizacao com Net-SNMP.tex
 
-## Manual técnico
-- Manual 12 - Monitorizacao com Net-SNMP.tex
+## Sebenta
+- Sebenta 12 - Tecnologias de Administracao de Sistemas - SNMP.tex (um slide por página, com texto de estudo aprofundado)
 
 ## Diagramas
 Fonte editável (`.drawio`) e PNG em `Diagramas/`:
 - a12-arquitetura-snmp
 - a12-arvore-mib
-- m12-duas-vms
+- a12-oid
+- a12-counter-gauge
+- a12-versoes
+- a12-usm-niveis
+- a12-operacoes
+- a12-net-snmp
+- a12-polling-push
+- a12-histerese
+- a12-panorama
+- m12-duas-vms (sem uso atual)
 
 ## Notas para o docente
 Esta é a primeira das duas aulas do bloco C6; vale a pena relembrar brevemente a escala de infraestruturas de cloud vista no início do semestre (C1) para justificar a necessidade de gestão centralizada.

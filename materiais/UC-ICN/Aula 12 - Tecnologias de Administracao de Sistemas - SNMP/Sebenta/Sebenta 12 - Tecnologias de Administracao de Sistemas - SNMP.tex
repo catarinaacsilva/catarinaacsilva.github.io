@@ -1,0 +1,280 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+\setlength{\emergencystretch}{3em}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{12}{Tecnologias de Administração de Sistemas, SNMP}{Aula 12}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 12. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada, com algum aprofundamento para além do que a apresentação permite mostrar. Depois de três aulas dedicadas a como construir e dimensionar serviços e armazenamento, a aula muda de perspetiva e trata de como observar e gerir o que foi construído. O tema é o SNMP, o protocolo clássico de gestão de equipamentos de rede e de servidores, e a monitorização e a alarmística que se constroem sobre ele.
+
+A leitura sequencial é a mais proveitosa. A aula começa pela necessidade de gestão centralizada e pela arquitetura do SNMP, com managers, agentes, MIB e OIDs. Estuda a árvore MIB, os tipos de dados e as versões do protocolo, com a segurança do SNMPv3. Passa pelas operações e pelas ferramentas do net-snmp, e termina com as questões de operação, o polling e o push, a escolha dos limiares, a fadiga de alertas e o lugar do SNMP no panorama atual. A aula tem componente prática, o guião de monitorização com o net-snmp.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+As aulas anteriores trataram de construir serviços disponíveis, redundantes e com armazenamento adequado. Uma vez construídos, é preciso saber o que se passa com eles. Um servidor com o disco quase cheio, uma interface de rede com erros ou uma fonte de alimentação avariada só são corrigidos a tempo se alguém, ou alguma coisa, os detetar.
+
+Esta aula apresenta o SNMP, um protocolo criado precisamente para consultar e gerir equipamentos de forma uniforme, e discute o que fazer com os dados que recolhe, quando se deve ser avisado e como evitar o excesso de avisos.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira metade da agenda trata do protocolo em si. Começa pela necessidade que o originou, a gestão centralizada, e pela arquitetura, com os managers que consultam e os agentes que respondem. Introduz a MIB e os OIDs, a forma de nomear cada variável gerível, e a árvore em que se organizam, com a MIB-II como núcleo comum.
+
+Segue-se a forma como os dados são descritos e tipados, a SMI e os ficheiros MIB, e a evolução do protocolo através das suas três versões.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda metade da agenda trata da segurança e da operação. O SNMPv3 e o modelo USM respondem à fragilidade das versões anteriores. As operações do protocolo definem o que um manager pode pedir e o que um agente pode comunicar, e o net-snmp fornece as ferramentas para o experimentar.
+
+Fecha com as questões de operação. A escolha entre polling e push, o que medir, como definir limiares e como evitar a fadiga de alertas, e o lugar que o SNMP ocupa hoje ao lado de sistemas de monitorização mais recentes.
+}
+
+\pagina{slides/slide-04.png}{
+Uma infraestrutura de cloud reúne centenas ou milhares de componentes, entre servidores, switches, routers e sistemas de armazenamento, de muitos fabricantes. Verificar manualmente o estado de cada equipamento, entrando em cada um, não escala, e perder um sinal de alerta pode significar uma falha evitável que chega ao utilizador.
+
+É necessário um protocolo comum, independente do fabricante, que permita consultar e, quando adequado, alterar o estado de qualquer dispositivo gerido. O SNMP, Simple Network Management Protocol, surgiu nos anos 1980 com este objetivo. A sua longevidade deve-se à simplicidade e ao facto de praticamente todos os equipamentos de rede o implementarem, o que o torna ainda hoje uma base comum de gestão.
+}
+
+\pagina{slides/slide-05.png}{
+A arquitetura do SNMP tem dois papéis. O manager é a estação de gestão, que consulta os dispositivos e recebe as suas notificações. O agente é um software que corre em cada dispositivo gerido, seja um servidor, um switch ou uma impressora, e que responde ao manager e lhe envia avisos.
+
+A comunicação usa tipicamente UDP. Os pedidos do manager vão para a porta 161 do agente e as notificações dos agentes chegam à porta 162 do manager. O UDP é leve e sem ligação, o que reduz o overhead de gestão sobre a rede, e como o SNMP foi concebido para ser pouco intrusivo, essa escolha faz sentido. Em contrapartida, as mensagens podem perder-se, e o protocolo trata disso com repetições a nível da aplicação. Um único manager pode gerir centenas de agentes distribuídos pela infraestrutura.
+}
+
+\pagina{slides/slide-06.png}{
+O diagrama mostra um manager ligado a três agentes, um num servidor com o \texttt{snmpd}, outro num switch e outro num router. O manager envia pedidos GET por UDP para a porta 161 de cada agente. Cada agente expõe a sua MIB, o conjunto das variáveis geríveis do dispositivo, e as traps seguem no sentido contrário, dos agentes para o manager, na porta 162.
+
+A legenda recorda que um manager gere muitos agentes, e que o UDP reduz o overhead. A figura é um esquema, e numa instalação real os managers podem ser vários e organizados em hierarquia.
+}
+
+\pagina{slides/slide-07.png}{
+A MIB (Management Information Base) é a estrutura que descreve as variáveis geríveis de um dispositivo, como o tempo desde o arranque, o número de bytes recebidos numa interface ou a utilização de um disco. Cada variável é endereçada por um OID (Object Identifier), um identificador numérico único, por exemplo \texttt{1.3.6.1.2.1.1.3.0}, que corresponde ao uptime do sistema.
+
+A MIB é organizada em árvore, e cada ramo pertence a uma organização ou a um fabricante. A IANA atribui os ramos de topo, e cada fabricante recebe um número próprio no ramo reservado a extensões privadas, onde pode definir variáveis específicas dos seus equipamentos. A normalização dos OIDs é o que dá valor ao protocolo. Sem ela, cada fabricante exporia a mesma informação à sua maneira, e seria preciso um conhecimento específico para cada equipamento.
+}
+
+\pagina{slides/slide-08.png}{
+A árvore da MIB tem uma raiz e nós numerados. O caminho da raiz até uma folha, lido como a sequência dos números dos nós, é o OID. O ramo mais usado é o \texttt{1.3.6.1}, que corresponde a \texttt{iso.org.dod.internet}, e a partir dele partem os ramos de gestão normalizada e os privados.
+
+O ramo \texttt{1.3.6.1.2.1} é a MIB-II, definida na RFC 1213, o conjunto normalizado de objetos que praticamente todos os dispositivos implementam. Entre os seus grupos estão o \texttt{system} (\texttt{1.3.6.1.2.1.1}), com a descrição, o nome e o uptime do equipamento, o \texttt{interfaces} (\texttt{1.3.6.1.2.1.2}), com o estado e os contadores de cada interface de rede, e o \texttt{ip} (\texttt{1.3.6.1.2.1.4}), com estatísticas do protocolo IP.
+
+O ramo \texttt{1.3.6.1.4.1} é o enterprises, onde cada fabricante recebe da IANA um número próprio para as suas extensões. É aí que ficam as variáveis específicas, por exemplo a temperatura de um módulo ou o estado de uma fonte de alimentação de um modelo concreto.
+}
+
+\pagina{slides/slide-09.png}{
+O diagrama desenha o caminho de \texttt{iso} (1), \texttt{org} (3), \texttt{dod} (6) até \texttt{internet} (1). Daí partem dois ramos. À esquerda, \texttt{mgmt} (2) e dentro dele a \texttt{mib-2} (1), com os grupos \texttt{system}, \texttt{interfaces} e \texttt{ip}. À direita, \texttt{private} (4) e dentro dele o \texttt{enterprises} (1), onde ficam os ramos dos fabricantes.
+
+A caixa final indica o OID do \texttt{sysUpTime}, \texttt{1.3.6.1.2.1.1.3.0}, que é o resultado de seguir o caminho pela MIB-II, grupo system. Uma boa forma de estudar é percorrer a árvore com o dedo e, para um OID dado, dizer a que grupo pertence.
+}
+
+\pagina{slides/slide-10.png}{
+O diagrama decompõe o OID \texttt{1.3.6.1.2.1.1.3.0} em nove componentes, cada um com o seu nome, iso, org, dod, internet, mgmt, mib-2, system, sysUpTime e a instância 0. Cada número identifica um nó na árvore, e o caminho completo da raiz à folha forma o OID.
+
+O sufixo \texttt{.0} merece uma nota. Os objetos escalares, que têm um único valor por dispositivo, como o uptime, usam a instância 0. Os objetos em tabelas, como os de cada interface de rede, usam um índice, por exemplo o número da interface. Os ficheiros MIB, tratados no slide seguinte, traduzem estes números em nomes legíveis para as ferramentas.
+}
+
+\pagina{slides/slide-11.png}{
+A SMI (Structure of Management Information) define as regras de escrita das definições da MIB, incluindo os tipos de dados permitidos. Os tipos mais comuns são o \texttt{INTEGER}, para números inteiros, o \texttt{OCTET STRING}, para texto ou sequências de bytes, o \texttt{Counter32}, o \texttt{Gauge32} e o \texttt{TimeTicks}, que mede o tempo em centésimos de segundo.
+
+A distinção entre contador e gauge é importante na interpretação. O \texttt{Counter32} só cresce e volta a zero ao atingir o máximo, e por isso o que interessa é a variação entre duas leituras, dividida pelo intervalo, e não o valor absoluto. Um contador de bytes de uma interface de 10 Gb/s pode transbordar em poucos segundos, e por isso as interfaces rápidas usam contadores de 64 bits. O \texttt{Gauge32} sobe e desce, e o valor absoluto interessa tal como é, como a utilização de CPU ou a temperatura.
+
+Um ficheiro MIB é um documento de texto que descreve os objetos de um ramo e permite traduzir os OIDs numéricos em nomes legíveis. Sem o ficheiro MIB correspondente, as ferramentas mostram apenas números, o que é funcional mas difícil de interpretar.
+}
+
+\pagina{slides/slide-12.png}{
+O diagrama contrasta os dois tipos. À esquerda, um contador cresce com o tempo. Duas leituras sucessivas dão a variação, e dividindo-a pelo intervalo obtém-se a taxa, por exemplo em bytes por segundo. A nota recorda que, ao transbordar, o contador volta a zero, e que as interfaces rápidas usam Counter64.
+
+À direita, um gauge sobe e desce, e cada leitura vale por si. Os exemplos são a utilização de CPU, a memória livre e a temperatura. Ao tratar os dados, convém compensar o transbordo de um contador, que dá uma variação negativa aparente entre duas leituras, e tratá-lo como uma nova volta.
+}
+
+\pagina{slides/slide-13.png}{
+O SNMPv1 é a versão original, simples e sem mecanismos de segurança reais. O acesso é controlado por uma community string, um texto que o manager envia com cada pedido e que o agente compara com a que tem configurada.
+
+O SNMPv2c melhora o desempenho, por exemplo com o GETBULK, que obtém vários valores de uma vez, e com o INFORM, e traz tipos de dados adicionais, como os contadores de 64 bits. Mantém, no entanto, a autenticação por community string. O c do nome refere-se justamente a este modelo baseado em community.
+
+A community string funciona como uma palavra-passe, mas é transmitida em texto simples na rede. Quem consiga ler o tráfego obtém a credencial, e com ela pode consultar e, se o acesso de escrita estiver ativo, alterar a configuração do equipamento. Um valor por omissão como \texttt{public} é, por isso, um risco bem conhecido.
+}
+
+\pagina{slides/slide-14.png}{
+O SNMPv3 introduz autenticação real, isto é, a verificação da identidade de quem pede, e cifra do tráfego de gestão. Corrige a principal fragilidade das versões anteriores, que expunham credenciais e dados de gestão em texto simples. Substitui a community string por utilizadores com credenciais próprias, e permite escolher, por utilizador, o nível de proteção adequado.
+
+Apesar disso, o SNMPv2c continua muito usado em ambientes legados, pela simplicidade de configuração e porque muitos equipamentos antigos não suportam a versão 3. Quando o v2c é inevitável, convém limitar o acesso por endereço de origem, usar uma community não trivial, restringir os acessos a leitura e isolar o tráfego numa rede de gestão.
+
+Em produção, o SNMPv3 é a escolha recomendada sempre que a segurança da rede de gestão conta. O custo é a configuração mais trabalhosa, com utilizadores, chaves e níveis, o que explica a resistência à sua adoção.
+}
+
+\pagina{slides/slide-15.png}{
+O diagrama resume as três versões em colunas. O SNMPv1 aparece com segurança por community em texto simples e sem GETBULK, a vermelho. O SNMPv2c acrescenta o GETBULK e o INFORM, mais desempenho, mantendo a community em texto simples. O SNMPv3 aparece a verde, com utilizadores, autenticação, cifra e controlo de acesso, através do USM e do VACM.
+
+O texto inferior repete a mensagem principal, a community string viaja sem proteção, e o SNMPv3 corrige isto com autenticação, integridade, cifra e proteção contra repetição. O v2c continua muito usado em ambientes legados, mas o v3 é a escolha recomendada quando a segurança conta.
+}
+
+\pagina{slides/slide-16.png}{
+O USM (User-based Security Model) é o modelo de segurança do SNMPv3. Substitui a community string por utilizadores com credenciais próprias, e cada utilizador tem um nível de segurança. O nível \texttt{noAuthNoPriv} não tem autenticação nem cifra, o \texttt{authNoPriv} autentica as mensagens mas não as cifra, e o \texttt{authPriv} autentica e cifra.
+
+A autenticação usa HMAC, tipicamente com SHA, e a cifra usa tipicamente AES. Os algoritmos mais antigos, como o MD5 e o DES, são hoje desaconselhados. O USM garante ainda integridade, porque a mensagem não foi alterada em trânsito, e proteção contra repetição, porque cada mensagem inclui informação de tempo que permite ao agente rejeitar mensagens antigas reenviadas.
+
+A autenticação diz quem é o utilizador, e o VACM (View-based Access Control Model) diz o que ele pode fazer. Define que ramos da MIB cada utilizador pode ler ou escrever, por exemplo permitir a um utilizador de monitorização ler tudo, mas a nenhum alterar nada. Seguir o princípio do menor privilégio, com utilizadores só de leitura para a monitorização, reduz o risco em caso de fuga de credenciais.
+}
+
+\pagina{slides/slide-17.png}{
+O diagrama mostra os três níveis do USM em colunas. O \texttt{noAuthNoPriv}, a vermelho, não tem autenticação nem cifra. O \texttt{authNoPriv} dá autenticação e integridade mas não cifra. O \texttt{authPriv}, a verde, dá autenticação, integridade e cifra.
+
+O texto inferior repete a base técnica, HMAC com SHA para a autenticação e AES para a cifra, a proteção contra repetição de mensagens antigas e o papel do VACM. Para consolidar, convém ser capaz de dizer, dado um cenário, qual o nível adequado, e porque é que o \texttt{authPriv} é o recomendado quando se atravessam redes não confiáveis.
+}
+
+\pagina{slides/slide-18.png}{
+O protocolo tem um conjunto pequeno de operações. O GET pede ao agente o valor de um OID específico, e o agente responde com esse valor. O GETNEXT pede o OID seguinte na árvore, o que permite percorrer tabelas e ramos sem conhecer de antemão todos os OIDs, e é a base do \texttt{snmpwalk}.
+
+O GETBULK, disponível no SNMPv2c e no v3, pede vários valores de uma vez, e reduz o número de mensagens trocadas ao percorrer tabelas grandes, o que acelera a recolha e alivia a carga da recolha. O SET altera o valor de uma variável no agente, por exemplo para ativar ou desativar uma interface, ou reconfigurar um parâmetro, o que dá poder de gestão e justifica cuidados. Em muitas instalações a escrita está desativada e o SNMP é usado apenas para leitura.
+}
+
+\pagina{slides/slide-19.png}{
+O GET, o GETNEXT, o GETBULK e o SET são operações síncronas. O manager pergunta e o agente responde, e é o manager que decide quando perguntar. Mas há eventos que não podem esperar pela próxima pergunta, como uma interface que cai ou uma temperatura crítica.
+
+A TRAP é o mecanismo assíncrono em que o agente notifica o manager sem pedido prévio. É enviada por UDP e não tem confirmação, o que significa que pode perder-se sem que o agente o saiba. O INFORM é como a TRAP, mas o manager confirma a receção, e se não houver confirmação o agente repete, o que o torna mais fiável.
+
+O modelo combina pull, com o GET periódico, e push, com a TRAP e o INFORM. As consultas periódicas dão uma visão contínua e permitem construir séries temporais, e as notificações cobrem os eventos urgentes. As duas formas complementam-se.
+}
+
+\pagina{slides/slide-20.png}{
+O diagrama é uma sequência entre o manager, à esquerda, e o agente, à direita. As quatro primeiras setas vão do manager para o agente, e correspondem ao GET, ao GETNEXT, ao GETBULK e ao SET, cada um com a resposta correspondente. As duas últimas vão do agente para o manager, a TRAP, um aviso sem pedido, e o INFORM, com confirmação do manager.
+
+A cor distingue as direções. As setas castanhas são as iniciadas pelo manager, e as setas laranja são as iniciadas pelo agente. Convém reter que apenas as notificações partem do agente.
+}
+
+\pagina{slides/slide-21.png}{
+O net-snmp é a implementação open source de referência do protocolo, e está disponível na generalidade das distribuições Linux, o que o torna uma base prática para aprender e testar. Inclui um agente, um recetor de traps e um conjunto de utilitários de linha de comandos.
+
+O \texttt{snmpd} corre no dispositivo gerido e faz o papel de agente. Os utilitários do manager incluem o \texttt{snmpget}, que consulta um OID, o \texttt{snmpwalk}, que percorre um ramo inteiro da MIB com GETNEXT, o \texttt{snmpbulkwalk}, que faz o mesmo com GETBULK, o \texttt{snmpset}, que altera um valor, e o \texttt{snmptrapd}, que recebe as traps enviadas pelos agentes. Há ainda o \texttt{snmptranslate}, que converte entre nomes e OIDs numéricos usando os ficheiros MIB.
+
+Com um \texttt{snmpd} configurado numa máquina virtual, um \texttt{snmpwalk} sobre o ramo \texttt{system} mostra, em segundos, a descrição, o nome e o uptime do equipamento. É essa a experiência que o guião da aula proporciona.
+}
+
+\pagina{slides/slide-22.png}{
+O diagrama coloca, à esquerda, o manager com as ferramentas \texttt{snmpget}, \texttt{snmpwalk} e \texttt{snmptrapd}, e, à direita, o dispositivo gerido com o \texttt{snmpd}, que lê e expõe a MIB do sistema. As setas castanhas mostram os pedidos do manager, e a seta laranja mostra as notificações que o agente envia ao recetor de traps.
+
+A nota lateral recorda que o net-snmp é a implementação de referência e usa a porta UDP 161 para pedidos e a 162 para traps. A legenda inferior lembra que os ficheiros MIB permitem ver nomes como \texttt{sysUpTime} em vez de números.
+}
+
+\pagina{slides/slide-23.png}{
+Há duas formas de saber o estado de um sistema. No polling, o manager consulta periodicamente cada agente com GET. É simples e dá uma série contínua de valores, mas o intervalo de consulta determina a rapidez de deteção. Se consultar de cinco em cinco minutos, uma falha pode demorar até cinco minutos a ser detetada. Um intervalo mais curto deteta mais depressa, mas gera mais carga sobre a rede e sobre os dispositivos, e com muitos agentes o custo soma-se.
+
+No push, o agente notifica quando algo acontece, com uma TRAP ou um INFORM. A deteção é imediata, mas depende de o agente estar funcional para avisar. Se o equipamento se desligar por completo, não há quem envie a notificação. Por isso, as duas formas combinam-se.
+
+As métricas habituais são a utilização de CPU e de memória, o espaço em disco, o tráfego e os erros por interface, a temperatura e o estado das fontes de alimentação. Convém recolher também a ausência de resposta, porque um agente que deixa de responder ao polling é, em si, um sinal relevante, muitas vezes o mais importante.
+}
+
+\pagina{slides/slide-24.png}{
+O diagrama usa duas linhas de tempo. Na de cima, o polling faz GET a intervalos regulares. Uma falha ocorre entre dois GET e só é detetada no GET seguinte, o que mostra que o atraso de deteção pode chegar a um intervalo completo.
+
+Na de baixo, o push faz o agente notificar no momento da falha, e o manager sabe de imediato. A legenda resume o compromisso. O polling é simples, mas o intervalo limita a rapidez de deteção, e o push avisa no momento, mas depende de o agente estar funcional.
+}
+
+\pagina{slides/slide-25.png}{
+Recolher métricas só é útil se houver critérios claros que transformem valores em ação. Os limiares (thresholds) definem a partir de que valor uma métrica gera um alerta, por exemplo CPU acima de 90\% durante cinco minutos. A duração mínima evita que picos momentâneos disparem avisos.
+
+A histerese usa dois limiares diferentes, um para disparar o alerta e outro, mais baixo, para o repor. Evita a oscilação constante junto ao limite, em que uma métrica que anda à volta do valor gera uma sucessão de alertas que disparam e se repõem.
+
+A fadiga de alertas surge quando há alertas a mais. Os operadores deixam de lhes prestar atenção, e os importantes passam despercebidos entre o ruído. A boa prática é alertar sobre sintomas com impacto no utilizador, como erros ou latência altos, e deixar as métricas de causa, como a utilização de CPU, para diagnóstico posterior. Cada alerta deve ser acionável, isto é, exigir de alguém uma ação concreta, e os que não o são devem ser removidos ou transformados em informação.
+}
+
+\pagina{slides/slide-26.png}{
+O diagrama mostra um sinal que oscila à volta de 80. As duas linhas tracejadas marcam o limiar de alerta, 80, e o limiar de reposição, 70. Com um só limiar em 80, o sinal que o atravessa várias vezes gera alertas repetidos. Com histerese, o alerta dispara acima de 80 e só é reposto abaixo de 70, o que evita a oscilação.
+
+A legenda acrescenta que, na prática, se exige também que a condição dure um período mínimo. Os valores 80 e 70 são exemplos, e os limiares reais dependem da métrica e do serviço.
+}
+
+\pagina{slides/slide-27.png}{
+O SNMP não está sozinho. O Nagios e o Zabbix são sistemas de monitorização mais completos, com alertas, painéis e histórico, e usam frequentemente o SNMP como um dos seus métodos de recolha de dados. O Prometheus é um modelo mais recente, em que os serviços expõem as suas métricas por HTTP, num endereço como \texttt{/metrics}, e o servidor as recolhe por pull.
+
+O SNMP mantém-se relevante sobretudo em equipamento de rede legado, como switches e routers, que só expõe gestão por esta via. Existem pontes, como o \texttt{snmp\_exporter}, que consultam equipamentos por SNMP e expõem os dados para o Prometheus. O equipamento de rede mais recente adota também telemetria em fluxo contínuo, como alternativa ao polling.
+
+A conclusão é de coexistência, e não de substituição total. Cada tecnologia tem o seu nicho consoante o equipamento e a idade da infraestrutura, e um administrador deve conhecer ambas.
+}
+
+\pagina{slides/slide-28.png}{
+O diagrama mostra os dois mundos. À esquerda, sistemas como o Nagios e o Zabbix consultam switches, routers, UPS e impressoras por SNMP. À direita, o Prometheus recolhe por pull HTTP os hosts e os serviços que expõem métricas, e usa o snmp\_exporter como ponte para equipamento legado que só fala SNMP.
+
+A legenda inferior resume o papel atual do SNMP, mantém-se relevante em equipamento de rede legado que só expõe gestão por esta via, e os sistemas modernos convivem com ele.
+}
+
+\pagina{slides/slide-29.png}{
+A primeira parte da síntese reúne os fundamentos. Infraestruturas de cloud com muitos componentes exigem gestão centralizada e normalizada. O SNMP assenta em managers, agentes, MIB e OIDs para endereçar cada variável gerida. O SNMPv1 e o v2c são simples mas inseguros, e o v3 acrescenta autenticação e cifra.
+
+Para estudar, convém ser capaz de decompor um OID, de explicar a diferença entre um Counter e um Gauge e de dizer porque é que a community string é uma fragilidade.
+}
+
+\pagina{slides/slide-30.png}{
+A segunda parte da síntese reúne as operações e a operação. O GET, o GETNEXT, o GETBULK e o SET são síncronos, e a TRAP e o INFORM notificam eventos de forma assíncrona. O SNMPv3 acrescenta autenticação, cifra e controlo de acesso por vistas, com o USM e o VACM. O net-snmp é a implementação de referência, e os ficheiros MIB traduzem OIDs em nomes.
+
+Recolher métricas só é útil com limiares bem escolhidos, e alertas a mais levam a fadiga e a incidentes ignorados. A aula seguinte, a última, apresenta o WBEM e o WS-Management, duas alternativas mais modernas de gestão, e faz a revisão geral da unidade curricular.
+}
+
+\pagina{slides/slide-31.png}{
+As leituras são quatro. As RFC 3411 a 3418 definem a arquitetura e os protocolos do SNMPv3, incluindo o USM e o VACM. A RFC 1213 define a MIB-II. A documentação do net-snmp descreve as ferramentas usadas no guião, e a do Prometheus sobre o \texttt{snmp\_exporter} mostra a ponte para os sistemas de monitorização mais recentes.
+
+Recomenda-se ler a RFC 1213 com atenção aos grupos system e interfaces, porque são os que se percorrem no guião, e consultar a documentação do net-snmp em paralelo com a sua realização.
+}
+
+\pagina{slides/slide-32.png}{
+Terminada a aula, as questões e os comentários são bem-vindos. Sugere-se rever o percurso, da arquitetura e da árvore MIB à segurança do SNMPv3, e das operações aos limiares e à fadiga de alertas, e testar a compreensão explicando cada diagrama por palavras próprias.
+}
+
+\end{document}
