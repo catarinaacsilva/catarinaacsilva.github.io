@@ -10,9 +10,6 @@
 ## Prática / laboratório
 - Guiao 09 - Mensageria e Desacoplamento com RabbitMQ.tex
 
-## Manual técnico
-- Manual 09 - Mensageria e Desacoplamento com RabbitMQ.tex
-
 ## Sebenta
 - Sebenta 09 - Redundancia e Desacoplamento de Servicos.tex (um slide por página, com texto de estudo aprofundado)
 
@@ -30,7 +27,7 @@ Fonte editável (`.drawio`) e PNG em `Diagramas/`:
 - a09-dlq-backpressure
 - a09-broker-streaming
 - a09-k8s-redundancia
-- m09-desacoplamento (usado no Manual)
+- m09-desacoplamento (sem uso atual)
 
 ## Notas para o docente
 Retomar o balanceamento de carga da Aula 08 como forma de redundância ativa-ativa, contrastando com o modelo ativa-passiva (failover).
