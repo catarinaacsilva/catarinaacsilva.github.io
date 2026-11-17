@@ -1,0 +1,314 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{BgCream}{HTML}{FAF8F5}
+\definecolor{TextEspresso}{HTML}{4A4238}
+\definecolor{NudeTaupe}{HTML}{BFAFA6}
+\definecolor{SoftBlush}{HTML}{D9C5B2}
+
+\hypersetup{colorlinks=true, linkcolor=TextEspresso, urlcolor=TextEspresso}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\color{NudeTaupe}\small\thepage}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.32cm}
+\setlength{\emergencystretch}{3em}
+
+\newtcolorbox{slidebox}{
+  breakable, colback=BgCream, colframe=NudeTaupe,
+  boxrule=0.6pt, arc=2pt, left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\newcommand{\sebentatitle}[3]{%
+  \thispagestyle{empty}
+  \begin{center}
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}\\[0.5cm]
+  {\LARGE\bfseries\color{TextEspresso} Sebenta #1}\\[0.35cm]
+  {\large\color{TextEspresso} #2}\\[0.3cm]
+  {\normalsize\color{NudeTaupe} Infraestruturas de Computação na Nuvem \quad|\quad #3}\\[0.4cm]
+  {\color{NudeTaupe}\rule{\textwidth}{0.5pt}}
+  \end{center}
+  \vspace{0.4cm}
+}
+
+\newcommand{\pagina}[2]{%
+  \begin{slidebox}
+  \centering
+  \includegraphics[width=0.95\textwidth]{#1}
+  \end{slidebox}
+  \vspace{0.4cm}
+  #2
+  \clearpage
+}
+
+\begin{document}
+
+\sebentatitle{10}{Armazenamento de Dados, Arquiteturas e Sistemas Locais}{Aula 10}
+
+\section*{Objeto e utilização deste documento}
+
+O presente documento acompanha a apresentação da Aula 10. Cada página reproduz um slide e desenvolve, em texto corrido, a matéria nele condensada, com algum aprofundamento para além do que a apresentação permite mostrar. A aula abre o bloco dedicado ao armazenamento. Retoma a redundância e os objetivos de recuperação (RTO e RPO) da Aula 09, e prepara a Aula 11, que estende o armazenamento a cenários de rede e distribuídos.
+
+A leitura sequencial é a mais proveitosa. A aula começa pelas três abstrações de armazenamento, bloco, ficheiro e objeto, e pelos dispositivos locais, com as suas interfaces e métricas de desempenho. Estuda depois o RAID, os seus níveis e os riscos da reconstrução, e passa para o LVM, o thin provisioning e os snapshots. Continua com os sistemas de ficheiros, com a diferença entre RAID e backup e a regra 3-2-1, e termina com a forma como o Proxmox VE concretiza estas opções. A aula tem componente prática, o guião com LVM e RAID, que reproduz numa máquina virtual a pilha aqui descrita.
+
+\clearpage
+
+\pagina{slides/slide-01.png}{
+Todo o serviço na nuvem acaba por guardar dados em algum meio físico, e as decisões sobre onde e como os guardar condicionam o desempenho, a disponibilidade e o custo do conjunto. Esta aula trata do armazenamento local, aquele que está ligado diretamente a um servidor, e das camadas de software que o organizam, desde os discos até ao sistema de ficheiros.
+
+O fio condutor é o de uma pilha de camadas, cada uma com a sua função. Os discos fornecem a capacidade, o RAID acrescenta redundância, o LVM acrescenta flexibilidade e o sistema de ficheiros dá estrutura aos dados. Compreender a função de cada camada permite diagnosticar problemas e escolher as combinações adequadas a cada caso.
+}
+
+\pagina{slides/slide-02.png}{
+A primeira metade da agenda trata dos fundamentos. Começa pelas três abstrações de armazenamento, que serão usadas nas aulas seguintes, e pelos dispositivos locais, HDD e SSD, com as interfaces que os ligam ao servidor e as métricas que medem o seu desempenho.
+
+Segue-se o RAID, com os níveis 0, 1, 5, 6 e 10, a distinção entre a implementação por hardware e por software e os riscos associados à reconstrução de um array depois de uma falha.
+}
+
+\pagina{slides/slide-03.png}{
+A segunda metade da agenda sobe na pilha. O LVM abstrai os discos em volumes lógicos redimensionáveis, e o thin provisioning e os snapshots são duas funcionalidades que ele oferece. Os sistemas de ficheiros ext4, XFS, ZFS e btrfs organizam os dados em cima dos volumes.
+
+Fecha com a proteção dos dados, em que o RAID e o backup respondem a riscos diferentes e a regra 3-2-1 orienta o segundo, e com o Proxmox VE, que serve de exemplo concreto de como estas camadas se combinam num servidor de virtualização.
+}
+
+\pagina{slides/slide-04.png}{
+O block storage expõe blocos brutos de dados, sem qualquer estrutura de ficheiros. É o sistema operativo do cliente que formata o dispositivo com um sistema de ficheiros e gere o acesso, e por isso o cliente tem controlo total. É o que um disco local oferece, e também o que oferecem os volumes de uma SAN (por exemplo por iSCSI) e os discos virtuais de uma VM. Dá a menor latência e é a escolha das bases de dados e dos discos de máquinas virtuais.
+
+O file storage expõe uma hierarquia de ficheiros e pastas através de um protocolo de rede, como o NFS, comum em Linux, ou o SMB, comum em Windows. Aqui é o servidor que gere o sistema de ficheiros e os clientes pedem ficheiros por nome. É a escolha natural para partilhar ficheiros entre vários utilizadores ou máquinas, com permissões e bloqueios geridos no servidor.
+
+A diferença essencial está em quem gere o sistema de ficheiros. No bloco é o cliente, no ficheiro é o servidor. Isto tem consequências práticas, porque dois clientes não devem montar o mesmo volume de blocos ao mesmo tempo com um sistema de ficheiros comum, enquanto um servidor de ficheiros foi concebido precisamente para esse acesso partilhado.
+}
+
+\pagina{slides/slide-05.png}{
+O object storage guarda os dados como objetos, cada um identificado por uma chave e acompanhado de metadados, e é acedido por uma API HTTP, tipicamente com operações simples de escrita (PUT), leitura (GET) e remoção. Não há uma hierarquia real de pastas. Os nomes com barras que se veem nas interfaces são apenas prefixos de chaves num espaço plano.
+
+Os objetos são tratados como unidades inteiras. Em geral, alterar parte de um objeto implica escrever de novo o objeto completo, o que o torna pouco adequado a cargas com muitas pequenas atualizações aleatórias, como uma base de dados. Em contrapartida, o modelo escala na horizontal para volumes muito grandes de dados não estruturados, como imagens, vídeos, cópias de segurança e registos, e a API simples facilita o acesso de qualquer aplicação através da rede.
+
+O slide propõe ordenar as três abstrações pela granularidade, do bloco, a mais baixa, ao objeto, a mais alta. Quanto mais alto o nível, menos controlo e mais simplicidade de uso e de escala. A escolha deve partir do caso de uso, desempenho e controlo no bloco, partilha no ficheiro, escala e simplicidade de API no objeto.
+}
+
+\pagina{slides/slide-06.png}{
+O diagrama mostra as três abstrações em paralelo. No block storage, a aplicação usa um sistema de ficheiros que reside no cliente e que escreve diretamente blocos brutos num disco, numa SAN ou num volume. No file storage, os clientes falam NFS ou SMB com um servidor, que tem o sistema de ficheiros e as pastas. No object storage, a aplicação usa uma API HTTP com chaves, e o armazenamento mantém objetos e metadados sem pastas reais.
+
+A legenda sob cada coluna resume o que cada abstração dá. Convém reparar que a camada intermédia muda de sítio. No bloco o sistema de ficheiros está do lado do cliente, no ficheiro está do lado do servidor, e no objeto nem existe. Esta posição é a chave para decidir onde residem as responsabilidades de organização e de partilha dos dados.
+}
+
+\pagina{slides/slide-07.png}{
+Os discos rígidos (HDD) guardam os dados em pratos magnéticos que rodam, lidos e escritos por cabeças móveis. O tempo de cada acesso soma o movimento da cabeça até à pista certa (seek) e a espera até que o setor passe sob a cabeça, que é uma fração da rotação. Num disco de 7200 rotações por minuto, meia rotação demora cerca de 4 ms. Daí a latência relativamente alta, que domina nos acessos aleatórios. Em contrapartida, o custo por GB é baixo, o que os mantém úteis para grandes volumes e para dados menos acedidos.
+
+Os discos de estado sólido (SSD) usam memória flash, sem partes móveis, pelo que o acesso aleatório é muito mais rápido, a latência é muito menor e o débito é maior. O custo por GB é superior, e a flash tem um número limitado de ciclos de escrita por célula, de modo que os SSD têm uma resistência (endurance) a ter em conta em cargas de escrita intensa. Têm também um controlador que gere o desgaste e a reorganização interna dos dados.
+
+Um único disco é um ponto único de falha e pode limitar o desempenho de aplicações exigentes. O RAID responde a ambos os problemas, combinando vários discos num único volume lógico para ganhar desempenho, redundância ou ambos.
+}
+
+\pagina{slides/slide-08.png}{
+A interface define como o disco se liga ao servidor e que protocolo usa. O SATA é a interface mais generalizada e serve HDD e SSD de gama de entrada. Foi concebido para discos rotativos, com uma única fila de comandos de profundidade limitada, e a sua largura de banda máxima (cerca de 600 MB/s na versão mais comum) limita os SSD que o usam.
+
+O SAS é a interface típica dos servidores. Suporta maior profundidade de fila, melhor tratamento e recuperação de erros e ligações redundantes, pelo que é preferido em ambientes empresariais com cargas exigentes e requisitos de fiabilidade.
+
+O NVMe foi desenhado de raiz para flash e liga-se diretamente ao barramento PCIe, sem o intermediário dos protocolos pensados para discos rotativos. Suporta um número muito elevado de filas de comandos em paralelo, o que aproveita o paralelismo interno da flash e dá débitos de vários GB/s e latências muito baixas. A mensagem do slide é que a escolha da interface pode ser tão determinante como a do próprio suporte, porque um SSD rápido ligado por uma interface limitada fica desaproveitado.
+}
+
+\pagina{slides/slide-09.png}{
+O diagrama compara os dois caminhos de dados. À esquerda, o CPU comunica com um controlador SATA ou SAS, que por sua vez comunica com o HDD ou SSD. O protocolo foi concebido para discos rotativos, e o controlador é um intermediário que acrescenta latência e limita o paralelismo. À direita, o CPU comunica por PCIe diretamente com o SSD NVMe, com muitas filas de comandos em paralelo.
+
+A legenda final liga o diagrama a uma consequência prática. Um SSD ligado por SATA fica limitado pelo protocolo e pelo barramento, e só mudando para NVMe é que o desempenho do suporte flash é plenamente aproveitado.
+}
+
+\pagina{slides/slide-10.png}{
+Três métricas descrevem o desempenho do armazenamento, e cada uma responde a uma pergunta diferente. Os IOPS contam as operações de entrada e saída por segundo, e importam em cargas com muitos acessos pequenos e aleatórios, típicos das bases de dados. O débito (throughput) mede os MB por segundo transferidos, e importa em leituras e escritas sequenciais de ficheiros grandes, como cópias de segurança ou vídeo. A latência é o tempo de resposta de uma operação individual, e é muitas vezes a que mais determina a experiência do utilizador.
+
+As métricas relacionam-se. O débito é aproximadamente o número de IOPS multiplicado pelo tamanho de cada operação, de modo que 100\,000 IOPS de 4 KB correspondem a cerca de 400 MB/s. Os IOPS que um dispositivo entrega dependem também da latência e do número de operações em curso em simultâneo (a profundidade de fila), porque com mais operações em paralelo o mesmo dispositivo pode concluir mais por segundo, até ao seu limite. Por isso, um valor de IOPS só é comparável quando se indicam o tamanho do bloco e a profundidade de fila.
+
+Um HDD fica limitado pelo posicionamento mecânico da cabeça, o que o deixa na ordem de uma centena a poucas centenas de IOPS aleatórios. Um SSD NVMe não tem essa restrição e pode atingir centenas de milhares. As ordens de grandeza dependem do modelo e da carga, e o que o slide pretende é fixar a diferença de várias ordens de grandeza.
+}
+
+\pagina{slides/slide-11.png}{
+O diagrama organiza as três métricas em colunas, cada uma com a definição e o tipo de carga em que mais pesa. Os IOPS correspondem a muitos acessos pequenos e aleatórios, sobretudo bases de dados, o débito corresponde a leituras e escritas sequenciais de ficheiros grandes, e a latência corresponde ao que o utilizador sente em cada pedido.
+
+A nota inferior dá as ordens de grandeza. Ao escolher o armazenamento para um serviço, a pergunta útil é qual destas métricas limita a aplicação. Uma base de dados transacional é limitada por IOPS e latência, e um servidor de ficheiros de vídeo por débito, e o dimensionamento deve seguir a métrica que de facto é o bottleneck.
+}
+
+\pagina{slides/slide-12.png}{
+O RAID combina vários discos num único volume lógico. O RAID 0, ou stripe, divide os dados em blocos (chunks) distribuídos por todos os discos, de modo que leituras e escritas decorrem em paralelo. Melhora o desempenho e dá toda a capacidade, mas não tem qualquer redundância, e a falha de um disco perde todos os dados.
+
+O RAID 1, ou mirror, escreve os mesmos dados em dois ou mais discos. Tolera a falha de todos menos um, e a leitura pode ser repartida pelas cópias, mas a capacidade útil é a de um só disco. Em contrapartida, é simples e rápido de recuperar.
+
+O RAID 5 distribui os dados e a paridade por todos os discos, com um mínimo de três. A paridade é calculada por uma operação de OU exclusivo dos blocos de dados, e permite reconstruir o conteúdo de um disco perdido a partir dos restantes. Tolera uma falha, e perde a capacidade de um disco, de modo que com quatro discos de 1 TB dá 3 TB úteis. Tem um custo de escrita, porque uma pequena escrita exige ler os dados e a paridade antigos e escrever os novos, o que dá quatro operações de I/O. O RAID 6 acrescenta uma segunda paridade independente, com um mínimo de quatro discos. Tolera duas falhas e perde a capacidade de dois discos, com um custo de escrita ainda maior, seis operações por pequena escrita.
+}
+
+\pagina{slides/slide-13.png}{
+O RAID 10 combina mirror e stripe, com um mínimo de quatro discos. Os discos são agrupados em pares espelhados, e os dados são distribuídos em stripe pelos pares. Junta o desempenho do RAID 0 à redundância do RAID 1, a metade da capacidade é útil, e a escrita não exige cálculo de paridade. Tolera a falha de um disco em cada par, mas não a dos dois discos do mesmo par.
+
+A escolha do nível depende do equilíbrio entre desempenho, redundância e capacidade útil. Em termos gerais, o RAID 10 é a escolha para cargas com muitas escritas pequenas, como bases de dados, o RAID 5 e o RAID 6 são vantajosos quando a capacidade útil é prioritária e as escritas são menos pesadas, e o RAID 0 só se justifica quando os dados são descartáveis ou estão protegidos por outro meio.
+
+A última linha do slide é a mais importante para a prática. O RAID protege contra a falha de um disco, e não substitui os backups. Não protege contra erro humano, corrupção lógica ou ransomware, porque todas essas situações afetam igualmente todas as cópias do array.
+}
+
+\pagina{slides/slide-14.png}{
+O diagrama mostra a distribuição dos blocos em três níveis. No RAID 0, os blocos A1 a A4 distribuem-se pelos quatro discos, e a capacidade é a de quatro discos, sem redundância. No RAID 1, cada bloco existe em ambos os discos, e a capacidade é a de um. No RAID 10, os discos D1 e D2 formam um par espelhado, o mesmo acontecendo com D3 e D4, e os blocos alternam entre os dois pares.
+
+Convém ler a legenda sob cada painel, que indica a capacidade e a tolerância a falhas. Uma boa forma de estudar é, para um conjunto de quatro discos de 1 TB, calcular a capacidade útil e o número de falhas toleradas em cada nível.
+}
+
+\pagina{slides/slide-15.png}{
+Este diagrama mostra a distribuição da paridade nos níveis 5 e 6. No RAID 5, cada linha de blocos de dados tem um bloco de paridade (PA, PB, PC), e a posição da paridade roda de disco para disco. Se a paridade ficasse sempre no mesmo disco, esse disco seria acedido em todas as escritas e tornar-se-ia um bottleneck, e a rotação distribui essa carga.
+
+No RAID 6, cada linha tem dois blocos de paridade independentes, P e Q, que rodam igualmente. A segunda paridade permite reconstruir a informação mesmo com dois discos em falta. A nota inferior recorda o custo, que é o de atualizar a paridade em cada escrita. O cálculo e a atualização da paridade são feitos pelo controlador ou pelo software, e a capacidade perdida é a de um disco no RAID 5 e a de dois no RAID 6.
+}
+
+\pagina{slides/slide-16.png}{
+No RAID por hardware, um controlador dedicado gere o array e apresenta ao sistema operativo um único disco lógico. As vantagens são a libertação do CPU do cálculo da paridade e, sobretudo, a cache própria protegida por bateria ou condensador, que garante que as escritas em curso não se perdem numa falha de energia. As desvantagens são o custo e a dependência do fabricante, pois um array criado por um controlador só costuma ser lido por controladores compatíveis, e se o controlador avariar é preciso encontrar um equivalente.
+
+No RAID por software, como o \texttt{mdadm} no Linux, o array é gerido pelo sistema operativo. Não exige hardware específico, tem custo zero e é portável, porque os discos podem ser movidos para outra máquina Linux e o array reconhecido. Em contrapartida, usa CPU do servidor, embora os processadores atuais tornem esse custo pouco relevante na maioria dos casos.
+
+Sistemas de ficheiros como o ZFS integram a função de RAID e dispensam uma camada separada. Quando se usam, é habitual preferir controladores em modo de acesso direto aos discos, em vez de RAID por hardware, para que o sistema de ficheiros veja e gira os discos individualmente.
+}
+
+\pagina{slides/slide-17.png}{
+O diagrama contrasta as duas pilhas. No RAID por hardware, o sistema operativo vê um disco, que na realidade é apresentado por um controlador RAID com cache com bateria, sobre os discos físicos. No RAID por software, o sistema operativo usa o driver md (mdadm), que gere diretamente os discos.
+
+As legendas resumem o compromisso. O hardware poupa CPU e protege as escritas em curso, e depende do fabricante do controlador. O software não precisa de hardware dedicado, os discos são portáveis entre máquinas, e usa CPU do servidor. No guião da aula, o RAID é de software, com o mdadm.
+}
+
+\pagina{slides/slide-18.png}{
+Quando um disco falha, o array continua a funcionar em modo degradado, com a redundância reduzida ou esgotada. Depois de substituído o disco, o array inicia a reconstrução (rebuild), recalculando o conteúdo em falta a partir dos discos restantes e escrevendo-o no disco novo.
+
+O período degradado é o mais perigoso. Em RAID 5, uma segunda falha durante a reconstrução implica perda total dos dados. A reconstrução obriga a ler integralmente todos os discos restantes, o que aumenta a carga sobre eles, que são do mesmo lote e têm a mesma idade, e a probabilidade de encontrar um erro irrecuperável de leitura (URE) num setor que não era lido há muito tempo. Os fabricantes especificam uma taxa de erros irrecuperáveis, por exemplo de um em $10^{14}$ bits lidos em discos de consumo, e com discos de vários TB a leitura integral aproxima-se dessa ordem de grandeza.
+
+Com discos de grande capacidade, a reconstrução pode demorar muitas horas ou dias, o que alonga a janela de risco. É por isso que o RAID 6 é recomendado em arrays de grande capacidade. Um hot spare, um disco de reserva já instalado, permite iniciar a reconstrução automaticamente, sem esperar pela intervenção de uma pessoa, e reduz o tempo em modo degradado.
+}
+
+\pagina{slides/slide-19.png}{
+O diagrama mostra o ciclo de vida de uma falha. O array começa normal, com todos os discos operacionais. Um disco avaria, e o array passa a degradado, sem margem em RAID 5. Com um disco novo ou um hot spare, inicia-se a reconstrução, e quando termina a redundância fica reposta e o array volta ao estado normal.
+
+A caixa sob o diagrama assinala o risco do período degradado, em que uma segunda falha ou um erro latente de leitura pode causar perda de dados em RAID 5. A nota inferior recorda que, com hot spare, a reconstrução começa sozinha, e que o RAID 6 tolera uma segunda falha durante este período. No guião, a falha de um disco é simulada com o \texttt{mdadm --fail}, e a reconstrução com discos de 1 GB é quase instantânea, mas em produção demoraria horas ou dias.
+}
+
+\pagina{slides/slide-20.png}{
+O LVM (Logical Volume Manager) é uma camada de abstração entre os discos físicos e os sistemas de ficheiros. Em vez de dividir um disco em partições de tamanho fixo, o LVM junta o espaço de vários dispositivos e reparte-o em volumes lógicos que se podem redimensionar.
+
+O modelo tem três níveis. Um PV (Physical Volume) é um disco, uma partição ou um array RAID preparado para o LVM. Um VG (Volume Group) agrupa um ou mais PVs num único espaço, dividido em unidades de alocação chamadas extents, com 4 MiB por omissão. Um LV (Logical Volume) é uma partição virtual criada dentro do VG, sobre a qual se cria um sistema de ficheiros.
+
+A principal vantagem é a flexibilidade. Um LV pode crescer enquanto houver espaço livre no VG, e o VG pode crescer acrescentando um PV, tudo sem reparticionar discos e, em muitos casos, sem desmontar o volume. Depois de aumentar o LV é preciso aumentar também o sistema de ficheiros, por exemplo com \texttt{resize2fs} no ext4 ou \texttt{xfs\_growfs} no XFS, e o comando \texttt{lvextend} com a opção \texttt{-r} faz os dois passos em conjunto.
+}
+
+\pagina{slides/slide-21.png}{
+O diagrama mostra três PVs, \texttt{/dev/sdb}, \texttt{/dev/sdc} e \texttt{/dev/sdd}, que alimentam um único volume group, o \texttt{vg\_dados}. O VG é dividido em dois LVs, o \texttt{lv\_app} e o \texttt{lv\_logs}, e mantém espaço livre disponível.
+
+A legenda recorda as duas direções de crescimento. O LV cresce com o espaço livre do VG, e o VG cresce acrescentando um PV. Os tamanhos são exemplos, e o que interessa reter é que o utilizador do LV deixa de depender dos limites de cada disco individual.
+}
+
+\pagina{slides/slide-22.png}{
+No LVM tradicional (thick), o espaço de um LV é reservado por inteiro no momento da criação, esteja ou não a ser usado. No LVM thin, os volumes retiram espaço de um thin pool apenas quando os dados são efetivamente escritos. O pool é um LV especial que contém os dados e os metadados que dizem que blocos virtuais correspondem a que blocos físicos.
+
+Isto permite declarar volumes cuja soma excede a capacidade física, o overcommit. A vantagem é o melhor aproveitamento do armazenamento, porque muitos volumes ficam pouco preenchidos, como acontece com os discos de VMs. O risco é o pool esgotar, caso em que todos os volumes que dele dependem ficam comprometidos, com escritas a falhar e possível corrupção. Exige, por isso, monitorização ativa da ocupação do pool, tanto dos dados como dos metadados, e é possível configurar o seu crescimento automático.
+
+É o mecanismo por detrás do \texttt{local-lvm}, usado por omissão no Proxmox para os discos das VMs. Quando os dados são apagados dentro da VM, o espaço só regressa ao pool se o sistema transmitir essa informação (operações de discard ou trim), caso contrário o pool continua a considerá-lo ocupado.
+}
+
+\pagina{slides/slide-23.png}{
+O diagrama ilustra um thin pool de 100 GB com três volumes declarados de 50 GB cada, num total de 150 GB. Cada volume usa apenas uma parte do declarado, 20, 15 e 10 GB, de modo que o pool tem realmente 45 GB escritos e 55 GB livres.
+
+O quadro à direita resume o overcommit, 150 GB declarados sobre 100 GB físicos, um fator de 1,5. Enquanto os volumes não enchem, tudo funciona. Se a soma do que é escrito ultrapassar os 100 GB, as escritas falham. Os valores são ilustrativos, e o ponto a reter é que o thin provisioning troca eficiência por risco, e que esse risco se gere com monitorização.
+}
+
+\pagina{slides/slide-24.png}{
+Este slide junta as camadas estudadas numa única pilha. Em baixo estão os discos, \texttt{sdb}, \texttt{sdc} e \texttt{sdd}, com um disco de reserva (spare) \texttt{sde}. Sobre eles está um array RAID 5 gerido pelo \texttt{mdadm}, que aparece como o dispositivo \texttt{/dev/md0} e dá a redundância. O array é usado como PV, que forma um VG, de onde se cria um LV, e sobre o LV é criado um sistema de ficheiros ext4.
+
+As duas anotações laterais separam as responsabilidades. O RAID dá redundância e sobrevive à falha de um disco, e o LVM dá flexibilidade, com redimensionamento e snapshots. É esta a pilha que o guião constrói. A ordem faz sentido, porque o RAID se aplica sobre dispositivos físicos e o LVM sobre o dispositivo RAID, de modo que as funcionalidades do LVM beneficiam da proteção do RAID.
+}
+
+\pagina{slides/slide-25.png}{
+Um snapshot captura o estado de um volume lógico num instante, sem copiar de imediato todos os dados. A criação é quase instantânea, porque o snapshot começa apenas como um registo do instante, e o seu custo cresce à medida que o volume original é alterado.
+
+O mecanismo é o copy-on-write. Quando um bloco do volume original vai ser alterado pela primeira vez depois do snapshot, o bloco original é primeiro copiado para uma área reservada ao snapshot, e só depois é sobrescrito. Assim o snapshot continua a ver o conteúdo do instante, lendo os blocos inalterados do volume original e os alterados da sua área. Só os blocos alterados ocupam espaço.
+
+As utilizações principais são duas. Permite obter backups consistentes de um volume em uso, copiando o snapshot enquanto a aplicação continua a escrever no original, e permite testar alterações, como uma atualização, com possibilidade de reverter depressa. Convém ter presente que um snapshot reside no mesmo armazenamento do volume e não é, por si só, um backup, porque se o armazenamento falhar perdem-se ambos. A consistência também exige cuidado, porque um snapshot de um volume com uma base de dados em escrita só é consistente ao nível da aplicação se esta tiver sido preparada, por exemplo com um flush dos dados.
+}
+
+\pagina{slides/slide-26.png}{
+O diagrama mostra o mecanismo em duas fases. Na primeira, o LV de origem tem os blocos B1 a B4, e o snapshot é criado, guardando apenas a vista do instante. Na segunda, o bloco B2 é alterado. Antes de ser sobrescrito, o bloco original é copiado para a área COW do snapshot, e o LV passa a ter o B2 novo.
+
+O snapshot lê agora B1, B3 e B4 do LV e B2 da sua área, e vê o conteúdo do instante da criação. A legenda final lembra duas características do snapshot clássico do LVM. Só os blocos alterados ocupam espaço, e a área do snapshot tem um tamanho definido na criação, de modo que, se encher, o snapshot fica inválido. Os snapshots de volumes thin não têm esta área fixa, e partilham o espaço do pool.
+}
+
+\pagina{slides/slide-27.png}{
+O sistema de ficheiros organiza os blocos de um volume em ficheiros e pastas. O ext4 e o XFS são sistemas de uso geral, maduros e estáveis, comuns em servidores Linux. Ambos mantêm um journal, um registo das alterações de metadados que permite recuperar rapidamente a consistência depois de uma falha de energia, sem verificar o volume inteiro. O ext4 é a escolha por omissão em muitas distribuições, e o XFS destaca-se com ficheiros grandes e acessos paralelos. Um aspeto a recordar é que um XFS pode ser aumentado mas não reduzido.
+
+O ZFS e o btrfs são sistemas de ficheiros copy-on-write, em que os dados nunca são sobrescritos no local, são escritos em novos blocos e os apontadores são atualizados no fim. Isto dá snapshots baratos e consistentes e evita estados intermédios corrompidos. Incluem checksums de todos os dados e metadados, que permitem detetar corrupção silenciosa, e, havendo redundância, corrigi-la automaticamente. Têm snapshots nativos, sem depender do LVM.
+
+O ZFS vai mais longe e integra também a gestão de volumes e o RAID (o RAID-Z), pelo que substitui as camadas separadas de RAID e LVM, à custa de usar bastante memória para a sua cache. A escolha depende dos requisitos, simplicidade e desempenho previsível no ext4 e no XFS, integridade e funcionalidades avançadas no ZFS e no btrfs.
+}
+
+\pagina{slides/slide-28.png}{
+O diagrama compara os quatro sistemas. Sob o ext4 e o XFS aparece a mesma etiqueta de journaling, com o ext4 apresentado como uso geral maduro e o XFS como adequado a ficheiros grandes e I/O paralelo. Sob o ZFS e o btrfs aparece o copy-on-write, com o ZFS descrito como volume manager com RAID-Z, checksums e snapshots, e o btrfs com checksums, snapshots e subvolumes.
+
+As duas caixas intermédias separam as famílias, os sistemas tradicionais com journal, simples e de desempenho previsível, e os copy-on-write, com integridade verificada e funcionalidades integradas. A nota final repete duas diferenças práticas, o XFS cresce mas não reduz, e o ZFS gere discos e sistema de ficheiros na mesma camada.
+}
+
+\pagina{slides/slide-29.png}{
+O RAID protege contra a falha de um disco, e não protege contra tudo o resto. Apagar um ficheiro por engano, corrupção lógica, um ataque de ransomware que cifra os dados, um incêndio ou o roubo do servidor afetam todo o array de igual modo. O exemplo mais claro é o do espelho. Apagar um ficheiro apaga-o instantaneamente em todas as cópias, porque o espelho replica fielmente cada alteração, incluindo os erros.
+
+A resposta é o backup, e a regra 3-2-1 orienta-o. Devem existir três cópias dos dados, em dois suportes diferentes, com uma cópia fora das instalações. Os três números protegem contra falhas independentes, a avaria de um suporte, a de um tipo de tecnologia e a de um local inteiro. Uma extensão frequente acrescenta uma cópia imutável ou desligada da rede, que o ransomware não consiga alterar, e a verificação de que os backups restauram sem erros.
+
+A última frase do slide é a mais importante. Um backup só conta como backup depois de o restauro ter sido testado, porque muitos backups falham silenciosamente e só se descobre no momento em que são necessários. Os objetivos RTO e RPO da Aula 09 determinam a frequência e o método, porque o RPO dita o intervalo entre backups e o RTO dita o tempo aceitável de restauro. Os backups podem ser completos, incrementais (só o que mudou desde o último backup) ou diferenciais (o que mudou desde o último completo), com compromissos entre espaço e tempo de restauro.
+}
+
+\pagina{slides/slide-30.png}{
+O diagrama mostra a regra 3-2-1 com um exemplo. Os dados de produção são a cópia 1. O backup local, num suporte diferente, é a cópia 2, e o backup fora do local, na cloud ou noutro site, é a cópia 3. As setas indicam que ambas as cópias de backup se obtêm a partir da produção.
+
+O texto à direita repete a regra, três cópias, dois suportes, uma fora das instalações, e a exigência do teste de restauro. A nota inferior liga ao slide anterior, o RAID não substitui esta regra porque um espelho copia também os erros.
+}
+
+\pagina{slides/slide-31.png}{
+O Proxmox VE suporta vários tipos de storage, cada um com características próprias, e a escolha condiciona o que se pode fazer com os discos das VMs. O tipo Directory guarda ficheiros de imagem, como o formato \texttt{qcow2}, num sistema de ficheiros normal. É simples e flexível, e o formato qcow2 permite snapshots, ao custo de uma camada de ficheiros intermédia.
+
+O tipo LVM atribui um volume lógico a cada disco de VM, o que é eficiente mas sem thin provisioning nem snapshots. O LVM-thin acrescenta thin provisioning e snapshots, e é o que corresponde ao \texttt{local-lvm} usado por omissão numa instalação típica. O ZFS integra RAID, checksums e snapshots numa única camada, e o Ceph é armazenamento distribuído e replicado entre vários nós, tema da Aula 11. Existem ainda tipos de rede, como o NFS e o iSCSI.
+
+O comando \texttt{pvesm status} mostra os storages configurados no servidor da UC, e é o ponto de partida do guião. Os alunos veem em que tipo de storage reside o disco da sua VM, e depois constroem, uma camada acima, uma pilha RAID e LVM análoga à que o servidor já usa por baixo.
+}
+
+\pagina{slides/slide-32.png}{
+O diagrama coloca o nó Proxmox VE, com as suas VMs e containers, ligado aos cinco tipos de storage. Cada caixa resume o tipo, Directory com qcow2 num sistema de ficheiros, LVM com um LV por disco e sem thin, LVM-thin com thin provisioning e snapshots, ZFS com RAID, checksums e snapshots, e Ceph como armazenamento distribuído, que será estudado na Aula 11.
+
+A nota à direita lembra o comando de inspeção e que o \texttt{local-lvm} por omissão é LVM-thin. Uma forma útil de estudar é, para cada tipo, perguntar se oferece snapshots, thin provisioning e redundância própria, e relacionar a resposta com as camadas estudadas na aula.
+}
+
+\pagina{slides/slide-33.png}{
+A primeira parte da síntese reúne os dispositivos e o RAID. Block, file e object storage oferecem níveis de abstração diferentes para necessidades diferentes. HDD e SSD têm perfis distintos de custo e desempenho, e a interface conta tanto como o suporte. IOPS, débito e latência medem aspetos diferentes do desempenho. O RAID combina discos, e os níveis 0, 1, 5, 6 e 10 equilibram desempenho, redundância e capacidade de formas diferentes.
+
+Para estudar, convém ser capaz de calcular a capacidade útil e a tolerância a falhas de cada nível para um dado número de discos, de explicar porque é que a reconstrução é um período de risco e de dizer em que carga cada métrica de desempenho é determinante.
+}
+
+\pagina{slides/slide-34.png}{
+A segunda parte da síntese reúne as camadas superiores. O LVM dá flexibilidade sobre discos ou arrays RAID, com thin provisioning e snapshots copy-on-write. O ext4 e o XFS cobrem o uso geral, e o ZFS e o btrfs trazem checksums e snapshots ao sistema de ficheiros. O RAID não é backup, e a regra 3-2-1 e o teste de restauro continuam indispensáveis. O Proxmox concretiza estas opções nos tipos de storage Directory, LVM-thin, ZFS e Ceph.
+
+A aula seguinte estende o armazenamento ao cenário de rede e distribuído, onde o NFS, o iSCSI, o object storage e o Ceph resolvem o acesso partilhado e a escala que o armazenamento local não consegue dar.
+}
+
+\pagina{slides/slide-35.png}{
+As leituras são três. O artigo de Patterson, Gibson e Katz, de 1988, é a origem do conceito de RAID e justifica a ideia de combinar discos baratos para ganhar desempenho e fiabilidade. As páginas de manual do \texttt{mdadm} e do LVM (\texttt{lvm}, \texttt{lvmthin}) descrevem os comandos usados no guião. A documentação do Proxmox VE sobre o sistema de storage detalha os tipos e as suas capacidades.
+
+Recomenda-se ler as páginas de manual em paralelo com o guião, porque os comandos e as opções aí descritos são exatamente os que se usam na criação do array e dos volumes.
+}
+
+\pagina{slides/slide-36.png}{
+Terminada a aula, as questões e os comentários são bem-vindos. Sugere-se rever a pilha completa, dos discos ao sistema de ficheiros, e testar a compreensão explicando, por palavras próprias, a função de cada camada e o que acontece em cada uma quando um disco falha.
+}
+
+\end{document}

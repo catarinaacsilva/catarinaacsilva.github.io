@@ -56,11 +56,21 @@
 
 \usepackage{csquotes}
 
-\title{Armazenamento de Dados: Arquiteturas e Sistemas Locais}
+\title{Armazenamento de Dados, Arquiteturas e Sistemas Locais}
 \subtitle{Infraestruturas de Computação na Nuvem, Aula 10}
 \author{Catarina Silva}
 \institute{ESTGA, Universidade de Aveiro}
 \date{2026}
+
+\newcommand{\figframe}[2]{%
+\begin{frame}
+\frametitle{#1}
+\vfill
+\begin{center}
+\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/#2.png}
+\end{center}
+\vfill
+\end{frame}}
 
 \begin{document}
 
@@ -72,11 +82,11 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Tipos de armazenamento: block, file e object storage.
-    \item Armazenamento local em disco: HDD, SSD e interfaces.
-    \item Métricas de desempenho: IOPS, débito e latência.
-    \item Níveis de RAID: 0, 1, 5, 6 e 10.
-    \item Reconstrução de arrays e os seus riscos.
+    \item Tipos de armazenamento, block, file e object storage.
+    \item Armazenamento local em disco, HDD, SSD e interfaces.
+    \item Métricas de desempenho, IOPS, débito e latência.
+    \item Níveis de RAID 0, 1, 5, 6 e 10.
+    \item RAID por hardware e por software, e reconstrução de arrays.
 \end{itemize}
 \end{frame}
 
@@ -84,10 +94,10 @@
 \frametitle{Agenda \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item LVM: volumes físicos, grupos de volumes e volumes lógicos.
-    \item Thin provisioning e snapshots em LVM.
-    \item Sistemas de ficheiros: ext4, XFS, ZFS e btrfs.
-    \item Estratégias de backup e a regra 3-2-1.
+    \item LVM, com volumes físicos, grupos de volumes e volumes lógicos.
+    \item Thin provisioning e snapshots.
+    \item Sistemas de ficheiros ext4, XFS, ZFS e btrfs.
+    \item Backup e a regra 3-2-1.
     \item Armazenamento no Proxmox VE.
 \end{itemize}
 \end{frame}
@@ -96,10 +106,10 @@
 \frametitle{Tipos de Armazenamento \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Block storage}: expõe blocos brutos de dados, sem estrutura de ficheiros própria; o sistema operativo formata e gere o acesso.
-    \item Usado quando é preciso baixa latência e controlo total sobre o sistema de ficheiros, como discos de VMs e bases de dados.
-    \item \textbf{File storage}: expõe uma hierarquia de ficheiros e pastas através de um protocolo de rede (ex.\ NFS, SMB).
-    \item Adequado para partilha de ficheiros entre múltiplos utilizadores ou máquinas.
+    \item O block storage expõe blocos brutos, sem estrutura de ficheiros, e o sistema operativo do cliente formata e gere o acesso.
+    \item É usado quando se precisa de baixa latência e de controlo total do sistema de ficheiros, como nos discos de VMs e nas bases de dados.
+    \item O file storage expõe uma hierarquia de ficheiros e pastas através de um protocolo de rede, como o NFS ou o SMB.
+    \item É adequado à partilha de ficheiros entre vários utilizadores ou máquinas.
 \end{itemize}
 \end{frame}
 
@@ -107,21 +117,23 @@
 \frametitle{Tipos de Armazenamento \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{Object storage}: guarda dados como objetos identificados por uma chave, com metadados associados, acedidos via API HTTP.
-    \item Sem hierarquia de pastas real; escala horizontalmente para volumes muito grandes de dados não estruturados.
-    \item Cada abstração tem um nível de granularidade diferente: bloco (mais baixo), ficheiro (intermédio), objeto (mais alto).
-    \item A escolha depende do caso de uso: desempenho e controlo (block), partilha (file), escala e simplicidade de API (object).
+    \item O object storage guarda dados como objetos identificados por uma chave, com metadados associados, e é acedido por uma API HTTP.
+    \item Não tem hierarquia real de pastas e escala na horizontal para volumes muito grandes de dados não estruturados.
+    \item As abstrações têm granularidades diferentes, o bloco é a mais baixa, o ficheiro a intermédia e o objeto a mais alta.
+    \item A escolha depende do caso de uso, desempenho e controlo no bloco, partilha no ficheiro, escala e simplicidade de API no objeto.
 \end{itemize}
 \end{frame}
+
+\figframe{Block, File e Object Storage}{a10-tipos}
 
 \begin{frame}
 \frametitle{Armazenamento Local em Disco}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{HDD}: discos magnéticos, mais baratos por GB, mas com latência mais alta (partes mecânicas).
-    \item \textbf{SSD}: memória flash, sem partes móveis, latência muito menor e maior débito, mas custo por GB superior.
+    \item Os HDD são discos magnéticos, mais baratos por GB, mas com latência mais alta por terem partes mecânicas.
+    \item Os SSD usam memória flash, não têm partes móveis, e dão latência muito menor e maior débito, a um custo por GB superior.
     \item Um único disco é um ponto único de falha e pode limitar o desempenho de aplicações exigentes.
-    \item \textbf{RAID} (Redundant Array of Independent Disks): combina vários discos para ganhar desempenho e/ou redundância.
+    \item O RAID (Redundant Array of Independent Disks) combina vários discos para ganhar desempenho, redundância ou ambos.
 \end{itemize}
 \end{frame}
 
@@ -129,34 +141,38 @@
 \frametitle{Interfaces e Protocolos de Ligação}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{SATA}: interface generalizada, adequada a HDDs e a SSDs de gama de entrada.
-    \item \textbf{SAS}: usada em servidores; suporta maior profundidade de fila e melhor tratamento de erros.
-    \item \textbf{NVMe}: protocolo desenhado de raiz para memória flash, ligado diretamente ao barramento PCIe.
-    \item O NVMe elimina a sobrecarga dos protocolos concebidos para discos rotativos, permitindo muito mais operações em paralelo.
-    \item A escolha da interface pode ser tão determinante para o desempenho como a escolha do próprio suporte de armazenamento.
+    \item O SATA é a interface generalizada, adequada a HDD e a SSD de gama de entrada.
+    \item O SAS usa-se em servidores e suporta maior profundidade de fila e melhor tratamento de erros.
+    \item O NVMe é um protocolo desenhado de raiz para flash e ligado diretamente ao barramento PCIe.
+    \item Elimina a sobrecarga dos protocolos concebidos para discos rotativos e permite muito mais operações em paralelo.
+    \item A interface pode ser tão determinante para o desempenho como o próprio suporte.
 \end{itemize}
 \end{frame}
+
+\figframe{Caminho de Dados no SATA, SAS e NVMe}{a10-interfaces}
 
 \begin{frame}
 \frametitle{Métricas de Desempenho de Armazenamento}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{IOPS} (operações de entrada/saída por segundo): relevante em cargas com muitos acessos pequenos e aleatórios, como bases de dados.
-    \item \textbf{Débito} (\textit{throughput}, em MB/s): relevante em leituras e escritas sequenciais de grandes ficheiros.
-    \item \textbf{Latência}: tempo de resposta de uma operação individual -- frequentemente a métrica mais determinante para a experiência do utilizador.
-    \item Um HDD é limitado pelo tempo de posicionamento mecânico da cabeça; um SSD não tem essa restrição.
-    \item Ordens de grandeza típicas: um HDD ronda as centenas de IOPS aleatórios; um SSD NVMe atinge as centenas de milhares.
+    \setlength\itemsep{0.35cm}
+    \item Os IOPS (operações de I/O por segundo) são relevantes em cargas com muitos acessos pequenos e aleatórios, como as bases de dados.
+    \item O débito (throughput, em MB/s) é relevante em leituras e escritas sequenciais de ficheiros grandes.
+    \item A latência é o tempo de resposta de uma operação individual, e é muitas vezes a métrica mais determinante para o utilizador.
+    \item Um HDD é limitado pelo tempo de posicionamento mecânico da cabeça, e um SSD não tem essa restrição.
+    \item Um HDD faz da ordem de uma centena a poucas centenas de IOPS aleatórios, e um SSD NVMe pode atingir centenas de milhares.
 \end{itemize}
 \end{frame}
+
+\figframe{IOPS, Débito e Latência}{a10-metricas}
 
 \begin{frame}
 \frametitle{Níveis de RAID \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{RAID 0} (stripe): distribui os dados por todos os discos; melhora o desempenho mas não oferece redundância.
-    \item \textbf{RAID 1} (mirror): duplica os dados em dois ou mais discos; tolera a falha de um disco, sem ganho de capacidade.
-    \item \textbf{RAID 5}: distribui dados e paridade por todos os discos; tolera a falha de um disco com menor overhead de capacidade que o RAID 1.
-    \item \textbf{RAID 6}: como o RAID 5, mas com paridade dupla; tolera a falha de dois discos.
+    \item O RAID 0 (stripe) distribui os dados por todos os discos, melhora o desempenho e não oferece redundância.
+    \item O RAID 1 (mirror) duplica os dados em dois ou mais discos, tolera a falha de um disco e não ganha capacidade.
+    \item O RAID 5 distribui dados e paridade por todos os discos (mínimo de 3) e tolera a falha de um disco, com menos overhead de capacidade do que o RAID 1.
+    \item O RAID 6 é como o RAID 5 com paridade dupla (mínimo de 4 discos) e tolera a falha de dois discos.
 \end{itemize}
 \end{frame}
 
@@ -164,146 +180,159 @@
 \frametitle{Níveis de RAID \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{RAID 10}: combina mirror e stripe (mínimo de 4 discos); junta o desempenho do RAID 0 com a redundância do RAID 1.
-    \item Escolha do nível depende do equilíbrio pretendido entre desempenho, redundância e capacidade útil.
-    \item RAID protege contra falha de disco, mas não substitui backups: não protege contra erro humano ou corrupção lógica.
+    \item O RAID 10 combina mirror e stripe, com um mínimo de 4 discos, e junta o desempenho do RAID 0 à redundância do RAID 1.
+    \item A escolha do nível depende do equilíbrio entre desempenho, redundância e capacidade útil.
+    \item O RAID protege contra a falha de um disco, mas não substitui backups, porque não protege de erro humano nem de corrupção lógica.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Como Cada Nível Distribui os Dados}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a10-niveis-raid.png}
-\end{center}
-\vfill
-\end{frame}
+\figframe{RAID 0, 1 e 10}{a10-raid-basicos}
 
+\figframe{RAID 5 e RAID 6}{a10-raid-paridade}
 
 \begin{frame}
-\frametitle{RAID por Hardware vs por Software}
+\frametitle{RAID por Hardware e por Software}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item \textbf{Hardware}: um controlador dedicado gere o array; o sistema operativo vê apenas um disco.
-    \item Vantagem: cache própria com bateria, que protege escritas em curso em caso de falha de energia. Desvantagem: dependência do fabricante para substituição.
-    \item \textbf{Software} (ex.\ \texttt{mdadm} no Linux): o array é gerido pelo sistema operativo, sem hardware específico.
-    \item Vantagem: portabilidade -- os discos podem ser movidos para outra máquina; sem custo adicional.
-    \item Sistemas de ficheiros modernos como o ZFS integram a própria funcionalidade de RAID, dispensando uma camada separada.
+    \setlength\itemsep{0.35cm}
+    \item No RAID por hardware, um controlador dedicado gere o array e o sistema operativo vê apenas um disco.
+    \item A vantagem é a cache própria com bateria, que protege as escritas em curso numa falha de energia, e a desvantagem é a dependência do fabricante.
+    \item No RAID por software (por exemplo o \texttt{mdadm} no Linux), o array é gerido pelo sistema operativo.
+    \item A vantagem é a portabilidade, porque os discos podem ser movidos para outra máquina, e não há custo adicional.
+    \item Sistemas de ficheiros como o ZFS integram a função de RAID e dispensam uma camada separada.
 \end{itemize}
 \end{frame}
+
+\figframe{RAID por Hardware e por Software}{a10-raid-hw-sw}
 
 \begin{frame}
 \frametitle{Reconstrução de Arrays e os Seus Riscos}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item Após substituir um disco falhado, o array entra em \textbf{reconstrução} (\textit{rebuild}), recalculando os dados em falta.
-    \item Durante esse período o array está \textbf{degradado}: em RAID 5, outra falha implica perda total de dados.
-    \item A reconstrução exige leitura integral dos discos restantes, aumentando a probabilidade de detetar um erro latente precisamente no pior momento.
-    \item Com discos de grande capacidade, uma reconstrução pode demorar muitas horas ou dias.
-    \item É esta a razão pela qual o RAID 6 (paridade dupla) é recomendado em arrays de grande capacidade.
-    \item \textbf{Hot spare}: disco de reserva já instalado, que permite iniciar a reconstrução automaticamente, sem intervenção humana.
+    \setlength\itemsep{0.15cm}
+    \item Depois de substituir um disco falhado, o array entra em reconstrução (rebuild) e recalcula os dados em falta.
+    \item Durante esse período o array está degradado, e em RAID 5 uma segunda falha implica perda total de dados.
+    \item A reconstrução lê integralmente os discos restantes, o que aumenta a probabilidade de detetar um erro latente no pior momento.
+    \item Com discos de grande capacidade, a reconstrução pode demorar muitas horas ou dias.
+    \item É por isso que o RAID 6 é recomendado em arrays de grande capacidade.
+    \item Um hot spare é um disco de reserva já instalado, que permite iniciar a reconstrução sem intervenção humana.
 \end{itemize}
 \end{frame}
 
+\figframe{Ciclo de Falha e Reconstrução}{a10-reconstrucao}
+
 \begin{frame}
-\frametitle{LVM: Logical Volume Manager}
+\frametitle{LVM, Logical Volume Manager}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Camada de abstração entre os discos físicos e os sistemas de ficheiros.
-    \item \textbf{PV} (Physical Volume): um disco ou partição preparado para ser usado pelo LVM.
-    \item \textbf{VG} (Volume Group): agrupa um ou mais PVs num único espaço de armazenamento lógico.
-    \item \textbf{LV} (Logical Volume): partição virtual criada dentro de um VG, sobre a qual se cria um sistema de ficheiros.
-    \item Vantagem principal: redimensionamento flexível dos volumes sem reparticionar discos.
+    \item O LVM é uma camada de abstração entre os discos físicos e os sistemas de ficheiros.
+    \item Um PV (Physical Volume) é um disco ou partição preparado para o LVM.
+    \item Um VG (Volume Group) agrupa um ou mais PVs num único espaço de armazenamento.
+    \item Um LV (Logical Volume) é uma partição virtual criada dentro de um VG, sobre a qual se cria um sistema de ficheiros.
+    \item A principal vantagem é redimensionar volumes sem reparticionar discos.
 \end{itemize}
 \end{frame}
+
+\figframe{PV, VG e LV}{a10-lvm}
 
 \begin{frame}
 \frametitle{Thin Provisioning em LVM}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Em LVM \emph{thin}, o espaço é retirado de um \textit{thin pool} apenas quando é efetivamente escrito.
-    \item Permite declarar volumes cuja soma excede a capacidade física real (\textit{overcommit}).
-    \item Vantagem: melhor aproveitamento do armazenamento, sobretudo quando muitos volumes ficam pouco preenchidos.
-    \item Risco: se o pool esgotar, todos os volumes que dele dependem ficam comprometidos -- exige monitorização ativa.
-    \item É o mecanismo por detrás do \texttt{local-lvm} usado por omissão no Proxmox para os discos das VMs.
+    \item No LVM thin, o espaço é retirado de um thin pool apenas quando é efetivamente escrito.
+    \item Permite declarar volumes cuja soma excede a capacidade física, o overcommit.
+    \item A vantagem é o melhor aproveitamento do armazenamento quando muitos volumes ficam pouco preenchidos.
+    \item O risco é o pool esgotar, o que compromete todos os volumes que dele dependem, e exige monitorização ativa.
+    \item É o mecanismo do \texttt{local-lvm} usado por omissão no Proxmox para os discos das VMs.
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{A Pilha Completa de Armazenamento}
-\vfill
-\begin{center}
-\includegraphics[width=0.97\textwidth,height=0.70\textheight,keepaspectratio]{../Diagramas/a10-pilha-armazenamento.png}
-\end{center}
-\vfill
-\end{frame}
+\figframe{Thin Pool e Overcommit}{a10-thin}
 
+\figframe{A Pilha Completa de Armazenamento}{a10-pilha-armazenamento}
 
 \begin{frame}
 \frametitle{Snapshots em LVM}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item Um snapshot captura o estado de um LV num dado instante, sem copiar imediatamente todos os dados.
-    \item Funciona por \textbf{copy-on-write}: só se copiam os blocos alterados após a criação do snapshot.
+    \item Um snapshot captura o estado de um LV num instante, sem copiar logo todos os dados.
+    \item Funciona por copy-on-write, e só se copiam os blocos alterados depois de o snapshot ser criado.
     \item Permite obter backups consistentes de um volume em uso, sem parar a aplicação.
-    \item Também útil para testar alterações (ex.\ atualizações) com possibilidade de reverter rapidamente.
+    \item É também útil para testar alterações, como atualizações, com possibilidade de reverter depressa.
 \end{itemize}
 \end{frame}
+
+\figframe{Snapshot Copy-on-Write}{a10-snapshot}
 
 \begin{frame}
 \frametitle{Sistemas de Ficheiros}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item \textbf{ext4} e \textbf{XFS}: sistemas de ficheiros de uso geral, maduros e estáveis, comuns em servidores Linux.
-    \item \textbf{ZFS} e \textbf{btrfs}: sistemas de ficheiros \textit{copy-on-write}, com funcionalidades avançadas integradas.
-    \item Incluem checksums de dados (deteção de corrupção) e snapshots nativos, sem depender do LVM.
-    \item Escolha depende dos requisitos: simplicidade e desempenho (ext4/XFS) vs. integridade e funcionalidades avançadas (ZFS/btrfs).
+    \item O ext4 e o XFS são sistemas de uso geral, maduros e estáveis, comuns em servidores Linux.
+    \item O ZFS e o btrfs são sistemas copy-on-write com funcionalidades avançadas integradas.
+    \item Incluem checksums de dados, que detetam corrupção, e snapshots nativos, sem depender do LVM.
+    \item A escolha depende dos requisitos, simplicidade e desempenho previsível no ext4 e no XFS, integridade e funcionalidades avançadas no ZFS e no btrfs.
 \end{itemize}
 \end{frame}
+
+\figframe{Comparação de Sistemas de Ficheiros}{a10-sistemas-ficheiros}
 
 \begin{frame}
 \frametitle{RAID Não é Backup}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O RAID protege contra a falha \emph{de um disco}. Não protege contra tudo o resto.
-    \item Não protege contra: apagar ficheiros por engano, corrupção lógica, \textit{ransomware}, incêndio ou roubo do servidor.
-    \item Num espelho, apagar um ficheiro apaga-o instantaneamente em todas as cópias.
-    \item \textbf{Regra 3-2-1}: manter 3 cópias dos dados, em 2 suportes diferentes, com 1 cópia fora das instalações.
-    \item Um backup só conta como backup depois de o restauro ter sido efetivamente testado.
+    \setlength\itemsep{0.35cm}
+    \item O RAID protege contra a falha de um disco e não protege contra tudo o resto.
+    \item Não protege de apagar ficheiros por engano, de corrupção lógica, de ransomware, de incêndio ou de roubo do servidor.
+    \item Num espelho, apagar um ficheiro apaga-o logo em todas as cópias.
+    \item A regra 3-2-1 manda manter 3 cópias dos dados, em 2 suportes diferentes, com 1 cópia fora das instalações.
+    \item Um backup só conta como backup depois de o restauro ter sido testado.
 \end{itemize}
 \end{frame}
+
+\figframe{A Regra 3-2-1}{a10-regra-321}
 
 \begin{frame}
 \frametitle{Armazenamento no Proxmox VE}
 \begin{itemize}
-    \setlength\itemsep{0.4cm}
-    \item O Proxmox suporta vários \emph{tipos de storage}, cada um com características próprias.
-    \item \textbf{Directory}: ficheiros de imagem (ex.\ \texttt{qcow2}) num sistema de ficheiros normal -- simples e flexível.
-    \item \textbf{LVM} e \textbf{LVM-thin}: cada disco de VM é um volume lógico; o LVM-thin acrescenta thin provisioning e snapshots.
-    \item \textbf{ZFS}: integra RAID, checksums e snapshots nativos numa única camada.
-    \item \textbf{Ceph}: armazenamento distribuído e replicado entre vários nós -- tema da Aula 11.
+    \setlength\itemsep{0.2cm}
+    \item O Proxmox suporta vários tipos de storage, cada um com características próprias.
+    \item O Directory guarda ficheiros de imagem (por exemplo \texttt{qcow2}) num sistema de ficheiros normal, de forma simples e flexível.
+    \item O LVM e o LVM-thin usam um volume lógico por disco de VM, e o LVM-thin acrescenta thin provisioning e snapshots.
+    \item O ZFS integra RAID, checksums e snapshots numa única camada.
+    \item O Ceph é armazenamento distribuído e replicado entre nós, tema da Aula 11.
     \item O comando \texttt{pvesm status} mostra os storages configurados no servidor da UC.
 \end{itemize}
 \end{frame}
+
+\figframe{Tipos de Storage do Proxmox VE}{a10-proxmox}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(1/2)}}
 \begin{itemize}
     \setlength\itemsep{0.4cm}
     \item Block, file e object storage oferecem níveis de abstração diferentes para necessidades diferentes.
-    \item HDD e SSD têm perfis de custo e desempenho distintos; RAID combina discos para desempenho e/ou redundância.
-    \item RAID 0, 1, 5, 6 e 10 equilibram desempenho, redundância e capacidade de formas diferentes.
+    \item HDD e SSD têm perfis distintos de custo e desempenho, e a interface conta tanto como o suporte.
+    \item IOPS, débito e latência medem aspetos diferentes do desempenho.
+    \item O RAID combina discos, e os níveis 0, 1, 5, 6 e 10 equilibram desempenho, redundância e capacidade de formas diferentes.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Síntese da Aula \textcolor{NudeTaupe}{\small(2/2)}}
 \begin{itemize}
+    \setlength\itemsep{0.35cm}
+    \item O LVM dá flexibilidade sobre discos ou arrays RAID, com thin provisioning e snapshots copy-on-write.
+    \item O ext4 e o XFS cobrem o uso geral, e o ZFS e o btrfs trazem checksums e snapshots ao sistema de ficheiros.
+    \item O RAID não é backup, e a regra 3-2-1 e o teste de restauro continuam indispensáveis.
+    \item O Proxmox concretiza estas opções nos tipos de storage Directory, LVM-thin, ZFS e Ceph.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Leituras}
+\begin{itemize}
     \setlength\itemsep{0.4cm}
-    \item LVM acrescenta flexibilidade sobre discos físicos ou arrays RAID (PVs, VGs, LVs), com thin provisioning e snapshots copy-on-write.
-    \item ext4/XFS cobrem o uso geral; ZFS/btrfs trazem checksums e snapshots nativos ao sistema de ficheiros.
-    \item RAID não é backup: a regra 3-2-1 e o teste de restauro continuam indispensáveis.
-    \item O Proxmox concretiza estas opções nos seus tipos de storage (Directory, LVM-thin, ZFS, Ceph).
+    \item Patterson, Gibson e Katz, A Case for Redundant Arrays of Inexpensive Disks (RAID), SIGMOD 1988.
+    \item Páginas de manual do \texttt{mdadm} e do LVM (\texttt{lvm}, \texttt{lvmthin}), e documentação do projeto LVM2.
+    \item Documentação do Proxmox VE sobre o sistema de storage, pve.proxmox.com.
 \end{itemize}
 \end{frame}
 

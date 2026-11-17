@@ -13,10 +13,26 @@
 ## Manual técnico
 - Manual 10 - Armazenamento Local com LVM e RAID.tex
 
+## Sebenta
+- Sebenta 10 - Armazenamento de Dados - Arquiteturas e Sistemas Locais.tex (um slide por página, com texto de estudo aprofundado)
+
 ## Diagramas
 Fonte editável (`.drawio`) e PNG em `Diagramas/`:
-- a10-niveis-raid
+- a10-tipos
+- a10-interfaces
+- a10-metricas
+- a10-raid-basicos
+- a10-raid-paridade
+- a10-raid-hw-sw
+- a10-reconstrucao
+- a10-lvm
+- a10-thin
 - a10-pilha-armazenamento
+- a10-snapshot
+- a10-sistemas-ficheiros
+- a10-regra-321
+- a10-proxmox
+- a10-niveis-raid (versão anterior, usada no Manual)
 
 ## Notas para o docente
 Dar ênfase à distinção entre as três abstrações de armazenamento (bloco, ficheiro, objeto), pois será usada nas duas aulas seguintes.
